@@ -16,8 +16,11 @@ import jax.numpy as jnp
 from jax.lax import stop_gradient, scan
 from jax import vmap, grad, jacfwd, jacrev, random, jit
 
+#JAX Optimization
+from jax.example_libraries import optimizers
+
 #scipy
-from scipy.optimize import minimize,fmin_bfgs,fmin_cg
+from scipy.optimize import minimize,fmin_bfgs,fmin_cg, approx_fprime
 
 #Plotting
 import matplotlib.pyplot as plt

@@ -56,16 +56,28 @@ class Euclidean(riemannian.Manifold):
         self.divsharp = jit(lambda x,X: jnp.trace(jacfwdx(X)(x)))
         
         #Geodesic
-        M.geodesic = jit(lambda x,v,dts: (jnp.cumsum(dts), jnp.stack((x[0]+dts*v, jnp.repeat(v, len(dts)))), jnp.repeat(x[1], len(dts))))
+        self.geodesic = jit(lambda x,v,dts: (jnp.cumsum(dts), jnp.stack((x[0]+jnp.cumsum(dts)[:,None]*v, 
+                                                                         jnp.tile(v, (len(dts), 1)))).transpose(1,0,2), 
+                                             jnp.tile(x[1], (len(dts), 1))))
         
         #Log
-        M.Log = jit(lambda x,y: (y[0]-x[0], jnp.zeros(1)))
-        M.dist = jit(lambda x,y: jnp.sqrt(jnp.sum((x[0]-y[0])**2)))
+        self.Log = jit(lambda x,y: (y[0]-x[0], jnp.zeros(1)))
+        self.dist = jit(lambda x,y: jnp.sqrt(jnp.sum((x[0]-y[0])**2)))
         
-        #Parallel Transport
+        #Parallel Transport - ADD CLOSED FORM EXPRESSIONS
         
-        #Curvature
+        #Curvature - ADD CLOSED FORM EXPRESSIONS
         
+        
+        #ADD HEAT KERNEL
+        self.hk = jit(lambda x,y,t: hk(self, x,y, t))
+        self.log_hk = jit(lambda x,y,t: log_hk(self, x, y, t))
+        self.gradx_log_hk = jit(lambda x,y,t: gradx_log_hk(self, x, y, t))
+        self.grady_log_hk = jit(lambda x,y,t: grady_log_hk(self, x, y, t))
+        self.gradt_log_hk = jit(lambda x,y,t: gradt_log_hk(self, x, y, t))
+        self.mlx_hk = jit(lambda X_obs,t: mlx_hk(self, X_obs, t))
+        self.mlt_hk = jit(lambda X_obs,t: mlt_hk(self, X_obs, t))
+        self.mlxt_hk = jit(lambda X_obs, t: mlxt_hk(self, X_obs))
         
         return
     
@@ -150,7 +162,48 @@ class Euclidean(riemannian.Manifold):
         
         return
         
-#%% Closed Form Expression for Euclidean Geometry
+#%% Heat Kernel
+
+def hk(M:Euclidean, x:ndarray,y:ndarray,t:ndarray)->ndarray:
+    
+    const = 1/((2*jnp.pi*t)**(self.dim*0.5))
+    
+    return jnp.exp(-0.5*jnp.sum(x[0]-y[0])/t)*const
+
+def log_hk(M:Euclidean, x:ndarray,y:ndarray,t:ndarray)->ndarray:
+    
+    return -0.5*jnp.sum(x[0]-y[0])/t-self.dim*0.5*jnp.log(2*jnp.pi*t)
+
+def gradx_log_hk(M:Euclidean, x:ndarray, y:ndarray, t:ndarray)->float:
+    
+    return ((y[0]-x[0])/t, jnp.zeros(1))
+
+def grady_log_hk(M:Euclidean, x:ndarray, y:ndarray, t:ndarray)->float:
+    
+    return ((x[0]-y[0])/t, jnp.zeros(1))
+
+def gradt_log_hk(M:Euclidean, x:ndarray, y:ndarray, t:ndarray)->float:
+    
+    diff = x[0]-y[0]
+    
+    return 0.5*jnp.dot(diff, diff)/(t**2)-0.5*self.dim/t
+
+def mlx_hk(M:Euclidean, X_obs:ndarray, t:ndarray=None)->float:
+
+    return (jnp.mean(X_obs[0], axis=0), jnp.zeros(1))
+
+def mlt_hk(M:Euclidean, X_obs:ndarray, mu:ndarray)->float:
+
+    diff_mu = X_obs[0]-mu[0]
+    
+    return jnp.mean(jnp.linalg.norm(diff_mu, axis = 1)**2)/self.dim
+
+def mlxt_hk(M:Euclidean, X_obs:ndarray)->float:
+    
+    mu = hk_mu(X_obs)
+    
+    return mu, opt_t(X_obs, mu)
+
 
 
 

@@ -1,34 +1,33 @@
-## This file is part of Jax Geometry
-#
-# Copyright (C) 2021, Stefan Sommer (sommer@di.ku.dk)
-# https://bitbucket.org/stefansommer/jaxgeometry
-#
-# Jax Geometry is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Jax Geometry is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Theano Geometry. If not, see <http://www.gnu.org/licenses/>.
-#
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Sep  5 12:30:30 2023
 
+@author: fmry
+"""
 
-from src.setup import *
-from src.utils import *
+#%% Sources
+
+#%% Modules
+
+from jaxgeometry.setup import *
+
+#%% MPP landmarks
 
 ###############################################################
 # Most probable paths for landmarks via development           #
 ###############################################################
-def initialize(M,sigmas,dsigmas,a):
+def initialize(M:object,
+               sigmas:ndarray,
+               dsigmas:ndarray,
+               a:Callable[[ndarray], ndarray]):
     """ Most probable paths for Kunita flows                 """
     """ M: shape manifold, a: flow field                     """
     
-    def ode_MPP_landmarks(c,y):
+    def ode_MPP_landmarks(c:tuple[ndarray, ndarray, ndarray],
+                          y:tuple[ndarray, ndarray]
+                          )->tuple[ndarray, ndarray]:
+        
         t,xlambd,chart = c
         qp, = y
         x = xlambd[0].reshape((M.N,M.m))  # points
@@ -41,9 +40,14 @@ def initialize(M,sigmas,dsigmas,a):
         dx = a(x,qp)+jnp.einsum('a,rak->rk',c,sigmasx)
         #dlambd = -jnp.einsum('ri,a,rairk->rk',lambd,c,jacrev(sigmas)(x))-jnp.einsum('ri,rirk->rk',lambd,jacrev(a)(x,qp))
         dlambd = -jnp.einsum('ri,a,raik->rk',lambd,c,dsigmasx)-jnp.einsum('ri,rirk->rk',lambd,jacrev(a)(x,qp))
+        
         return jnp.stack((dx.flatten(),dlambd.flatten()))
 
-    def chart_update_MPP_landmarks(xlambd,chart,y):
+    def chart_update_MPP_landmarks(xlambd:tuple[ndarray, ndarray],
+                                   chart:ndarray,
+                                   y:ndarray
+                                   )->tuple[ndarray, ndarray]:
+        
         if M.do_chart_update is None:
             return (xlambd,chart)
     
@@ -61,8 +65,16 @@ def initialize(M,sigmas,dsigmas,a):
                                 new_chart,
                                 chart))
     
-    def MPP_landmarks(x,lambd,qps,dts):
+    def MPP_landmarks(x:tuple[ndarray, ndarray],
+                      lambd:ndarray,
+                      qps:ndarray,
+                      dts:ndarray
+                      )->tuple[ndarray, ndarray, ndarray]:
+        
         (ts,xlambds,charts) = integrate(ode_MPP_landmarks,chart_update_MPP_landmarks,jnp.stack((x[0],lambd)),x[1],dts,qps)
+        
         return (ts,xlambds[:,0],xlambds[:,1],charts)
+    
     M.MPP_landmarks = MPP_landmarks
 
+    return
