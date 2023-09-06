@@ -1,40 +1,34 @@
-## This file is part of Jax Geometry
-#
-# Copyright (C) 2021, Stefan Sommer (sommer@di.ku.dk)
-# https://bitbucket.org/stefansommer/jaxgeometry
-#
-# Jax Geometry is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Jax Geometry is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Jax Geometry. If not, see <http://www.gnu.org/licenses/>.
-#
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Sep  6 10:02:49 2023
 
-from src.setup import *
-from src.params import *
+@author: fmry
+"""
 
-from src.groups.group import *
+#%% Sources
 
-import matplotlib.pyplot as plt
+#%% Modules
+
+from jaxgeometry.setup import *
+from jaxgeometry.groups import LieGroup
+
+#%% SON
 
 class SON(LieGroup):
     """ Special Orthogonal Group SO(N) """
 
-    def __init__(self,N=3,invariance='left'):
+    def __init__(self,
+                 N:int=3,
+                 invariance:str='left'
+                 )->None:
         dim = N*(N-1)//2 # group dimension
         LieGroup.__init__(self,dim,N,invariance=invariance)
 
         self.injectivity_radius = 2*jnp.pi
 
         # project to group (here using QR factorization)
-        def to_group(g):
+        def to_group(g:ndarray)->ndarray:
             (q,r) = jnp.linalg.qr(g)
             return jnp.dot(q,jnp.diag(jnp.diag(r)))
 
@@ -44,7 +38,7 @@ class SON(LieGroup):
         tmp_mat = r[jnp.newaxis, :] + ((N * (N - 3)) // 2-(r * (r - 1)) // 2)[::-1,jnp.newaxis]
         triu_index_matrix = jnp.triu(tmp_mat+1)-jnp.diag(jnp.diagonal(tmp_mat+1))
 
-        def VtoLA(hatxi): # from \RR^G_dim to LA
+        def VtoLA(hatxi:ndarray)->ndarray: # from \RR^G_dim to LA
             if hatxi.ndim == 1:
                 m = jnp.concatenate((jnp.zeros(1),hatxi))[triu_index_matrix]
                 return m-m.T
@@ -56,13 +50,13 @@ class SON(LieGroup):
 
         #import theano.tensor.slinalg
         #Expm = jnp.slinalg.Expm()
-        def Expm(g): # hardcoded for skew symmetric matrices to allow higher-order gradients
+        def Expm(g:ndarray)->ndarray: # hardcoded for skew symmetric matrices to allow higher-order gradients
             (w,V) = jnp.linalg.eigh(1.j*g)
             w = -1j*w
             expm = jnp.real(jnp.tensordot(V,jnp.tensordot(jnp.diag(jnp.exp(w)),jnp.conj(V.T),(1,0)),(1,0)))
             return expm
         self.Expm = Expm
-        def logm(b):
+        def logm(b:ndarray)->ndarray:
             I = jnp.eye(b.shape[0])
             res = jnp.zeros_like(b)
             ITERATIONS = 20
@@ -72,17 +66,23 @@ class SON(LieGroup):
         self.Logm = logm
 
         super(SON,self).initialize()
+        
+        return
 
-    def __str__(self):
+    def __str__(self)->str:
         return "SO(%d) (dimension %d)" % (self.N,self.dim)
 
-    def newfig(self):
-        newfig3d()
-
-    ### plotting
-    import matplotlib.pyplot as plt
-    def plot_path(self,g,color_intensity=1.,color=None,linewidth=3.,alpha=1.,prevg=None):
+    def plot_path(self,
+                  g:ndarray,
+                  color_intensity:float=1.,
+                  color:str=None,
+                  linewidth:float=3.,
+                  alpha:float=1.,
+                  prevg:ndarray=None
+                  )->None:
+        
         assert(len(g.shape)>2)
+        
         for i in range(g.shape[0]):
             self.plotg(g[i],
                   linewidth=linewidth if i==0 or i==g.shape[0]-1 else .3,
@@ -91,9 +91,16 @@ class SON(LieGroup):
                   prevg=g[i-1] if i>0 else None)
         return 
 
-    def plotg(self,g,color_intensity=1.,color=None,linewidth=3.,alpha=1.,prevg=None):
+    def plotg(self,
+              g:ndarray,
+              color_intensity:float=1.,
+              color:str=None,
+              linewidth:float=3.,
+              alpha:float=1.,
+              prevg:ndarray=None
+              )->None:
+        
         # Grid Settings:
-        import matplotlib.ticker as ticker 
         ax = plt.gca()
         x = jnp.arange(-10,10,1)
         ax.w_xaxis.set_major_locator(ticker.FixedLocator(x))
@@ -122,3 +129,4 @@ class SON(LieGroup):
                 ss = jnp.stack((prevs,s))
                 ss = ss/jnp.linalg.norm(ss,axis=1)[:,jnp.newaxis,:]
                 plt.plot(ss[:,0,i],ss[:,1,i],ss[:,2,i],linewidth=1,color=colors[i])
+

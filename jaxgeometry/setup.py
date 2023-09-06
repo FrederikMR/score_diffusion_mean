@@ -10,23 +10,43 @@ Created on Mon Sep  4 11:36:41 2023
 
 #%% Modules
 
+#Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 #JAX
 from jax.numpy import ndarray
 import jax.numpy as jnp
-from jax.lax import stop_gradient, scan
+from jax.lax import stop_gradient, scan, cond
 from jax import vmap, grad, jacfwd, jacrev, random, jit
 
 #JAX Optimization
 from jax.example_libraries import optimizers
 
+#JAX scipy
+import jax.scipy as jscipy
+
+#numpy
+import numpy as np
+
 #scipy
 from scipy.optimize import minimize,fmin_bfgs,fmin_cg, approx_fprime
 
+#sklearn
+from sklearn.decomposition import PCA
+
 #Plotting
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+
+#functools
+from functools import partial
 
 #typing
 from typing import Callable
+
+#JAXGeometry
+
 
 #%% Default Parameters
 
