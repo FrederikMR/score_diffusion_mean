@@ -1,10 +1,21 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Sep  4 17:43:33 2023
-
-@author: frederik
-"""
+## This file is part of Jax Geometry
+#
+# Copyright (C) 2021, Stefan Sommer (sommer@di.ku.dk)
+# https://bitbucket.org/stefansommer/jaxgeometry
+#
+# Jax Geometry is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Jax Geometry is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Jax Geometry. If not, see <http://www.gnu.org/licenses/>.
+#
 
 #%% Sources
 
@@ -61,7 +72,7 @@ class Euclidean(riemannian.Manifold):
                                              jnp.tile(x[1], (len(dts), 1))))
         
         #Log
-        self.Log = jit(lambda x,y: (y[0]-x[0], jnp.zeros(1)))
+        self.Log = jit(lambda x,y: y[0]-x[0])
         self.dist = jit(lambda x,y: jnp.sqrt(jnp.sum((x[0]-y[0])**2)))
         
         #Parallel Transport - ADD CLOSED FORM EXPRESSIONS
@@ -76,8 +87,8 @@ class Euclidean(riemannian.Manifold):
         self.grady_log_hk = jit(lambda x,y,t: grady_log_hk(self, x, y, t))
         self.gradt_log_hk = jit(lambda x,y,t: gradt_log_hk(self, x, y, t))
         self.mlx_hk = jit(lambda X_obs,t: mlx_hk(self, X_obs, t))
-        self.mlt_hk = jit(lambda X_obs,t: mlt_hk(self, X_obs, t))
-        self.mlxt_hk = jit(lambda X_obs, t: mlxt_hk(self, X_obs))
+        self.mlt_hk = jit(lambda X_obs,mu: mlt_hk(self, X_obs, mu))
+        self.mlxt_hk = jit(lambda X_obs: mlxt_hk(self, X_obs))
         
         return
     
@@ -166,13 +177,13 @@ class Euclidean(riemannian.Manifold):
 
 def hk(M:Euclidean, x:ndarray,y:ndarray,t:ndarray)->ndarray:
     
-    const = 1/((2*jnp.pi*t)**(self.dim*0.5))
+    const = 1/((2*jnp.pi*t)**(M.dim*0.5))
     
     return jnp.exp(-0.5*jnp.sum(x[0]-y[0])/t)*const
 
 def log_hk(M:Euclidean, x:ndarray,y:ndarray,t:ndarray)->ndarray:
     
-    return -0.5*jnp.sum(x[0]-y[0])/t-self.dim*0.5*jnp.log(2*jnp.pi*t)
+    return -0.5*jnp.sum(x[0]-y[0])/t-M.dim*0.5*jnp.log(2*jnp.pi*t)
 
 def gradx_log_hk(M:Euclidean, x:ndarray, y:ndarray, t:ndarray)->float:
     
@@ -186,7 +197,7 @@ def gradt_log_hk(M:Euclidean, x:ndarray, y:ndarray, t:ndarray)->float:
     
     diff = x[0]-y[0]
     
-    return 0.5*jnp.dot(diff, diff)/(t**2)-0.5*self.dim/t
+    return 0.5*jnp.dot(diff, diff)/(t**2)-0.5*M.dim/t
 
 def mlx_hk(M:Euclidean, X_obs:ndarray, t:ndarray=None)->float:
 
@@ -196,13 +207,13 @@ def mlt_hk(M:Euclidean, X_obs:ndarray, mu:ndarray)->float:
 
     diff_mu = X_obs[0]-mu[0]
     
-    return jnp.mean(jnp.linalg.norm(diff_mu, axis = 1)**2)/self.dim
+    return jnp.mean(jnp.linalg.norm(diff_mu, axis = 1)**2)/M.dim
 
 def mlxt_hk(M:Euclidean, X_obs:ndarray)->float:
     
-    mu = hk_mu(X_obs)
+    mu = mlx_hk(M, X_obs)
     
-    return mu, opt_t(X_obs, mu)
+    return mu, mlt_hk(M, X_obs, mu)
 
 
 

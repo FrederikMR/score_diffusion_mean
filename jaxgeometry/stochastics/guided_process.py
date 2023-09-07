@@ -1,10 +1,21 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Sep  6 10:54:02 2023
-
-@author: fmry
-"""
+## This file is part of Jax Geometry
+#
+# Copyright (C) 2021, Stefan Sommer (sommer@di.ku.dk)
+# https://bitbucket.org/stefansommer/jaxgeometry
+#
+# Jax Geometry is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Jax Geometry is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Jax Geometry. If not, see <http://www.gnu.org/licenses/>.
+#
 
 #%% Sources
 
@@ -21,7 +32,7 @@ def get_guided(M:object,
                chart_update:Callable[[ndarray, ndarray, ...], tuple[ndarray, ndarray, ...]],
                phi:Callable[[tuple[ndarray, ndarray], ndarray, ...], ndarray],
                sqrtCov:Callable[[ndarray, ...], ndarray]=None,
-               A:Callable=None,
+               A:Callable[[ndarray], ndarray]=None,
                logdetA:Callable=None,
                method:str='DelyonHu',
                integration:str='ito'
@@ -55,7 +66,7 @@ def get_guided(M:object,
         dW_guided = (1-.5*dt/(1-t))*dW+dt*h  # for Ito as well?
         sqrtCovx = sqrtCov(xchart,*cy) if sqrtCov is not None else X
         Cov = dt*jnp.tensordot(sqrtCovx,sqrtCovx,(1,1))
-        Pres = jnp.linalg.inv(Cov) #ERROR: NEVER USED VARIABLE
+        #Pres = jnp.linalg.inv(Cov) #ERROR: NEVER USED VARIABLE
         residual = jnp.tensordot(dW_guided,jnp.linalg.solve(Cov,dW_guided),(0,0))
         #residual = jnp.tensordot(dW_guided,jnp.tensordot(Pres,dW_guided,(1,0)),(0,0))
         log_likelihood = .5*(-dW.shape[0]*jnp.log(2*jnp.pi)-jnp.linalg.slogdet(Cov)[1]-residual)

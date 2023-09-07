@@ -1,18 +1,29 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Sep  6 10:15:37 2023
-
-@author: fmry
-"""
+## This file is part of Jax Geometry
+#
+# Copyright (C) 2021, Stefan Sommer (sommer@di.ku.dk)
+# https://bitbucket.org/stefansommer/jaxgeometry
+#
+# Jax Geometry is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Jax Geometry is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Jax Geometry. If not, see <http://www.gnu.org/licenses/>.
+#
 
 #%% Sources
 
 #%% Modules
 
 from jaxgeometry.setup import *
-from jaxgeometry.statistics import iterative_mle
-from jaxgeoemtry.stochastics import get_guided
+from jaxgeometry.statistics.iterative_mle import *
+from jaxgeometry.stochastics import get_guided
 
 #%% Code
 
@@ -35,9 +46,14 @@ def initialize(M:object)->None:
             states_flat = ((x,m,v),*s)
             return (states_flat,tree_def,subtree_defs),chart
         
+    if hasattr(M, 'F'):
+        F_fun = M.F
+    else:
+        F_fun = lambda x: x[0]
+        
     # guide function
     phi = lambda q,v,s: jnp.tensordot((1/s)*jnp.linalg.cholesky(M.g(q)).T,
-                                      M.Log(q,M.F((v,q[1]))).flatten(),
+                                      M.Log(q,F_fun((v,q[1]))).flatten(),
                                       (1,0))
     A = lambda x,v,w,s: (s**(-2))*jnp.dot(v,jnp.dot(M.g(x),w))
     logdetA = lambda x,s: jnp.linalg.slogdet(s**(-2)*M.g(x))[1]
@@ -60,20 +76,17 @@ def initialize(M:object)->None:
                 params,params_inds,params_update,x[1],_dts,M,\
                 N=N,num_steps=num_steps,step_size=1e-2)
 
-    M.log_transition_denisty = lambda x0, t, obss, *args: \
-        jnp.mean(vmap(lambda x,chart,obss,dW,dts,*ys: log_p_T((x,chart),
-                                                              obss,
-                                                              dW,dts,
-                                                              *ys),
-                      (None,None,0,0,None,*((None,)*(6-5))))(x0[0],
-                                                             x0[1],
-                                                             obss,
-                                                             dWs(len(obss[0])*N*M.dim,_dts).reshape(-1,_dts.shape[0],
-                                                                                                    N,
-                                                                                                    M.dim),
-                                                             _dts,
-                                                             *params[1:])
-    
+    M.diffusion_mean_ll = lambda x, t, obss, N=N: \
+        jnp.mean(vmap(lambda w,dW: log_p_T(x,
+                                           w,
+                                           dW,
+                                           _dts,
+                                           *t))(obss, 
+                                               dWs(len(obss[0])*N*M.dim,_dts).reshape(-1,
+                                                                                      _dts.shape[0],
+                                                                                      N,
+                                                                                      M.dim)))
+                                               
     return
     
     

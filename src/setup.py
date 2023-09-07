@@ -39,7 +39,7 @@ import time
 
 from src.params import *
 
-from multiprocess import Pool
+from multiprocessing import Pool
 import src.multiprocess_utils as mpu
 
 import itertools
