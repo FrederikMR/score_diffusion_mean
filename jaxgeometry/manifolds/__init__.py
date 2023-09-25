@@ -22,5 +22,7 @@
 #%% Modules
 
 from .Euclidean import Euclidean
+from .riemann_indicatrix import RiemannIndicatrix
+from .lorentzian_spacetime import LorentzSpacetime
 
 #%% Code

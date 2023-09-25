@@ -29,13 +29,24 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 from jax.numpy import ndarray
 import jax.numpy as jnp
 from jax.lax import stop_gradient, scan, cond
-from jax import vmap, grad, jacfwd, jacrev, random, jit, value_and_grad
+from jax import vmap, grad, jacfwd, jacrev, random, jit, value_and_grad, Array, device_get, \
+    tree_leaves, tree_map, tree_flatten, tree_unflatten
 
 #JAX Optimization
 from jax.example_libraries import optimizers
 
 #JAX scipy
 import jax.scipy as jscipy
+
+#haiku
+import haiku as hk
+
+#optax
+import optax
+
+#tensorflow
+import tensorflow as tf
+import tensorflow_datasets as tfds
 
 #numpy
 import numpy as np
@@ -46,6 +57,12 @@ from scipy.optimize import minimize,fmin_bfgs,fmin_cg, approx_fprime
 #sklearn
 from sklearn.decomposition import PCA
 
+#os
+import os
+
+#pickle
+import pickle
+
 #Plotting
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -54,7 +71,7 @@ import matplotlib.ticker as ticker
 from functools import partial
 
 #typing
-from typing import Callable
+from typing import Callable, NamedTuple
 
 #JAXGeometry
 from jaxgeometry.params import *

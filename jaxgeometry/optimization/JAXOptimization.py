@@ -14,11 +14,9 @@ from jaxgeometry.setup import *
 
 #%% Riemannian Jax Optimization
 
-@jit
 def RMJaxOpt(mu_init:ndarray,
              M:object,
              grad_fn:Callable[[tuple[ndarray, ndarray]], ndarray],
-             step_size:float = 0.1,
              max_iter:int=100,
              optimizer:Callable=None,
              opt_params:tuple=(0.1, 0.9, 0.999, 1e-8),
@@ -69,11 +67,9 @@ def RMJaxOpt(mu_init:ndarray,
 
 #%% Euclidean Jax Optimization
 
-@jit
 def JaxOpt(mu_init:ndarray,
            M:object,
            grad_fn:Callable[[ndarray], ndarray],
-           step_size:float = 0.1,
            max_iter:int=100,
            optimizer:Callable=None,
            opt_params:tuple=(0.1, 0.9, 0.999, 1e-8),
@@ -122,7 +118,6 @@ def JaxOpt(mu_init:ndarray,
 
 #%% Joint Jax Optimization
 
-@jit
 def JointJaxOpt(mu_rm:ndarray,
                 mu_euc:ndarray,
                 M:object,
@@ -144,8 +139,8 @@ def JointJaxOpt(mu_rm:ndarray,
         
         mu_rm, mu_euc, grad_rm, grad_euc, opt_state = carry
         
-        grad_rm = jnp.clip(grad_rm, min_step, max_step)
-        grad_euc = jnp.clip(grad_euc, min_step, max_step)
+        grad_rm = grad_rm #jnp.clip(grad_rm, min_step, max_step)
+        grad_euc = grad_euc #jnp.clip(grad_euc, min_step, max_step)
         
         grad = jnp.hstack((grad_rm, grad_euc))
         opt_state = opt_update(idx, grad, opt_state)
@@ -154,14 +149,14 @@ def JointJaxOpt(mu_rm:ndarray,
         mux_rm = mu[:N_rm]
         mu_euc = mu[N_rm:]
         
-        mux_rm = jnp.clip(mux_rm, lb_rm, ub_rm)
+        mux_rm = mux_rm#jnp.clip(mux_rm, lb_rm, ub_rm)
         mu_euc = jnp.clip(mu_euc, lb_euc, ub_euc)
         
         new_chart = M.centered_chart((mux_rm, mu_rm[1]))
         mu_rm = M.update_coords((mux_rm, mu_rm[1]),new_chart)
         
-        grad_rm = grad_fn_rm(mu_rm)
-        grad_euc = grad_fn_euc(mu_euc)
+        grad_rm = grad_fn_rm(mu_rm, mu_euc)
+        grad_euc = grad_fn_euc(mu_rm, mu_euc)
         
         return (mu_rm, mu_euc, grad_rm, grad_euc, opt_state), \
             (mu_rm, mu_euc, grad_rm, grad_euc)
@@ -182,14 +177,16 @@ def JointJaxOpt(mu_rm:ndarray,
         opt_init, opt_update, get_params = optimizer(*opt_params)
         
     opt_state = opt_init(jnp.hstack((mu_rm[0], mu_euc)))
-    grad_rm = grad_fn_rm(mu_rm)
-    grad_euc = grad_fn_euc(mu_euc)
+    grad_rm = grad_fn_rm(mu_rm, mu_euc)
+    grad_euc = grad_fn_euc(mu_rm, mu_euc)
     N_rm = len(grad_rm)
-    _, out = lax.scan(update, init = (mu_rm, mu_euc, 
+    _, out = scan(update, init = (mu_rm, mu_euc, 
                                       grad_rm, grad_euc, 
                                       opt_state), xs = jnp.arange(0,max_iter,1))
-    mu = out[0]
-    grad = out[1]
+    mu_rm = out[0]
+    mu_euc = out[1]
+    grad_rm = out[2]
+    grad_euc = out[3]
     
-    return mu, grad
+    return mu_rm, mu_euc, grad_rm, grad_euc
 

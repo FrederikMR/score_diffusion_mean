@@ -22,14 +22,14 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-import jaxgeometry.dynamics as dynamics
-import jaxgeometry.framebundle as framebundle
-import jaxgeometry.group as group
-import jaxgeometry.groups as groups
-import jaxgeometry.manifolds as manifolds
-import jaxgeometry.optimization as optimization
-import jaxgeometry.sR as sR
-import jaxgeometry.statistics as statistics
-import jaxgeometry.stochastics as stochastics
+#import jaxgeometry.dynamics as dynamics
+#import jaxgeometry.framebundle as framebundle
+#import jaxgeometry.group as group
+#import jaxgeometry.groups as groups
+#import jaxgeometry.manifolds as manifolds
+#import jaxgeometry.optimization as optimization
+#import jaxgeometry.sR as sR
+#import jaxgeometry.statistics as statistics
+#import jaxgeometry.stochastics as stochastics
 
 #%% Code

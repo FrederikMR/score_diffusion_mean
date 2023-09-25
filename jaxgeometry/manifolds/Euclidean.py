@@ -63,8 +63,8 @@ class Euclidean(riemannian.Manifold):
         self.flat = jit(lambda x,v: v)
         self.sharp = jit(lambda x,p: p)
         self.orthFrame = jit(lambda x: jnp.eye(self.dim))
-        self.div = jit(lambda x,X: jnp.trace(jacfwdx(X)(x)))
-        self.divsharp = jit(lambda x,X: jnp.trace(jacfwdx(X)(x)))
+        self.div = lambda x,X: jnp.trace(jacfwdx(X)(x))
+        self.divsharp = lambda x,X: jnp.trace(jacfwdx(X)(x))
         
         #Geodesic
         self.geodesic = jit(lambda x,v,dts: (jnp.cumsum(dts), jnp.stack((x[0]+jnp.cumsum(dts)[:,None]*v, 
@@ -85,6 +85,7 @@ class Euclidean(riemannian.Manifold):
         self.log_hk = jit(lambda x,y,t: log_hk(self, x, y, t))
         self.gradx_log_hk = jit(lambda x,y,t: gradx_log_hk(self, x, y, t))
         self.grady_log_hk = jit(lambda x,y,t: grady_log_hk(self, x, y, t))
+        self.ggrady_log_hk = jit(lambda x,y,t: -jnp.eye(self.dim)/t)
         self.gradt_log_hk = jit(lambda x,y,t: gradt_log_hk(self, x, y, t))
         self.mlx_hk = jit(lambda X_obs,t: mlx_hk(self, X_obs, t))
         self.mlt_hk = jit(lambda X_obs,mu: mlt_hk(self, X_obs, mu))
