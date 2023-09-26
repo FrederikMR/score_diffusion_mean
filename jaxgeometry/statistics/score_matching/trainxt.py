@@ -152,7 +152,8 @@ def train_s1(M:object,
 #%% Score Training for SN
 #https://scoste.fr/posts/diffusion/#denoising_score_matching
 def train_s2(M:object,
-             model:object,
+             s1_model:Callable[[ndarray, ndarray, ndarray], ndarray],
+             s2_model:object,
              data_generator:Callable[[], jnp.ndarray],
              N_dim:int,
              batch_size:int,
@@ -177,11 +178,14 @@ def train_s2(M:object,
             xp = xt+noise
             xm = xt-noise
             
-            s1,s2 = apply_fn(params,jnp.hstack((x0, xt, t)), rng_key, state_val)
+            s1 = s1_model(x0,xt,t)
+            s2 = apply_fn(params,jnp.hstack((x0, xt, t)), rng_key, state_val)
             
-            s1p,s2p = apply_fn(params,jnp.hstack((x0, xp, t)), rng_key, state_val)
+            s1p = s1_model(x0,xp,t)
+            s2p = apply_fn(params,jnp.hstack((x0, xp, t)), rng_key, state_val)
             
-            s1m,s2m = apply_fn(params,jnp.hstack((x0, xm, t)), rng_key, state_val)
+            s1m = s1_model(x0,xm,t)
+            s2m = apply_fn(params,jnp.hstack((x0, xm, t)), rng_key, state_val)
             
             psi = s2+jnp.einsum('i,j->ij', s1, s1)
             psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
@@ -190,10 +194,8 @@ def train_s2(M:object,
             loss_s2 = psim**2+psim**2\
                 +2*(jnp.eye(N_dim)-jnp.eye(N_dim)-jnp.einsum('i,j->ij', noise, noise)/dt)*\
                     (psip+psim-2*psi)
-                    
-            loss_s1 = noise/dt+s1
                                 
-            return loss_s2+gamma*jnp.sum(loss_s1*loss_s1)
+            return loss_s2
             
             #s1 = s1_model(x0,xt,t)
             #s2 = apply_fn(params,jnp.hstack((x0, xt, t)), rng_key, state_val)
@@ -245,16 +247,16 @@ def train_s2(M:object,
     train_dataset = iter(tfds.as_numpy(train_dataset))
     
     initial_rng_key = random.PRNGKey(seed)
-    if type(model) == hk.Transformed:
-        initial_params = model.init(random.PRNGKey(seed), next(train_dataset)[:,:(2*N_dim+1)])
+    if type(s2_model) == hk.Transformed:
+        initial_params = s2_model.init(random.PRNGKey(seed), next(train_dataset)[:,:(2*N_dim+1)])
         initial_opt_state = optimizer.init(initial_params)
         state = TrainingState(initial_params, None, initial_opt_state, initial_rng_key)
-        apply_fn = lambda params, data, rng_key, state_val: model.apply(params, rng_key, data)
-    elif type(model) == hk.TransformedWithState:
-        initial_params, init_state = model.init(random.PRNGKey(seed), next(train_dataset)[:,:(2*N_dim+1)])
+        apply_fn = lambda params, data, rng_key, state_val: s2_model.apply(params, rng_key, data)
+    elif type(s2_model) == hk.TransformedWithState:
+        initial_params, init_state = s2_model.init(random.PRNGKey(seed), next(train_dataset)[:,:(2*N_dim+1)])
         initial_opt_state = optimizer.init(initial_params)
         state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
-        apply_fn = lambda params, data, rng_key, state_val: model.apply(params, state_val, rng_key, data)[0]
+        apply_fn = lambda params, data, rng_key, state_val: s2_model.apply(params, state_val, rng_key, data)[0]
     
     loss = []
     for step in range(epochs):
