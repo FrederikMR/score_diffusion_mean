@@ -27,3 +27,14 @@ Constant folding an instruction is taking > 1s:
 This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
 
 If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/train_score.py", line 307, in <module>
+    train_rn_s2(file_path = 'models/R', 
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/train_score.py", line 280, in train_rn_s2
+    train_s2(M=M,
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/statistics/score_matching/trainxt.py", line 261, in train_s2
+    state, loss_val = update(state, next(train_dataset))
+  File "<string>", line 1, in <lambda>
+KeyboardInterrupt
+2023-09-26 09:43:12.605912: W tensorflow/core/kernels/data/generator_dataset_op.cc:108] Error occurred when finalizing GeneratorDataset iterator: FAILED_PRECONDITION: Python interpreter state is not initialized. The process may be terminated.
+	 [[{{node PyFunc}}]]
