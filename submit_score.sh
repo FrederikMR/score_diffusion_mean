@@ -1,7 +1,7 @@
 #!/bin/sh
 #BSUB -q gpuv100
 #BSUB -gpu "num=1"
-#BSUB -J R200
+#BSUB -J R2
 #BSUB -n 4
 #BSUB -W 24:00
 #BSUB -R "rusage[mem=32GB]"
@@ -19,4 +19,4 @@ module swap cudnn/v7.0-prod-cuda8
 python3 train_score.py \
     --model RN \
     --order s2 \
-    --dim 200
+    --dim 2
