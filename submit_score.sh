@@ -18,5 +18,5 @@ module swap cudnn/v7.0-prod-cuda8
 
 python3 train_score.py \
     --model RN \
-    --order s2 \
+    --order s1 \
     --dim 2
