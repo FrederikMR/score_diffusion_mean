@@ -12,3 +12,4 @@ Skipping registering GPU devices...
   setattr(self, word, getattr(machar, word).flat[0])
 /zhome/77/8/118225/.local/lib/python3.9/site-packages/numpy/core/getlimits.py:89: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
   return self._float_to_str(self.smallest_subnormal)
+User defined signal 2
