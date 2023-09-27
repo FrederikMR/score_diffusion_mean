@@ -24,5 +24,7 @@
 from .Euclidean import Euclidean
 from .riemann_indicatrix import RiemannIndicatrix
 from .lorentzian_spacetime import LorentzSpacetime
+from .Ellipsoid import Ellipsoid
+from .nSphere import nSphere
 
 #%% Code

@@ -61,14 +61,17 @@ def train_s1(M:object,
 
     def loss_dsm(params:hk.Params, state_val:dict, rng_key:Array, data:jnp.ndarray)->float:
         
-        def f(x0,xt,t,noise,dt):
+        def f(x0,xt,chart,t,noise,dt):
+            
+            s1 = tmx_fun(params, state_val, rng_key, x0, (xt,chart), t)
 
-            loss = noise/dt+apply_fn(params,jnp.hstack((x0, xt, t)), rng_key, state_val)
+            loss = noise/dt+s1
             
             return jnp.sum(loss*loss)
         
         x0 = data[:,:N_dim]
         xt = data[:,N_dim:2*N_dim]
+        (xt,chart) = vmap(update_coords)(xt)
         t = data[:,2*N_dim]
         noise = data[:,(2*N_dim+1):-1]
         dt = data[:,-1]
@@ -82,7 +85,7 @@ def train_s1(M:object,
         
         loss = jnp.mean(vmap(
                         f,
-                        (0,0,0,0,0))(x0,xt,t,noise,dt))
+                        (0,0,0,0,0,0))(x0,xt,chart,t,noise,dt))
     
         return loss
     
@@ -113,7 +116,7 @@ def train_s1(M:object,
                                mu_dtype=None)
         
     train_dataset = tf.data.Dataset.from_generator(data_generator,output_types=tf.float32,
-                                                   output_shapes=([batch_size,3*N_dim+2]))
+                                                   output_shapes=([batch_size,2*N_dim+M.dim+2]))
     train_dataset = iter(tfds.as_numpy(train_dataset))
         
     initial_rng_key = random.PRNGKey(seed)
@@ -243,7 +246,7 @@ def train_s2(M:object,
                                mu_dtype=None)
         
     train_dataset = tf.data.Dataset.from_generator(data_generator,output_types=tf.float32,
-                                                   output_shapes=([batch_size,3*N_dim+2]))
+                                                   output_shapes=([batch_size,2*N_dim+M.dim+2]))
     train_dataset = iter(tfds.as_numpy(train_dataset))
     
     initial_rng_key = random.PRNGKey(seed)
