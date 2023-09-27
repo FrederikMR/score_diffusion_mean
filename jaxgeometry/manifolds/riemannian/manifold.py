@@ -100,7 +100,7 @@ class EmbeddedManifold(Manifold):
                 
                 JF = self.JF(x)
                 
-                return jnp.tensordot(JF,JF,(0,0)) 
+                return jnp.tensordot(JF,JF,(0,0))
 
             # metric matrix
             self.g = g

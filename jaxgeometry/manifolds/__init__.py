@@ -26,5 +26,10 @@ from .riemann_indicatrix import RiemannIndicatrix
 from .lorentzian_spacetime import LorentzSpacetime
 from .Ellipsoid import Ellipsoid
 from .nSphere import nSphere
+from .Cylinder import Cylinder
+from .S1 import S1
+from .Torus import Torus
+from .H2 import H2
+from .Landmarks import Landmarks
 
 #%% Code

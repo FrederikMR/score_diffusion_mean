@@ -28,7 +28,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 #JAX
 from jax.numpy import ndarray
 import jax.numpy as jnp
-from jax.lax import stop_gradient, scan, cond
+from jax.lax import stop_gradient, scan, cond, linalg
 from jax import vmap, grad, jacfwd, jacrev, random, jit, value_and_grad, Array, device_get, \
     tree_leaves, tree_map, tree_flatten, tree_unflatten
 

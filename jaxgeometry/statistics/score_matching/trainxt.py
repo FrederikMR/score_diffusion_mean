@@ -70,12 +70,11 @@ def train_s1(M:object,
             return jnp.sum(loss*loss)
         
         x0 = data[:,:N_dim]
-        xt = data[:,N_dim:2*N_dim]
+        xt = data[:,N_dim:(2*N_dim)]
         (xt,chart) = vmap(update_coords)(xt)
         t = data[:,2*N_dim]
         noise = data[:,(2*N_dim+1):-1]
         dt = data[:,-1]
-        
 
         #loss = jnp.mean(vmap(
         #            vmap(
