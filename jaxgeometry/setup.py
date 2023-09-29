@@ -38,6 +38,9 @@ from jax.example_libraries import optimizers
 #JAX scipy
 import jax.scipy as jscipy
 
+#Scipy
+from scipy.linalg import fractional_matrix_power, logm
+
 #haiku
 import haiku as hk
 

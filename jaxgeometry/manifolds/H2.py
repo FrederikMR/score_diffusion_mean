@@ -44,7 +44,7 @@ class H2(riemannian.EmbeddedManifold):
         riemannian.parallel_transport(self)
 
         # metric matrix from embedding into Minkowski space
-        #self.g = lambda x: jnp.einsum('ji,j,jl',self.JF(x),jnp.array([-1.,1.,1.]),self.JF(x))
+        self.g = lambda x: jnp.einsum('ji,j,jl',self.JF(x),jnp.array([-1.,1.,1.]),self.JF(x))
 
 
     def __str__(self):

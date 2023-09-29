@@ -31,5 +31,7 @@ from .S1 import S1
 from .Torus import Torus
 from .H2 import H2
 from .Landmarks import Landmarks
+from .Heisenberg import Heisenberg
+from .SPDN import SPDN
 
 #%% Code

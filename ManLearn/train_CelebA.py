@@ -52,7 +52,6 @@ class Batch(NamedTuple):
 
 class TrainingState(NamedTuple):
     params: hk.Params
-    state_val: dict
     opt_state: optax.OptState
     rng_key: Array
   
@@ -92,33 +91,32 @@ def train_vae():
         return jnp.mean(jnp.square(x-x_hat))
     
     @jit
-    def kl_divergence(mu, logvar):
+    def kl_divergence(mu, std):
         
-        return jnp.mean(-0.5*jnp.sum(1+logvar-mu**2-jnp.exp(logvar), axis=-1))
+        return -0.5*jnp.mean(jnp.sum(1+2.0*std-mu**2-jnp.exp(2.0*std), axis=-1))
     
     @jit
-    def loss_fn(params, state_val, rng_key, batch:Batch)->Array:
+    def loss_fn(params, rng_key, batch:Batch)->Array:
         
-        out, state_val = model.apply(params, state_val, rng_key, batch.image)
-        z, x_hat, mu, logvar = out
+        z, x_hat, mu, std = model.apply(params, rng_key, batch.image)
         
         rec_loss = gaussian_likelihood(batch.image, x_hat)
-        kld = kl_divergence(mu, logvar)
+        kld = kl_divergence(mu, std)
         
         elbo = rec_loss+kld
         
-        return elbo, (state_val, kld, rec_loss, elbo)
+        return elbo, (kld, rec_loss, elbo)
     
     @jit
     def update(state: TrainingState, batch: Batch) -> TrainingState:
       """Performs a single SGD step."""
       
       rng_key, next_rng_key = jran.split(state.rng_key)
-      gradients, aux = grad(loss_fn, has_aux=True)(state.params, state.state_val, rng_key, batch)
+      gradients, aux = grad(loss_fn, has_aux=True)(state.params, rng_key, batch)
       updates, new_opt_state = optimizer.update(gradients, state.opt_state)
       new_params = optax.apply_updates(state.params, updates)
       
-      return TrainingState(new_params, aux[0], new_opt_state, next_rng_key), aux[1:]
+      return TrainingState(new_params, new_opt_state, next_rng_key), aux
     
     # Load datasets.
     train_dataset = load_dataset()
@@ -126,9 +124,9 @@ def train_vae():
     
     # Initialise the training state.
     initial_rng_key = jran.PRNGKey(args.seed)
-    initial_params, state_val = model.init(initial_rng_key, next(train_dataset).image)
+    initial_params = model.init(initial_rng_key, next(train_dataset).image)
     initial_opt_state = optimizer.init(initial_params)
-    state = TrainingState(initial_params, state_val, initial_opt_state, initial_rng_key)
+    state = TrainingState(initial_params, initial_opt_state, initial_rng_key)
 
     # Run training and evaluation.
     kld_loss = []
