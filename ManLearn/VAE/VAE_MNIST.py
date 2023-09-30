@@ -145,7 +145,7 @@ def model_encoder(x):
     decoder=Decoder(),
     )
   
-    return vae.encoder.evaluate(x)[0]
+    return vae.encoder(x)[0]
 
 #%% Transformed Decoder model
     
@@ -157,4 +157,4 @@ def model_decoder(z):
     decoder=Decoder(),
     )
   
-    return vae.decoder.evaluate(z)
+    return vae.decoder(z)

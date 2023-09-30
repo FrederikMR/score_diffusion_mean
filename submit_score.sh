@@ -6,8 +6,8 @@
 #BSUB -W 24:00
 #BSUB -R "rusage[mem=32GB]"
 #BSUB -u fmry@dtu.dk
-#BSUB -o models/output/output_%J.out
-#BSUB -e models/error/error_%J.err
+#BSUB -o scores/output/output_%J.out
+#BSUB -e scores/error/error_%J.err
 #BSUB -B
 #BSUB -N
 
@@ -17,6 +17,17 @@ module swap cuda/8.0
 module swap cudnn/v7.0-prod-cuda8
 
 python3 train_score.py \
-    --model RN \
-    --order s1 \
-    --dim 2
+    --manifold RN \
+    --N 2 \
+    --loss_type dsm \
+    --train_net s1 \
+    --max_T 1.0 \
+    --lr_rate 0.001 \
+    --epochs 50000 \
+    --x_samples 32 \
+    --t_samples 128 \
+    --repeats 8 \
+    --samples_per_batch 16 \
+    --dt_steps 1000 \
+    --save_step 10 \
+    --seed 2712

@@ -33,5 +33,7 @@ from .H2 import H2
 from .Landmarks import Landmarks
 from .Heisenberg import Heisenberg
 from .SPDN import SPDN
+from .HypParaboloid import HypParaboloid
+from .Latent import Latent
 
 #%% Code

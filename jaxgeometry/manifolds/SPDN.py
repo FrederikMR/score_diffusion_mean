@@ -227,8 +227,8 @@ def duplication_fun(N:int):
         for i in range(j,N):
             A,u = 0*A, 0*u
             idx = j*N+i-((j+1)*j)//2
-            A = A.at[i,j].set(1)
-            A = A.at[j,i].set(1)
+            A = A.at[i,i-j].set(1)
+            A = A.at[i-j,i].set(1)
             u = u.at[idx].set(1)
             D += u.dot(A.reshape((1, -1), order="F"))
             

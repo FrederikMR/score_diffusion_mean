@@ -28,7 +28,7 @@ def train_s1(M:object,
              model:object,
              data_generator:Callable[[], jnp.ndarray],
              update_coords:Callable[[jnp.ndarray], tuple[jnp.ndarray, jnp.ndarray]],
-             tmx_fun:Callable[[hk.Params, dict, Array, jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray],
+             proj_grad:Callable[[hk.Params, dict, Array, jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray],
              N_dim:int,
              batch_size:int,
              lr_rate:float = 0.001,
@@ -55,7 +55,8 @@ def train_s1(M:object,
         
         (xts,chartts) = vmap(update_coords)(xt)
         
-        divs = vmap(lambda x0, xt, chart, t: M.div((xt, chart), lambda x: tmx_fun(params, state_val, rng_key, x0, x, t)))(x0,xts,chartts,t)
+        s1 = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
+        divs = vmap(lambda x0, xt, chart, t: M.div((xt, chart), lambda x: proj_grad(s1, x0, x, t)))(x0,xts,chartts,t)
         
         return jnp.mean(norm2s+2.0*divs)
 
@@ -63,7 +64,8 @@ def train_s1(M:object,
         
         def f(x0,xt,chart,t,noise,dt):
             
-            s1 = tmx_fun(params, state_val, rng_key, x0, (xt,chart), t)
+            s1 = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
+            s1 = proj_grad(s1, x0, (xt,chart), t)
 
             loss = noise/dt+s1
             
@@ -157,6 +159,9 @@ def train_s2(M:object,
              s1_model:Callable[[ndarray, ndarray, ndarray], ndarray],
              s2_model:object,
              data_generator:Callable[[], jnp.ndarray],
+             update_coords:Callable[[jnp.ndarray], tuple[jnp.ndarray, jnp.ndarray]],
+             proj_grad:Callable[[Callable, jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray],
+             proj_hess:Callable[[Callable, jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray],
              N_dim:int,
              batch_size:int,
              gamma:float=1.0,
@@ -175,19 +180,21 @@ def train_s2(M:object,
                  data:jnp.ndarray
                  )->float:
         
-        def f(x0,xt,t,noise,dt):
+        def f(x0,xt,chart,t,noise,dt):
             
             xp = xt+noise
             xm = xt-noise
             
-            s1 = s1_model(x0,xt,t)
-            s2 = apply_fn(params,jnp.hstack((x0, xt, t)), rng_key, state_val)
+            s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
             
-            s1p = s1_model(x0,xp,t)
-            s2p = apply_fn(params,jnp.hstack((x0, xp, t)), rng_key, state_val)
+            s1 = proj_grad(s1_model, x0, (xt,chart), t)
+            s2 = proj_hess(s1_model, s2_model, x0, (xt,chart), t)
+
+            s1p = proj_grad(s1_model, x0, (xp,chart), t)
+            s2p = proj_hess(s1_model, s2_model, x0, (xp,chart), t)
             
-            s1m = s1_model(x0,xm,t)
-            s2m = apply_fn(params,jnp.hstack((x0, xm, t)), rng_key, state_val)
+            s1m = proj_grad(s1_model, x0, (xm,chart), t)
+            s2m = proj_hess(s1_model, s2_model, x0, (xm,chart), t)
             
             psi = s2+jnp.einsum('i,j->ij', s1, s1)
             psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
@@ -198,9 +205,11 @@ def train_s2(M:object,
                     (psip+psim-2*psi)
                                 
             return loss_s2
+        
+            #s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
             
-            #s1 = s1_model(x0,xt,t)
-            #s2 = apply_fn(params,jnp.hstack((x0, xt, t)), rng_key, state_val)
+            #s1 = proj_grad(s1_model, x0, (xt,chart), t)
+            #s2 = proj_hess(s1_model, s2_model, x0, (xt,chart), t)
             
             #loss_s2 = s2+jnp.einsum('i,j->ij', s1, s1)+\
             #    (jnp.eye(N_dim)-jnp.einsum('i,j->ij', noise, noise)/dt)/dt
@@ -208,11 +217,11 @@ def train_s2(M:object,
             #return jnp.sum(loss_s2*loss_s2)
         
         x0 = data[:,:N_dim]
-        xt = data[:,N_dim:2*N_dim]
+        xt = data[:,N_dim:(2*N_dim)]
+        (xt,chart) = vmap(update_coords)(xt)
         t = data[:,2*N_dim]
         noise = data[:,(2*N_dim+1):-1]
         dt = data[:,-1]
-        
 
         #loss = jnp.mean(vmap(
         #            vmap(
@@ -222,7 +231,7 @@ def train_s2(M:object,
         
         loss = jnp.mean(vmap(
                         f,
-                        (0,0,0,0,0))(x0,xt,t,noise,dt))
+                        (0,0,0,0,0,0))(x0,xt,chart,t,noise,dt))
     
         return loss
     

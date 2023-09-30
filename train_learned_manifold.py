@@ -13,6 +13,6 @@ from ManLearn.train_SVHN import train_vae as train_svhn
 from ManLearn.train_CelebA import train_vae as train_celeba
 #from ManLearn.train_CelebA import train_vae
 
-train_svhn()
-train_mnist()
+#train_svhn()
+#train_mnist()
 train_celeba()

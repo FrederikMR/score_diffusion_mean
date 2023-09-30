@@ -54,13 +54,13 @@ class S1(riemannian.EmbeddedManifold):
             invF = self.F_spherical_inv
             self.do_chart_update = do_chart_update_spherical
             self.centered_chart = self.centered_chart_spherical
-            self.Log = self.StdLogSpherical
+            self.chart = lambda : jnp.array([1.0, 0.0])
         else:
             F = self.F_steographic
             invF = self.F_steographic_inv
             self.do_chart_update = do_chart_update_steographic
             self.centered_chart = self.centered_chart_steographic
-            self.Log = self.StdLogSteographic
+            self.chart = lambda : jnp.array([0.0, -1.0])
 
         riemannian.EmbeddedManifold.__init__(self,F,1,2,invF=invF)
 
@@ -86,11 +86,6 @@ class S1(riemannian.EmbeddedManifold):
         self.grady_log_hk = jit(lambda x,y,t: grady_log_hk(self, x, y, t))
         #self.ggrady_log_hk = jit(lambda x,y,t: -jnp.eye(self.dim)/t)
         self.gradt_log_hk = jit(lambda x,y,t: gradt_log_hk(self, x, y, t))
-
-    def chart(self):
-        """ return default coordinate chart """
-        
-        return jnp.array([0.0, 0.1])
     
     def centered_chart_spherical(self,x):
         """ return centered coordinate chart """

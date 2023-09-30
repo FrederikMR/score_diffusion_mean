@@ -70,7 +70,7 @@ def load_dataset(data_dir:str = '../Data/CelebA/celeb_a/img_align_celeba',
         return image
 
     filenames = tf.constant([os.path.join(data_dir, fname) for fname in os.listdir(data_dir)])
-    dataset = tf.data.Dataset.from_tensor_slices((filenames))
+    dataset = tf.data.Dataset.from_tensor_slices((filenames[:int(len(filenames)*0.8)]))
 
     dataset = dataset.map(preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
     dataset = dataset.batch(batch_size=batch_size, drop_remainder=True)
