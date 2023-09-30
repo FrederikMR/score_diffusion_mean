@@ -1,0 +1,14 @@
+Loaded dependency [python3/3.9.11]: gcc/10.3.0-binutils-2.36.1
+
+Switching from python3/3.8.2 to python3/3.9.11
+  Loading requirement: gcc/10.3.0-binutils-2.36.1
+2023-09-29 23:55:43.302851: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1696024559.233400   12987 tfrt_cpu_pjrt_client.cc:349] TfrtCpuClient created.
+No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for more info.)
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/train_score.py", line 2880, in <module>
+    train_cylinder_s1(file_path='models/Cylinder', 
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/train_score.py", line 1564, in train_cylinder_s1
+    x0 = M.coords([0.]*N)
+NameError: name 'N' is not defined
