@@ -72,7 +72,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--N', default=2,
                         type=int)
-    parser.add_argument('--loss_type', default="vsm",
+    parser.add_argument('--loss_type', default="dsm",
                         type=str)
     parser.add_argument('--train_net', default="s1",
                         type=str)

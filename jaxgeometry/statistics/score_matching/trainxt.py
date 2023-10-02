@@ -90,6 +90,7 @@ def train_s1(M:object,
         #                (0,0,0,0)),
         #            (1,1,None,1))(x0,xt,t,noise))
         
+        
         loss = jnp.mean(vmap(
                         f,
                         (0,0,0,0,0,0))(x0,xt,chart,t,noise,dt))
