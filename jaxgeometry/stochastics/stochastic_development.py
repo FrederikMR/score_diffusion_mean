@@ -28,8 +28,8 @@ def initialize(M:object)->None:
     """ development and stochastic development from R^d to M """
 
     # Deterministic development
-    def ode_development(c:tuple[ndarray, ndarray, ndarray],
-                        y:tuple[ndarray, ndarray]):
+    def ode_development(c:Tuple[ndarray, ndarray, ndarray],
+                        y:Tuple[ndarray, ndarray]):
         t,u,chart = c
         dgamma, = y
 
@@ -42,9 +42,9 @@ def initialize(M:object)->None:
         return det
 
     # Stochastic development
-    def sde_development(c:tuple[ndarray, ndarray, ndarray],
-                        y:tuple[ndarray, ndarray]
-                        )->tuple[ndarray, ndarray, dnarray]:
+    def sde_development(c:Tuple[ndarray, ndarray, ndarray],
+                        y:Tuple[ndarray, ndarray]
+                        )->Tuple[ndarray, ndarray, dnarray]:
         
         t,u,chart = c
         dt,dW = y

@@ -29,7 +29,7 @@ def initialize(M:object)->None:
     """ flow along a vector field X """
     def flow(X:Callable[[ndarray], ndarray]):
 
-        def ode_flow(c:tuple[ndarray, ndarray, ndarray],
+        def ode_flow(c:Tuple[ndarray, ndarray, ndarray],
                      y:ndarray
                      )->ndarray:
             

@@ -33,9 +33,9 @@ def initialize(M:object)->None:
     Erlend Grong and Stefan Sommer, 2021
     """
 
-    def ode_mpp(c:tuple[ndarray, ndarray, ndarray],
-                y:tuple[ndarray, ndarray]
-                )->tuple[ndarray, ndarray]:
+    def ode_mpp(c:Tuple[ndarray, ndarray, ndarray],
+                y:Tuple[ndarray, ndarray]
+                )->Tuple[ndarray, ndarray]:
         
         t,gammafvchi,chart = c
         lamb, = y
@@ -67,7 +67,7 @@ def initialize(M:object)->None:
     def chart_update_mpp(gammafvchi:ndarray,
                          chart:ndarray,
                          *args
-                         )->tuple[ndarray, ndarray]:
+                         )->Tuple[ndarray, ndarray]:
         
         if M.do_chart_update is None:
             return (gammafvchi,chart)
@@ -89,13 +89,13 @@ def initialize(M:object)->None:
                                 chart))
     
     @jit
-    def MPP_forwardt(u:tuple[ndarray, ndarray],
+    def MPP_forwardt(u:Tuple[ndarray, ndarray],
                      lamb:ndarray,
                      v:ndarray,
                      chi:ndarray,
                      T:float=T,
                      n_steps:int=n_steps
-                     )->tuple[ndarray, ndarray, ndarray]:
+                     )->Tuple[ndarray, ndarray, ndarray]:
         
         curve = M.mpp((jnp.hstack((u[0],v,chi)),u[1]),jnp.broadcast_to(lamb[None,...],(n_steps,)+lamb.shape),dts(T,n_steps))
         us = curve[1][:,0:M.dim+M.dim**2]
@@ -117,7 +117,7 @@ def initialize(M:object)->None:
         return jnp.dot(invlambv,invlambv)
     # constraint
     def MPP_c(vchi:ndarray,
-              u:tuple[ndarray, ndarray],
+              u:Tuple[ndarray, ndarray],
               lamb:ndarray,
               y:ndarray
               )->ndarray:
@@ -131,10 +131,10 @@ def initialize(M:object)->None:
         
         return jnp.hstack((xT-y_chartT[0],chiT))
     
-    def MPP(u:tuple[ndarray, ndarray],
+    def MPP(u:Tuple[ndarray, ndarray],
             lamb:ndarray,
             y:ndarray
-            )->tuple[ndarray, ndarray]:
+            )->Tuple[ndarray, ndarray]:
         
         res = scipy.optimize.minimize(MPP_f,
                         jnp.zeros(M.dim+M.dim*(M.dim-1)//2),
@@ -198,7 +198,7 @@ def initialize(M:object)->None:
                chi:ndarray,
                y:ndarray,
                ychart:ndarray
-               )->tuple[ndarray, ndarray]:
+               )->Tuple[ndarray, ndarray]:
         
         _jac2345_c = jac2345_c(chart,x,lamb,v,chi,y,ychart)
         invjac45_c = jnp.linalg.inv(jnp.hstack(_jac2345_c[2:4]))
@@ -217,7 +217,7 @@ def initialize(M:object)->None:
                  step_size23:float=1e-3,
                  num_steps:int=6000,
                  opt23_update_mod:int=25
-                 )->tuple[ndarray, ndarray, ndarray, ndarray]:
+                 )->Tuple[ndarray, ndarray, ndarray, ndarray]:
         
         opt_init45, opt_update45, get_params45 = optimizers.adam(step_size45)
         opt_init23, opt_update23, get_params23 = optimizers.adam(step_size23)

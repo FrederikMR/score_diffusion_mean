@@ -26,18 +26,16 @@ from jaxgeometry.setup import *
 #%% Diagonal Conditioning
 
 def initialize(M:object,
-               sde_product:Callable[[tuple[ndarray, ndarray, ndarray, ...], ndarray], 
-                                    tuple[ndarray, ndarray, ndarray, ...]],
-               chart_update_product:Callable[[tuple[ndarray, ndarray], ndarray, ...], 
-                                    tuple[ndarray, ndarray, ...]],
+               sde_product,
+               chart_update_product,
                integrator:Callable[[ndarray], ndarray]=integrator_ito,
                T:float=1
                )->None:
     """ diagonally conditioned product diffusions """
 
-    def sde_diagonal(c:tuple[ndarray, ndarray, ndarray, ...],
-                     y:tuple[ndarray, ndarray]
-                     )->tuple[ndarray, ndarray, ndarray, ndarray, ...]:
+    def sde_diagonal(c,
+                     y
+                     ):
         
         if M.do_chart_update is None:
             t,x,chart,T,*cy = c
@@ -70,7 +68,7 @@ def initialize(M:object,
     def chart_update_diagonal(x:ndarray,
                               chart:ndarray,
                               *ys
-                              )->tuple[ndarray, ndarray, ndarray, float, ...]:
+                              ):
         if M.do_chart_update is None:
             return (x,chart,*ys)
 

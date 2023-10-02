@@ -30,7 +30,7 @@ from jaxgeometry.setup import *
 def tangent_PCA(M:object, 
                 Log:Callable, 
                 mean:ndarray, 
-                y:tuple[...]
+                y
                 )->ndarray:
     y = list(y) # make sure y is subscriptable
     

@@ -30,9 +30,9 @@ def initialize(G,Psi=None,r=None):
     see Noise and dissipation on coadjoint orbits arXiv:1601.02249 [math.DS]
     and EulerPoincare.py """
 
-    def sde_stochastic_coadjoint(c:tuple[ndarray, ndarray, ndarray],
-                                 y:tuple[ndarray, ndarray]
-                                 )->tuple[ndarray, ndarray, ndarray]:
+    def sde_stochastic_coadjoint(c:Tuple[ndarray, ndarray, ndarray],
+                                 y:Tuple[ndarray, ndarray]
+                                 )->Tuple[ndarray, ndarray, ndarray]:
         t,mu,_ = c
         dt,dW = y
 

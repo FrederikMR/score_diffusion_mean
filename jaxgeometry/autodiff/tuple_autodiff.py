@@ -25,37 +25,37 @@ from jaxgeometry.setup import *
 
 #%% Automatic Differentiation for tuple containing coordinate and chart
 
-def gradx(f:Callable[[tuple[ndarray, ndarray], ...], ndarray])->Callable[[tuple[ndarray, ndarray], ...], ndarray]:
+def gradx(f:Callable[[Tuple[ndarray, ndarray], ...], ndarray])->Callable[[Tuple[ndarray, ndarray], ...], ndarray]:
     """ jax.grad but only for the x variable of a function taking coordinates and chart """
     def fxchart(x:ndarray,chart:ndarray,*args,**kwargs)->ndarray:
         return f((x,chart),*args,**kwargs)
-    def gradf(x:tuple[ndarray, ndarray],*args,**kwargs)->ndarray:
+    def gradf(x:Tuple[ndarray, ndarray],*args,**kwargs)->ndarray:
         return grad(fxchart,argnums=0)(x[0],x[1],*args,**kwargs)
     return gradf
 
-def jacfwdx(f:Callable[[tuple[ndarray, ndarray], ...], ndarray])->Callable[[tuple[ndarray, ndarray], ...], ndarray]:
+def jacfwdx(f:Callable[[Tuple[ndarray, ndarray], ...], ndarray])->Callable[[Tuple[ndarray, ndarray], ...], ndarray]:
     """jax.jacfwd but only for the x variable of a function taking coordinates and chart"""
     def fxchart(x:ndarray,chart:ndarray,*args,**kwargs)->ndarray:
         return f((x,chart),*args,**kwargs)
-    def jacf(x:tuple[ndarray, ndarray],*args,**kwargs)->ndarray:
+    def jacf(x:Tuple[ndarray, ndarray],*args,**kwargs)->ndarray:
         return jacfwd(fxchart,argnums=0)(x[0],x[1],*args,**kwargs)
     return jacf
 
-def jacrevx(f:Callable[[tuple[ndarray, ndarray], ...], ndarray]):
+def jacrevx(f:Callable[[Tuple[ndarray, ndarray], ...], ndarray]):
     """jax.jacrev but only for the x variable of a function taking coordinates and chart"""
     def fxchart(x:ndarray,chart:ndarray,*args,**kwargs):
         return f((x,chart),*args,**kwargs)
-    def jacf(x:tuple[ndarray, ndarray],*args,**kwargs)->ndarray:
+    def jacf(x:Tuple[ndarray, ndarray],*args,**kwargs)->ndarray:
         return jacrev(fxchart,argnums=0)(x[0],x[1],*args,**kwargs)
     return jacf
 
-def hessianx(f:Callable[[tuple[ndarray, ndarray], ...], ndarray])->ndarray:
+def hessianx(f:Callable[[Tuple[ndarray, ndarray], ...], ndarray])->ndarray:
     """hessian only for the x variable of a function taking coordinates and chart"""
     return jacfwdx(jacrevx(f))
 
-def straight_through(f:Callable[[tuple[ndarray, ndarray], ...], ndarray],
-                     x:tuple[ndarray, ndarray],
-                     *ys)->tuple[ndarray, ndarray]:
+def straight_through(f:Callable[[Tuple[ndarray, ndarray], ...], ndarray],
+                     x:Tuple[ndarray, ndarray],
+                     *ys)->Tuple[ndarray, ndarray]:
     """
     evaluation with pass through derivatives
     Create an exactly-zero expression with Sterbenz lemma that has

@@ -33,9 +33,9 @@ def initialize(M:object,
     Eulerian / stochastic EPDiff acting on landmarks
     """
 
-    def sde_Eulerian(c:tuple[ndarray, ndarray, ndarray, ndarray, ndarray],
-                     y:tuple[ndarray, ndarray]
-                     )->tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
+    def sde_Eulerian(c:Tuple[ndarray, ndarray, ndarray, ndarray, ndarray],
+                     y:Tuple[ndarray, ndarray]
+                     )->Tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
         
         t,x,chart,sigmas_x,sigmas_a = c
         dt,dW = y
@@ -59,7 +59,7 @@ def initialize(M:object,
     def chart_update_Eulerian(xp:ndarray,
                               chart:ndarray,
                               *cy
-                              )->tuple[ndarray, ndarray, ...]:
+                              )->Tuple[ndarray, ndarray, ...]:
         
         if M.do_chart_update is None:
             return (xp,chart,*cy)

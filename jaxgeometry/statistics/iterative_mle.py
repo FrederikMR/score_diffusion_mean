@@ -27,8 +27,8 @@ from jaxgeometry.setup import *
 
 def iterative_mle(obss:ndarray,
                   neg_log_p_Ts:Callable,
-                  params:tuple[...],
-                  params_inds:tuple[...],
+                  params,
+                  params_inds,
                   params_update:Callable,
                   chart:ndarray,
                   _dts:ndarray,
@@ -36,7 +36,7 @@ def iterative_mle(obss:ndarray,
                   N:int=1,
                   step_size:float=1e-1,
                   num_steps:int=50
-                  )->tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
+                  ):
 
     def step(step, params, opt_state, chart):
         

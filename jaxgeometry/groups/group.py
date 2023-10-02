@@ -79,7 +79,7 @@ class LieGroup(riemannian.EmbeddedManifold):
 
         ## group exp/log maps
         self.exp = self.Expm
-        def expt(xi:tuple[ndarray, ndarray],
+        def expt(xi:Tuple[ndarray, ndarray],
                  _dts:ndarray=None
                  )->ndarray:
             if _dts is None: _dts = dts()

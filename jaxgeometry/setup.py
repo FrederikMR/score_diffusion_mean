@@ -74,7 +74,7 @@ import matplotlib.ticker as ticker
 from functools import partial
 
 #typing
-from typing import Callable, NamedTuple
+from typing import Callable, NamedTuple, Tuple
 
 #JAXGeometry
 from jaxgeometry.params import *

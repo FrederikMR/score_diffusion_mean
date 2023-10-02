@@ -16,18 +16,18 @@ from jaxgeometry.setup import *
 
 def RMJaxOpt(mu_init:ndarray,
              M:object,
-             grad_fn:Callable[[tuple[ndarray, ndarray]], ndarray],
+             grad_fn:Callable[[Tuple[ndarray, ndarray]], ndarray],
              max_iter:int=100,
              optimizer:Callable=None,
-             opt_params:tuple=(0.1, 0.9, 0.999, 1e-8),
-             bnds:tuple[ndarray, ndarray]=(None, None),
+             opt_params:Tuple=(0.1, 0.9, 0.999, 1e-8),
+             bnds:Tuple[ndarray, ndarray]=(None, None),
              max_step:ndarray=None
-             )->tuple[ndarray, ndarray]:
+             )->Tuple[ndarray, ndarray]:
     
     @jit
-    def update(carry:tuple[ndarray, ndarray, object], idx:int
-               )->tuple[tuple[ndarray, ndarray, object],
-                        tuple[ndarray, ndarray]]:
+    def update(carry:Tuple[ndarray, ndarray, object], idx:int
+               )->Tuple[Tuple[ndarray, ndarray, object],
+                        Tuple[ndarray, ndarray]]:
         
         mu, grad, opt_state = carry
         
@@ -72,15 +72,15 @@ def JaxOpt(mu_init:ndarray,
            grad_fn:Callable[[ndarray], ndarray],
            max_iter:int=100,
            optimizer:Callable=None,
-           opt_params:tuple=(0.1, 0.9, 0.999, 1e-8),
-           bnds:tuple[ndarray, ndarray]=(None,None),
+           opt_params:Tuple=(0.1, 0.9, 0.999, 1e-8),
+           bnds:Tuple[ndarray, ndarray]=(None,None),
            max_step=None
-           )->tuple[ndarray, ndarray]:
+           )->Tuple[ndarray, ndarray]:
     
     @jit
-    def update(carry:tuple[ndarray, ndarray, object], idx:int
-               )->tuple[tuple[ndarray, ndarray, object],
-                        tuple[ndarray, ndarray]]:
+    def update(carry:Tuples[ndarray, ndarray, object], idx:int
+               )->Tuple[Tuple[ndarray, ndarray, object],
+                        Tuple[ndarray, ndarray]]:
         
         mu, grad, opt_state = carry
         
@@ -121,21 +121,21 @@ def JaxOpt(mu_init:ndarray,
 def JointJaxOpt(mu_rm:ndarray,
                 mu_euc:ndarray,
                 M:object,
-                grad_fn_rm:Callable[[tuple[ndarray, ndarray]], ndarray],
+                grad_fn_rm:Callable[[Tuple[ndarray, ndarray]], ndarray],
                 grad_fn_euc:Callable[[ndarray], ndarray],
                 max_iter:int=100,
                 optimizer:Callable=None,
-                opt_params:tuple=(0.1, 0.9, 0.999, 1e-8),
-                bnds_rm:tuple[ndarray, ndarray]=(None,None),
-                bnds_euc:tuple[ndarray, ndarray]=(None,None),
+                opt_params:Tuple=(0.1, 0.9, 0.999, 1e-8),
+                bnds_rm:Tuple[ndarray, ndarray]=(None,None),
+                bnds_euc:Tuple[ndarray, ndarray]=(None,None),
                 max_step:jnp.ndarray=None
-                )->tuple[ndarray, ndarray, ndarray, ndarray]:
+                )->Tuple[ndarray, ndarray, ndarray, ndarray]:
     
     @jit
-    def update(carry:tuple[ndarray, ndarray, ndarray, ndarray, object], 
+    def update(carry:Tuple[ndarray, ndarray, ndarray, ndarray, object], 
                idx:int
-               )->tuple[tuple[ndarray, ndarray, ndarray, ndarray, object],
-                        tuple[ndarray, ndarray, ndarray, ndarray]]:
+               )->Tuple[Tuple[ndarray, ndarray, ndarray, ndarray, object],
+                        Tuple[ndarray, ndarray, ndarray, ndarray]]:
         
         mu_rm, mu_euc, grad_rm, grad_euc, opt_state = carry
         

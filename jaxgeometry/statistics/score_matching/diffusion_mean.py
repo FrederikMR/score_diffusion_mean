@@ -22,7 +22,7 @@ def initialize(M:object,
                )->None:
     
     @jit
-    def gradt_loss(X_obs:tuple[ndarray, ndarray],y:tuple[ndarray, ndarray],t:ndarray)->ndarray:
+    def gradt_loss(X_obs:Tuple[ndarray, ndarray],y:Tuple[ndarray, ndarray],t:ndarray)->ndarray:
         
         s1 = vmap(lambda x, chart: s1_model((x,chart),y,t))(X_obs[0], X_obs[1])
         s2 = vmap(lambda x, chart: s2_model((x,chart),y,t))(X_obs[0], X_obs[1])
@@ -35,7 +35,7 @@ def initialize(M:object,
         return -0.5*jnp.mean(vmap(lambda s1, div: jnp.dot(s1, s1)+div)(s1, div), axis=0)
     
     @jit
-    def gradx_loss(X_obs:tuple[ndarray, ndarray], y:tuple[ndarray,ndarray],t:ndarray)->ndarray:
+    def gradx_loss(X_obs:Tuple[ndarray, ndarray], y:Tuple[ndarray,ndarray],t:ndarray)->ndarray:
         
         s1 = vmap(lambda x,chart: s1_model((x,chart),y,t))(X_obs[0], X_obs[1])
         

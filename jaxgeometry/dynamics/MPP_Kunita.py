@@ -36,8 +36,8 @@ def initialize(M:object,
     """ Most probable paths for Kunita flows                 """
     """ M: shape manifold, N: embedding space, u: flow field """
 
-    def ode_MPP_AC(c:tuple[ndarray, ndarray, ndarray],
-                   y:tuple[ndarray, ndarray]
+    def ode_MPP_AC(c:Tuple[ndarray, ndarray, ndarray],
+                   y:Tuple[ndarray, ndarray]
                    )->ndarray:
         
         t,xx1,chart = c
@@ -65,7 +65,7 @@ def initialize(M:object,
     def chart_update_MPP_AC(xv:ndarray,
                             chart:ndarray,
                             y:ndarray
-                            )->tuple[ndarray, ndarray]:
+                            )->Tuple[ndarray, ndarray]:
         
         if M.do_chart_update is None:
             return (xv,chart)

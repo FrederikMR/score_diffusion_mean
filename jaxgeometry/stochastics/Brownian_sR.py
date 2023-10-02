@@ -28,9 +28,9 @@ from jaxgeometry.setup import *
 def initialize(M):
     """ sub-Riemannian Brownian motion """
 
-    def sde_Brownian_sR(c:tuple[ndarray, ndarray, ndarray],
-                        y:tuple[ndarray, ndarray]
-                        )->tuple[ndarray, ndarray, ndarray]:
+    def sde_Brownian_sR(c:Tuple[ndarray, ndarray, ndarray],
+                        y:Tuple[ndarray, ndarray]
+                        )->Tuple[ndarray, ndarray, ndarray]:
         t,x,chart = c
         dt,dW = y
 
@@ -43,7 +43,7 @@ def initialize(M):
     
     def chart_update_Brownian_sR(x:ndarray,
                                  chart:ndarray,*ys
-                                 )->tuple[ndarray, ndarray]:
+                                 )->Tuple[ndarray, ndarray]:
         if M.do_chart_update is None:
             return (x,chart,*ys)
 

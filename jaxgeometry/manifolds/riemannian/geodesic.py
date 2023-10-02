@@ -27,14 +27,14 @@ from jaxgeometry.setup import *
 
 def initialize(M:object) -> None:
     
-    def ode_geodesic(c:tuple[ndarray, ndarray, ndarray],y:ndarray)->ndarray:
+    def ode_geodesic(c:Tuple[ndarray, ndarray, ndarray],y:ndarray)->ndarray:
         t,x,chart = c
         dx2t = -jnp.einsum('ikl,k,l->i',M.Gamma_g((x[0],chart)),x[1],x[1])
         dx1t = x[1] 
         
         return jnp.stack((dx1t,dx2t))
     
-    def chart_update_geodesic(xv:ndarray,chart:ndarray,y:ndarray)->tuple[ndarray, ndarray]:
+    def chart_update_geodesic(xv:ndarray,chart:ndarray,y:ndarray)->Tuple[ndarray, ndarray]:
         if M.do_chart_update is None:
             return (xv,chart)
     
@@ -52,22 +52,22 @@ def initialize(M:object) -> None:
                                 new_chart,
                                 chart))
     
-    def Exp(x:tuple[ndarray, ndarray],
+    def Exp(x:Tuple[ndarray, ndarray],
             v:ndarray,
             T:float=T,
             n_steps:int=n_steps
-            )->tuple[ndarray, ndarray]:
+            )->Tuple[ndarray, ndarray]:
         curve = M.geodesic(x,v,dts(T,n_steps))
         x = curve[1][-1,0]
         chart = curve[2][-1]
         
         return(x,chart)
 
-    def Expt(x:tuple[ndarray, ndarray],
+    def Expt(x:Tuple[ndarray, ndarray],
              v:ndarray,
              T:float=T,
              n_steps:int=n_steps
-             )->tuple[ndarray, ndarray]:
+             )->Tuple[ndarray, ndarray]:
         
         curve = M.geodesic(x,v,dts(T,n_steps))
         xs = curve[1][:,0]

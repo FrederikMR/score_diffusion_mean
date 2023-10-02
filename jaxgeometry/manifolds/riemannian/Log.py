@@ -31,9 +31,9 @@ def initialize(M:object,
                )->None:
     """ numerical Riemannian Logarithm map """
 
-    def loss(x:tuple[ndarray, ndarray],
+    def loss(x:Tuple[ndarray, ndarray],
              v:ndarray,
-             y:tuple[ndarray, ndarray]
+             y:Tuple[ndarray, ndarray]
              )->float:
         
         (x1,chart1) = f(x,v)
@@ -41,10 +41,10 @@ def initialize(M:object,
         
         return 1./M.dim*jnp.sum(jnp.square(x1 - y_chart1[0]))
     
-    def shoot(x:tuple[ndarray, ndarray],
-              y:tuple[ndarray, ndarray],
+    def shoot(x:Tuple[ndarray, ndarray],
+              y:Tuple[ndarray, ndarray],
               v0:ndarray=None
-              )->tuple[ndarray, ndarray]:
+              )->Tuple[ndarray, ndarray]:
 
         if v0 is None:
             v0 = jnp.zeros(M.dim)
@@ -53,8 +53,8 @@ def initialize(M:object,
 
         return (res.x,res.fun)
     
-    def dist(x:tuple[ndarray, ndarray],
-             y:tuple[ndarray, ndarray]
+    def dist(x:Tuple[ndarray, ndarray],
+             y:Tuple[ndarray, ndarray]
              )->float:
         
         v = M.Log(x,y)

@@ -63,7 +63,7 @@ def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float, N_terms=100) -> float:
         
         return (2*(l-1+alpha)*xy_dot*Cl1-(l+2*alpha-2)*Cl2)/l
     
-    def step(carry:tuple[float,float,float], l:int) -> tuple[tuple[float, float, float], None]:
+    def step(carry:Tuple[float,float,float], l:int) -> Tuple[Tuple[float, float, float], None]:
 
         val, Cl1, Cl2 = carry
 
@@ -97,7 +97,7 @@ def log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float, N_terms=100) -> float:
 
 def gradx_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -> float:
     
-    def get_coords(Fx:jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray]:
+    def get_coords(Fx:jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
 
         chart = M.centered_chart(Fx)
         return (M.invF((Fx,chart)),chart)
@@ -123,7 +123,7 @@ def gradx_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -
         
         return (2*(l-1+alpha)*xy_dot*Cl1-(l+2*alpha-2)*Cl2)/l
     
-    def step(carry:tuple[float, float, float], l:int) -> tuple[tuple[float, float, float], None]:
+    def step(carry:Tuple[float, float, float], l:int) -> Tuple[Tuple[float, float, float], None]:
         
         val, Cl1, Cl2 = carry
         
@@ -156,7 +156,7 @@ def gradx_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -
 
 def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -> float:
     
-    def get_coords(Fx:jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray]:
+    def get_coords(Fx:jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
 
         chart = M.centered_chart(Fx)
         return (M.invF((Fx,chart)),chart)
@@ -182,7 +182,7 @@ def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -
         
         return (2*(l-1+alpha)*xy_dot*Cl1-(l+2*alpha-2)*Cl2)/l
     
-    def step(carry:tuple[float, float, float], l:int)->tuple[tuple[float, float, float], None]:
+    def step(carry:Tuple[float, float, float], l:int)->Tuple[Tuple[float, float, float], None]:
         
         val, Cl1, Cl2 = carry
         
@@ -223,7 +223,7 @@ def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -
         
         return (2*(l-1+alpha)*xy_dot*Cl1-(l+2*alpha-2)*Cl2)/l
     
-    def step(carry:tuple[float, float, float], l:int) -> tuple[tuple[float, float, float], None]:
+    def step(carry:Tuple[float, float, float], l:int) -> Tuple[Tuple[float, float, float], None]:
 
         val, Cl1, Cl2 = carry
 

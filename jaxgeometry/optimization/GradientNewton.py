@@ -25,14 +25,14 @@ def RMGradientNewton(mu_init:jnp.ndarray,
                      iter_step:int = 10,
                      tol = 1e-1,
                      max_iter:int=100,
-                     bnds:tuple[jnp.ndarray, jnp.ndarray] = (None, None),
+                     bnds:Tuple[jnp.ndarray, jnp.ndarray] = (None, None),
                      max_step:jnp.ndarray=None
-                     )->tuple[jnp.ndarray, jnp.ndarray]:
+                     )->Tuple[jnp.ndarray, jnp.ndarray]:
     
     @jit
-    def update_gradient(carry:tuple[jnp.ndarray, jnp.ndarray], idx:int
-                        )->tuple[tuple[jnp.ndarray, jnp.ndarray],
-                                 tuple[jnp.ndarray, jnp.ndarray]]:
+    def update_gradient(carry:Tuple[jnp.ndarray, jnp.ndarray], idx:int
+                        )->Tuple[Tuple[jnp.ndarray, jnp.ndarray],
+                                 Tuple[jnp.ndarray, jnp.ndarray]]:
         
         mu, grad = carry
         
@@ -49,9 +49,9 @@ def RMGradientNewton(mu_init:jnp.ndarray,
         return out, out
     
     @jit
-    def update_newton(carry:tuple[jnp.ndarray, jnp.ndarray], idx:int
-                      )->tuple[tuple[jnp.ndarray, jnp.ndarray],
-                               tuple[jnp.ndarray, jnp.ndarray]]:
+    def update_newton(carry:Tuple[jnp.ndarray, jnp.ndarray], idx:int
+                      )->Tuple[Tuple[jnp.ndarray, jnp.ndarray],
+                               Tuple[jnp.ndarray, jnp.ndarray]]:
         
         mu, grad = carry
         
@@ -115,14 +115,14 @@ def GradientNewton(mu_init:jnp.ndarray,
                    iter_step:int = 10,
                    tol = 1e-1,
                    max_iter:int=100,
-                   bnds:tuple[jnp.ndarray, jnp.ndarray]=(None,None),
+                   bnds:Tuple[jnp.ndarray, jnp.ndarray]=(None,None),
                    max_step:jnp.ndarray=None
-                   )->tuple[jnp.ndarray, jnp.ndarray]:
+                   )->Tuple[jnp.ndarray, jnp.ndarray]:
     
     @jit
-    def update_gradient(carry:tuple[jnp.ndarray, jnp.ndarray], idx:int
-                        )->tuple[tuple[jnp.ndarray, jnp.ndarray],
-                                 tuple[jnp.ndarray, jnp.ndarray]]:
+    def update_gradient(carry:Tuple[jnp.ndarray, jnp.ndarray], idx:int
+                        )->Tuple[Tuple[jnp.ndarray, jnp.ndarray],
+                                 Tuple[jnp.ndarray, jnp.ndarray]]:
         
         mu, grad = carry
         
@@ -136,9 +136,9 @@ def GradientNewton(mu_init:jnp.ndarray,
         return out, out
     
     @jit
-    def update_newton(carry:tuple[jnp.ndarray, jnp.ndarray], idx:int
-                      )->tuple[tuple[jnp.ndarray, jnp.ndarray],
-                               tuple[jnp.ndarray, jnp.ndarray]]:
+    def update_newton(carry:Tuple[jnp.ndarray, jnp.ndarray], idx:int
+                      )->Tuple[Tuple[jnp.ndarray, jnp.ndarray],
+                               Tuple[jnp.ndarray, jnp.ndarray]]:
         
         mu, grad = carry
         
@@ -203,15 +203,15 @@ def JointGradientNewton(mu_rm:jnp.ndarray,
                        iter_step:int=10,
                        tol:float=1e-1,
                        max_iter:int=100,
-                       bnds_rm:tuple[jnp.ndarray, jnp.ndarray] = (None, None),
-                       bnds_euc:tuple[jnp.ndarray, jnp.ndarray] = (None, None),
+                       bnds_rm:Tuple[jnp.ndarray, jnp.ndarray] = (None, None),
+                       bnds_euc:Tuple[jnp.ndarray, jnp.ndarray] = (None, None),
                        max_step:jnp.ndarray = None
-                       )->tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+                       )->Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     
     @jit
-    def update_gradient(carry:tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray], idx:int
-                        )->tuple[tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray],
-                                 tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]]:
+    def update_gradient(carry:Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray], idx:int
+                        )->Tuple[Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray],
+                                 Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]]:
         
         mu_rm, mu_euc, grad_rm, grad_euc = carry
         
@@ -234,9 +234,9 @@ def JointGradientNewton(mu_rm:jnp.ndarray,
         return out, out
     
     @jit
-    def update_newton(carry:tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray], idx:int
-                      )->tuple[tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray],
-                               tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]]:
+    def update_newton(carry:Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray], idx:int
+                      )->Tuple[Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray],
+                               Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]]:
         
         mu_rm, mu_euc, grad_rm, grad_euc = carry
         

@@ -32,7 +32,7 @@ def initialize(M:object) -> None:
     """ Riemannian curvature """
     
     @jit
-    def CurvatureOperator(x: tuple[ndarray, ndarray]) -> ndarray:
+    def CurvatureOperator(x: Tuple[ndarray, ndarray]) -> ndarray:
         
         """
         Riemannian Curvature tensor
@@ -55,7 +55,7 @@ def initialize(M:object) -> None:
                     -jnp.einsum('ljki->ijkl',Dchris))
     
     @jit
-    def CurvatureForm(x: tuple[ndarray, ndarray])->ndarray:
+    def CurvatureForm(x: Tuple[ndarray, ndarray])->ndarray:
         
         """
         Riemannian Curvature form
@@ -71,12 +71,12 @@ def initialize(M:object) -> None:
         M.R_u = jit(lambda x,u: jnp.einsum('ml,ijql,qk->ijmk',jnp.linalg.inv(u),M.R(x),u))
         
     @jit
-    def CurvatureTensor(x: tuple[ndarray, ndarray]) -> ndarray:
+    def CurvatureTensor(x: Tuple[ndarray, ndarray]) -> ndarray:
         
         return jnp.einsum('sijk,sm->ijkm', M.R(x), M.g(x))
         
     @jit
-    def RicciCurvature(x: tuple[ndarray, ndarray]) -> ndarray:
+    def RicciCurvature(x: Tuple[ndarray, ndarray]) -> ndarray:
         
         """
         Ricci curvature
@@ -91,7 +91,7 @@ def initialize(M:object) -> None:
         return jnp.einsum('kijk->ij', M.R(x))
     
     @jit
-    def TracelessRicci(x:tuple[ndarray, ndarray])->ndarray:
+    def TracelessRicci(x:Tuple[ndarray, ndarray])->ndarray:
         
         G = M.g(x)
         R = M.Ricci_curv(x)
@@ -100,7 +100,7 @@ def initialize(M:object) -> None:
         return R-S*G/M.dim
     
     @jit
-    def EinsteinTensor(x: tuple[ndarray, ndarray]) -> ndarray:
+    def EinsteinTensor(x: Tuple[ndarray, ndarray]) -> ndarray:
         
         R = M.Ricci_curv(x)
         S = M.S_curv(x)
@@ -109,7 +109,7 @@ def initialize(M:object) -> None:
         return R-0.5*S*G
     
     @jit
-    def ScalarCurvature(x: tuple[ndarray, ndarray]) -> ndarray:
+    def ScalarCurvature(x: Tuple[ndarray, ndarray]) -> ndarray:
         
         """
         Scalar curvature
@@ -124,7 +124,7 @@ def initialize(M:object) -> None:
         return jnp.einsum('ij,ij->', M.gsharp(x),M.Ricci_curv(x))
     
     @jit
-    def SectionalCurvature(x: tuple[ndarray, ndarray], e1:ndarray, e2:ndarray) -> ndarray:
+    def SectionalCurvature(x: Tuple[ndarray, ndarray], e1:ndarray, e2:ndarray) -> ndarray:
         
         """
             Sectional curvature

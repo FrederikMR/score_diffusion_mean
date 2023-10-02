@@ -31,7 +31,7 @@ def initialize(M:object)->None:
     def chart_update_FM(u:ndarray,
                         chart:ndarray,
                         *args
-                        )->tuple[ndarray, ndarray]:
+                        )->Tuple[ndarray, ndarray]:
         
         if M.do_chart_update != True:
             return (u,chart)

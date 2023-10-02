@@ -28,8 +28,8 @@ from jaxgeometry.setup import *
 def initialize(G:object)->None:
     """ Lie-Poisson geodesic integration """
 
-    def ode_LP(c:tuple[ndarray, ndarray, ndarray],
-               y:tuple[ndarray, ndarray]
+    def ode_LP(c:Tuple[ndarray, ndarray, ndarray],
+               y:Tuple[ndarray, ndarray]
                )->ndarray:
         
         t,mu,_ = c
@@ -38,8 +38,8 @@ def initialize(G:object)->None:
         return dmut
 
     # reconstruction
-    def ode_LPrec(c:tuple[ndarray, ndarray, ndarray],
-                  y:tuple[ndarray, ndarray]
+    def ode_LPrec(c:Tuple[ndarray, ndarray, ndarray],
+                  y:Tuple[ndarray, ndarray]
                   )->ndarray:
         t,g,_ = c
         mu, = y

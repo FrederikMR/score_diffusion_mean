@@ -28,8 +28,8 @@ from jaxgeometry.setup import *
 def initialize(M:object)->None:
     """ Riemannian parallel transport """
 
-    def ode_parallel_transport(c:tuple[ndarray, ndarray, ndarray],
-                               y:tuple[ndarray, ndarray, ndarray]
+    def ode_parallel_transport(c:Tuple[ndarray, ndarray, ndarray],
+                               y:Tuple[ndarray, ndarray, ndarray]
                                )->ndarray:
         t,xv,prevchart = c
         x,chart,dx = y
@@ -46,8 +46,8 @@ def initialize(M:object)->None:
         return jnp.stack((jnp.zeros_like(x),dv))
     
     def chart_update_parallel_transport(xv:ndarray,prevchart:ndarray,
-                                        y:tuple[ndarray, ndarray, ndarray]
-                                        )->tuple[ndarray, ndarray]:
+                                        y:Tuple[ndarray, ndarray, ndarray]
+                                        )->Tuple[ndarray, ndarray]:
         x,chart,dx = y
         if M.do_chart_update is None:
             return (xv,chart)

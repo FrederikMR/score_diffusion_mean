@@ -28,9 +28,9 @@ from jaxgeometry.setup import *
 def initialize(G:object)->None:
     """ Brownian motion with respect to left/right invariant metric """
 
-    def sde_Brownian_inv(c:tuple[ndarray, ndarray, ndarray],
-                         y:tuple[ndarray, ndarray]
-                         )->tuple[ndarray, ndarray, ndarray, ndarray]:
+    def sde_Brownian_inv(c:Tuple[ndarray, ndarray, ndarray],
+                         y:Tuple[ndarray, ndarray]
+                         )->Tuple[ndarray, ndarray, ndarray, ndarray]:
         t,g,_,sigma = c
         dt,dW = y
 

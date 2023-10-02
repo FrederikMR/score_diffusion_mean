@@ -30,12 +30,12 @@ class RiemannIndicatrix(riemannian.Manifold):
     """ 2d Indicatrix """
 
     def __init__(self,
-                 mua_fun:Callable[[tuple[ndarray, ndarray]], ndarray] = lambda x: jnp.ones(1, dtype=jnp.float32),
-                 mub_fun:Callable[[tuple[ndarray, ndarray]], ndarray] = lambda x: jnp.ones(1, dtype=jnp.float32),
-                 mutheta_fun:Callable[[tuple[ndarray, ndarray]], ndarray] = lambda x: jnp.zeros(1, dtype=jnp.float32),
-                 sigmaa_fun:Callable[[tuple[ndarray, ndarray]], ndarray] = lambda x: jnp.zeros(1, dtype=jnp.float32),
-                 sigmab_fun:Callable[[tuple[ndarray, ndarray]], ndarray] = lambda x: jnp.zeros(1, dtype=jnp.float32),
-                 sigmatheta_fun:Callable[[tuple[ndarray, ndarray]], ndarray] = lambda x: jnp.zeros(1, dtype=jnp.float32),
+                 mua_fun:Callable[[Tuple[ndarray, ndarray]], ndarray] = lambda x: jnp.ones(1, dtype=jnp.float32),
+                 mub_fun:Callable[[Tuple[ndarray, ndarray]], ndarray] = lambda x: jnp.ones(1, dtype=jnp.float32),
+                 mutheta_fun:Callable[[Tuple[ndarray, ndarray]], ndarray] = lambda x: jnp.zeros(1, dtype=jnp.float32),
+                 sigmaa_fun:Callable[[Tuple[ndarray, ndarray]], ndarray] = lambda x: jnp.zeros(1, dtype=jnp.float32),
+                 sigmab_fun:Callable[[Tuple[ndarray, ndarray]], ndarray] = lambda x: jnp.zeros(1, dtype=jnp.float32),
+                 sigmatheta_fun:Callable[[Tuple[ndarray, ndarray]], ndarray] = lambda x: jnp.zeros(1, dtype=jnp.float32),
                  eps:ndarray = jnp.zeros(3)
                  )->None:
         riemannian.Manifold.__init__(self)
@@ -111,12 +111,12 @@ class RiemannIndicatrix(riemannian.Manifold):
         if self.dim == 2:
             plt.axis('equal')
     
-    def plot_path(self, xs:tuple[ndarray, ndarray], 
+    def plot_path(self, xs:Tuple[ndarray, ndarray], 
                   u:ndarray=None, 
                   color:str='b', 
                   color_intensity:float=1., 
                   linewidth:float=1., 
-                  prevx:tuple[ndarray, ndarray]=None, 
+                  prevx:Tuple[ndarray, ndarray]=None, 
                   last:bool=True, 
                   s:int=20, 
                   arrowcolor:str='k'
@@ -137,12 +137,12 @@ class RiemannIndicatrix(riemannian.Manifold):
             
         return
 
-    def plotx(self, x:tuple[ndarray, ndarray], 
+    def plotx(self, x:Tuple[ndarray, ndarray], 
               u:ndarray=None, 
               color:str='b', 
               color_intensity:float=1., 
               linewidth:float=1., 
-              prevx:tuple[ndarray, ndarray]=None,
+              prevx:Tuple[ndarray, ndarray]=None,
               last:bool=True, 
               s:int=20, 
               arrowcolor:str='k'

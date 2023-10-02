@@ -30,7 +30,7 @@ class LorentzSpacetime(riemannian.Manifold):
     """ Lorentzian Spacetime Metric """
 
     def __init__(self,
-                 g:Callable[[tuple[ndarray, ndarray, ndarray]], ndarray], #Metric tensor Riemannian manifold
+                 g:Callable[[Tuple[ndarray, ndarray, ndarray]], ndarray], #Metric tensor Riemannian manifold
                  N:int #dimension of Riemannian manifold, N
                  )->None:
         riemannian.Manifold.__init__(self)
@@ -104,12 +104,12 @@ class LorentzSpacetime(riemannian.Manifold):
         if self.dim == 2:
             plt.axis('equal')
     
-    def plot_path(self, xs:tuple[ndarray, ndarray], 
+    def plot_path(self, xs:Tuple[ndarray, ndarray], 
                   u:ndarray=None, 
                   color:str='b', 
                   color_intensity:float=1., 
                   linewidth:float=1., 
-                  prevx:tuple[ndarray, ndarray]=None, 
+                  prevx:Tuple[ndarray, ndarray]=None, 
                   last:bool=True, 
                   s:int=20, 
                   arrowcolor:str='k'
@@ -130,12 +130,12 @@ class LorentzSpacetime(riemannian.Manifold):
             
         return
 
-    def plotx(self, x:tuple[ndarray, ndarray], 
+    def plotx(self, x:Tuple[ndarray, ndarray], 
               u:ndarray=None, 
               color:str='b', 
               color_intensity:float=1., 
               linewidth:float=1., 
-              prevx:tuple[ndarray, ndarray]=None,
+              prevx:Tuple[ndarray, ndarray]=None,
               last:bool=True, 
               s:int=20, 
               arrowcolor:str='k'

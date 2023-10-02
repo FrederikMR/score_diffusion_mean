@@ -28,10 +28,10 @@ from jaxgeometry.setup import *
 def initialize(M:object)->None:
     """ Brownian motion from stochastic development """
 
-    def Brownian_development(x:tuple[ndarray, ndarray],
+    def Brownian_development(x:Tuple[ndarray, ndarray],
                              dts:ndarray,
                              dWs:ndarray
-                             )->tuple[ndarray, ndarray, ndarray]:
+                             )->Tuple[ndarray, ndarray, ndarray]:
         # amend x with orthogonal basis to get initial frame bundle element
         gsharpx = M.gsharp(x)
         nu = jnp.linalg.cholesky(gsharpx)

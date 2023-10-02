@@ -30,9 +30,9 @@ def initialize(G:object)->None:
 
     assert(G.invariance == 'left')
 
-    def sde_Brownian_process(c:tuple[ndarray, ndarray, ndarray],
-                             y:tuple[ndarray, ndarray]
-                             )->tuple[ndarray, ndarray, ndarray, ndarray]:
+    def sde_Brownian_process(c:Tuple[ndarray, ndarray, ndarray],
+                             y:Tuple[ndarray, ndarray]
+                             )->Tuple[ndarray, ndarray, ndarray, ndarray]:
         t,g,_,sigma = c
         dt,dW = y
 

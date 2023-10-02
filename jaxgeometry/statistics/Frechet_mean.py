@@ -26,7 +26,7 @@ from jaxgeometry.setup import *
 #%% Fréchet mean
 
 def initialize(M:object,
-               Exp:Callable[[tuple[ndarray, ndarray]], tuple[ndarray, ndarray]]=None
+               Exp:Callable[[Tuple[ndarray, ndarray]], Tuple[ndarray, ndarray]]=None
                )->None:
 
     # objective
@@ -50,7 +50,7 @@ def initialize(M:object,
               x:ndarray,
               v:ndarray,
               y:ndarray,
-              ychart:ndarray)->tuple[ndarray, ndarray]:
+              ychart:ndarray)->Tuple[ndarray, ndarray]:
         
         _jacxv_c = M.Frechet_mean_jacxv_c(chart,x,v,y,ychart)
         jacv = -jnp.linalg.solve(_jacxv_c[1],_jacxv_c[0]) # implicit function theorem
@@ -60,11 +60,11 @@ def initialize(M:object,
     
         return v_f, g_f
 
-    def Frechet_mean(ys:tuple[...],
-                     x0:tuple[ndarray, ndarray],
+    def Frechet_mean(ys:Tuple[...],
+                     x0:Tuple[ndarray, ndarray],
                      Log:Callable=None,
                      options:dict={}
-                     )->tuple[tuple[ndarray, ndarray], ndarray, int]:
+                     )->Tuple[Tuple[ndarray, ndarray], ndarray, int]:
         # data
         ys = list(ys) # make sure y is subscriptable
         N = len(ys)

@@ -54,7 +54,7 @@ def initialize(M:object,
               dqps:ndarray,
               _dts:ndarray,
               v0:ndarray=None
-              )->tuple[ndarray, ndarray]:        
+              )->Tuple[ndarray, ndarray]:        
 
         if v0 is None:
             v0 = jnp.zeros(N.dim)

@@ -49,7 +49,7 @@ class Manifold(object):
         """
         return stop_gradient(jnp.zeros(1))
     
-    def coords(self,coords:ndarray=None,chart:ndarray=None)->tuple[ndarray, ndarray]:
+    def coords(self,coords:ndarray=None,chart:ndarray=None)->Tuple[ndarray, ndarray]:
         """ return coordinate representation of point in manifold """
         if coords is None:
             coords = jnp.zeros(self.dim)
@@ -96,7 +96,7 @@ class EmbeddedManifold(Manifold):
             self.invJF = jacfwdx(self.invF)
             
             @jit
-            def g(x:tuple[ndarray, ndarray])->ndarray:
+            def g(x:Tuple[ndarray, ndarray])->ndarray:
                 
                 JF = self.JF(x)
                 
@@ -110,7 +110,7 @@ class EmbeddedManifold(Manifold):
     def __str__(self)->str:
         return "Riemannian manifold of dimension %d embedded in R^%d" % (self.dim,self.emb_dim)
     
-    def update_coords(self,coords:ndarray,new_chart:ndarray)->tuple[ndarray, ndarray]:
+    def update_coords(self,coords:ndarray,new_chart:ndarray)->Tuple[ndarray, ndarray]:
         """ change between charts """
         return (self.invF((self.F(coords),new_chart)),new_chart)
 
@@ -122,7 +122,7 @@ class EmbeddedManifold(Manifold):
         """ change cotangent vector between charts """
         return jnp.tensordot(self.JF((new_coords,new_chart)).T,jnp.tensordot(self.invJF((self.F(coords),coords[1])).T,p,(1,0)),(1,0))
     
-    def plot_path(self, xs:tuple[ndarray, ndarray], 
+    def plot_path(self, xs:Tuple[ndarray, ndarray], 
                   vs:ndarray=None, 
                   v_steps:int=None, 
                   i0:int=0, 
@@ -130,7 +130,7 @@ class EmbeddedManifold(Manifold):
                   color_intensity:float=1., 
                   linewidth:float=1., 
                   s:int=15.,
-                  prevx:tuple[ndarray, ndarray]=None, 
+                  prevx:Tuple[ndarray, ndarray]=None, 
                   last:bool=True) -> None:
     
         if vs is not None and v_steps is not None:
@@ -161,7 +161,7 @@ class EmbeddedManifold(Manifold):
         return
 
     # plot x. x can be either in coordinates or in R^3
-    def plotx(self, x:tuple[ndarray, ndarray], 
+    def plotx(self, x:Tuple[ndarray, ndarray], 
               u:ndarray=None, 
               v:ndarray=None, 
               v_steps:int=None, 
@@ -170,7 +170,7 @@ class EmbeddedManifold(Manifold):
               color_intensity:float=1., 
               linewidth:float=1., 
               s:float=15., 
-              prevx:tuple[ndarray, ndarray]=None, 
+              prevx:Tuple[ndarray, ndarray]=None, 
               last:bool=True)->None:
     
         assert(type(x) == type(()) or x.shape[0] == self.emb_dim)

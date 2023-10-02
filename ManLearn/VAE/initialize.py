@@ -20,4 +20,4 @@ import haiku as hk
 import dataclasses
 
 #typing
-from typing import Tuple, NamedTuple
+from typing import Tuple, NamedTuple, Tuple

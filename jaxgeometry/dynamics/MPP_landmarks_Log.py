@@ -50,7 +50,7 @@ def initialize(M:object,
               qps:ndarray,
               _dts:ndarray,
               lambd0:ndarray=None
-              )->tuple[ndarray, ndarray]:        
+              )->Tuple[ndarray, ndarray]:        
 
         if lambd0 is None:
             lambd0 = jnp.zeros(M.dim)

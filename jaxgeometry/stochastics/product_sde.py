@@ -26,15 +26,14 @@ from jaxgeometry.setup import *
 #%% Product Diffusion Process
 
 def initialize(M:object,
-               sde:Callable[[tuple[ndarray, ndarray, ndarray, ...], tuple[ndarray, ndarray]],
-                            tuple[ndarray, ndarray, ndarray, ...]],
+               sde,
                chart_update:Callable,
                integrator:Callable=integrator_ito):
     """ product diffusions """
 
-    def sde_product(c:tuple[ndarray, ndarray, ndarray, ...],
-                    y:tuple[ndarray, ndarray]
-                    )->tuple[ndarray, ndarray, ndarray, ...]:
+    def sde_product(c,
+                    y
+                    ):
         t,x,chart,*cy = c
         dt,dW = y
         

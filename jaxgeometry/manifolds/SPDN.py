@@ -140,14 +140,14 @@ class SPDN(riemannian.EmbeddedManifold):
             
 #%% Embedding
 
-def F(M:object, x:tuple[ndarray, ndarray])->ndarray:
+def F(M:object, x:Tuple[ndarray, ndarray])->ndarray:
     
     P = jnp.zeros((M.N, M.N))
     P = P.at[jnp.triu_indices(M.N, k=0)].set(x[0])
     
     return (P+P.T-jnp.diag(jnp.diag(P))).reshape(-1)
 
-def invF(M:object, x:tuple[ndarray, ndarray])->ndarray:
+def invF(M:object, x:Tuple[ndarray, ndarray])->ndarray:
     
     P = x[1].reshape(M.N, M.N)
     
@@ -155,26 +155,26 @@ def invF(M:object, x:tuple[ndarray, ndarray])->ndarray:
             
 #%% Metric
 
-def g(M:object, x:tuple[ndarray,ndarray])->ndarray:
+def g(M:object, x:Tuple[ndarray,ndarray])->ndarray:
     
     P = x[1].reshape(M.N, M.N)
     D = M.dupmat_inv
     
     return jnp.matmul(D,jnp.linalg.solve(jnp.kron(P,P), D.T))
 
-def gsharp(M:object, x:tuple[ndarray,ndarray])->ndarray:
+def gsharp(M:object, x:Tuple[ndarray,ndarray])->ndarray:
     
     P = x[1].reshape(M.N, M.N)
     D = M.dupmat_inv
     
     return jnp.matmul(D,jnp.matmul(jnp.kron(P,P), D.T))
 
-def det(M:object, x:tuple[ndarray, ndarray],A:ndarray=None)->ndarray: 
+def det(M:object, x:Tuple[ndarray, ndarray],A:ndarray=None)->ndarray: 
     
     return 2**((M.N*(M.N-1)/2))*jnp.linalg.det(P.reshape(M.N,M.N))**(M.N+1) if A is None \
         else jnp.linalg.det(jnp.tensordot(M.g(x),A,(1,0)))
         
-def Gamma(M:object, x:tuple[ndarray, ndarray])->ndarray: 
+def Gamma(M:object, x:Tuple[ndarray, ndarray])->ndarray: 
     
     p = M.N*(M.N+1)//2
     E = jnp.eye(M.N*M.N)[:p]
@@ -183,7 +183,7 @@ def Gamma(M:object, x:tuple[ndarray, ndarray])->ndarray:
         
     return -vmap(lambda e: jnp.matmul(D.T,jnp.matmul(jnp.kron(jnp.linalg.inv(P), e.reshape(M.N,M.N)), D)))(E)
 
-def Expt(M:object, x:tuple[ndarray, ndarray], v:ndarray, t:float)->ndarray:
+def Expt(M:object, x:Tuple[ndarray, ndarray], v:ndarray, t:float)->ndarray:
     
     P = x[1].reshape(M.N,M.N)
     v = v.reshape(M.N,M.N)
@@ -195,7 +195,7 @@ def Expt(M:object, x:tuple[ndarray, ndarray], v:ndarray, t:float)->ndarray:
                                  jscipy.linalg.expm(t*jnp.matmul(jnp.matmul(P_nhalf, v), P_nhalf))),
                       P_phalf)
         
-def Log(M:object, x:tuple[ndarray, ndarray], y:tuple[ndarray,ndarray])->ndarray:
+def Log(M:object, x:Tuple[ndarray, ndarray], y:Tuple[ndarray,ndarray])->ndarray:
     
     P = x[1].reshape(M.N,M.N)
     S = y[1].reshape(M.N,M.N)
@@ -207,7 +207,7 @@ def Log(M:object, x:tuple[ndarray, ndarray], y:tuple[ndarray,ndarray])->ndarray:
                                  logm(jnp.matmul(jnp.matmul(P_nhalf, S), P_nhalf))),
                       P_phalf)
 
-def dist(M:object, x:tuple[ndarray, ndarray], y:tuple[ndarray,ndarray])->ndarray:
+def dist(M:object, x:Tuple[ndarray, ndarray], y:Tuple[ndarray,ndarray])->ndarray:
     
     P = x[1].reshape(M.N,M.N)
     S = y[1].reshape(M.N,M.N)

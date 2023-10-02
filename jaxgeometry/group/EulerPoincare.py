@@ -28,7 +28,7 @@ from jaxgeometry.setup import *
 def initialize(G:object)->None:
     """ Euler-Poincare geodesic integration """
 
-    def ode_EP(c:tuple[ndarray, ndarray, ndarray],
+    def ode_EP(c:Tuple[ndarray, ndarray, ndarray],
                y:ndarray
                )->ndarray:
         t,mu,_ = c
@@ -38,8 +38,8 @@ def initialize(G:object)->None:
         return dmut
 
     # reconstruction
-    def ode_EPrec(c:tuple[ndarray, ndarray, ndarray],
-                  y:tuple[ndarray, ndarray]
+    def ode_EPrec(c:Tuple[ndarray, ndarray, ndarray],
+                  y:Tuple[ndarray, ndarray]
                   )->ndarray:
         t,g,_ = c
         mu, = y

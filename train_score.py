@@ -23,7 +23,7 @@ import haiku as hk
 import random
 
 #typing
-from typing import Callable
+from typing import Callable, Tuple
 
 #dataclasses
 import dataclasses
@@ -103,7 +103,7 @@ def parse_args():
 #%% Generate Data directly on the manifold
 
 def xgenerator(M:object, 
-               product:Callable[[tuple[jnp.ndarray, jnp.ndarray], jnp.ndarray, jnp.ndarray], jnp.ndarray],
+               product:Callable[[Tuple[jnp.ndarray, jnp.ndarray], jnp.ndarray, jnp.ndarray], jnp.ndarray],
                x_samples:int=2**5,
                t_samples:int=2**7,
                N_sim:int = 2**8,
@@ -132,7 +132,7 @@ def xgenerator(M:object,
         
 #%% Update Coordinates, which are sampled directly on the manifold
 
-def update_xcoords(M:object, Fx:jnp.ndarray)->tuple[jnp.ndarray, jnp.ndarray]:
+def update_xcoords(M:object, Fx:jnp.ndarray)->Tuple[jnp.ndarray, jnp.ndarray]:
     
     chart = M.centered_chart(Fx)
     
@@ -142,7 +142,7 @@ def update_xcoords(M:object, Fx:jnp.ndarray)->tuple[jnp.ndarray, jnp.ndarray]:
 
 def proj_gradx(s1_model:Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray], 
                x0:jnp.ndarray, 
-               x:tuple[jnp.ndarray, jnp.ndarray], 
+               x:Tuple[jnp.ndarray, jnp.ndarray], 
                t:jnp.ndarray):
     
     return s1_model(x0, x[0], t)
@@ -152,7 +152,7 @@ def proj_gradx(s1_model:Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.nd
 def proj_hessx(s1_model:Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray], 
                s2_model:Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray],
                x0:jnp.ndarray, 
-               x:tuple[jnp.ndarray, jnp.ndarray], 
+               x:Tuple[jnp.ndarray, jnp.ndarray], 
                t:jnp.ndarray
                )->jnp.ndarray:
     
@@ -161,7 +161,7 @@ def proj_hessx(s1_model:Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.nd
 #%% Generate Data in the embedded space of the manifold
 
 def chartgenerator(M:object, 
-                   product:Callable[[tuple[jnp.ndarray, jnp.ndarray], jnp.ndarray, jnp.ndarray], jnp.ndarray],
+                   product:Callable[[Tuple[jnp.ndarray, jnp.ndarray], jnp.ndarray, jnp.ndarray], jnp.ndarray],
                    x_samples:int=2**5,
                    t_samples:int=2**7,
                    N_sim:int = 2**8,
@@ -190,7 +190,7 @@ def chartgenerator(M:object,
         
 #%% Update Coordinates, which are sampled in the embedded space
 
-def update_chartcoords(M:object, Fx:jnp.ndarray)->tuple[jnp.ndarray, jnp.ndarray]:
+def update_chartcoords(M:object, Fx:jnp.ndarray)->Tuple[jnp.ndarray, jnp.ndarray]:
     
     chart = M.centered_chart(Fx)
     
@@ -201,7 +201,7 @@ def update_chartcoords(M:object, Fx:jnp.ndarray)->tuple[jnp.ndarray, jnp.ndarray
 def proj_gradchart(M:object,
                    s1_model:Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray],
                    x0:jnp.ndarray, 
-                   x:tuple[jnp.ndarray, jnp.ndarray], 
+                   x:Tuple[jnp.ndarray, jnp.ndarray], 
                    t:jnp.ndarray):
     
     Fx = M.F(x)
@@ -214,7 +214,7 @@ def proj_hesschart(M:object,
                    s1_model:Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray], 
                    s2_model:Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray],
                    x0:jnp.ndarray, 
-                   x:tuple[jnp.ndarray, jnp.ndarray], 
+                   x:Tuple[jnp.ndarray, jnp.ndarray], 
                    t:jnp.ndarray
                    )->jnp.ndarray:
     

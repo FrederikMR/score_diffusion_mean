@@ -124,7 +124,7 @@ class S1(riemannian.EmbeddedManifold):
 
 def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float)->float:
     
-    def step(carry:float, k:int)->tuple[float, None]:
+    def step(carry:float, k:int)->Tuple[float, None]:
         
         carry += jnp.exp(-0.5*(2*jnp.pi*k+x1-y1)**2/t)
         
@@ -141,9 +141,9 @@ def log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float)->float:
     
     return jnp.log(hk(x,y,t))
 
-def gradx_log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float)->tuple[jnp.ndarray, jnp.ndarray]:
+def gradx_log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float)->Tuple[jnp.ndarray, jnp.ndarray]:
     
-    def get_coords(Fx:jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray]:
+    def get_coords(Fx:jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
 
         chart = M.centered_chart(Fx)
         return (M.invF((Fx,chart)),chart)
@@ -161,7 +161,7 @@ def gradx_log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float)->tuple[jnp.ndarr
 
         return jnp.dot(M.invJF((Fx,x[1])),v)
     
-    def step(carry:float, k:int)->tuple[float, None]:
+    def step(carry:float, k:int)->Tuple[float, None]:
         
         term1 = 2*jnp.pi*k+x1-y1
         
@@ -187,9 +187,9 @@ def gradx_log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float)->tuple[jnp.ndarr
    
     return grad_x, grad_chart
 
-def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> tuple[jnp.ndarray, jnp.ndarray]:
+def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> Tuple[jnp.ndarray, jnp.ndarray]:
     
-    def get_coords(Fx:jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray]:
+    def get_coords(Fx:jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
 
         chart = M.centered_chart(Fx)
         return (M.invF((Fx,chart)),chart)
@@ -207,7 +207,7 @@ def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> tuple[jnp.n
 
         return jnp.dot(M.invJF((Fx,x[1])),v)
     
-    def step(carry:float, k:int)->tuple[float,None]:
+    def step(carry:float, k:int)->Tuple[float,None]:
         
         term1 = 2*jnp.pi*k+x1-y1
         
@@ -235,7 +235,7 @@ def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> tuple[jnp.n
 
 def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float)->float:
     
-    def step1(carry:float, k:int)->tuple[float,None]:
+    def step1(carry:float, k:int)->Tuple[float,None]:
         
         term1 = 0.5*(2*jnp.pi*k+x1-y1)**2
         
@@ -243,7 +243,7 @@ def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float)->float:
         
         return carry, None
     
-    def step2(carry:float, k:int)->tuple[float,None]:
+    def step2(carry:float, k:int)->Tuple[float,None]:
         
         carry += jnp.exp(-0.5*(2*jnp.pi*k+x1-y1)**2/t)
         

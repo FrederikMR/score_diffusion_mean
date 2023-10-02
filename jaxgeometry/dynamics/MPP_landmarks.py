@@ -35,9 +35,9 @@ def initialize(M:object,
     """ Most probable paths for Kunita flows                 """
     """ M: shape manifold, a: flow field                     """
     
-    def ode_MPP_landmarks(c:tuple[ndarray, ndarray, ndarray],
-                          y:tuple[ndarray, ndarray]
-                          )->tuple[ndarray, ndarray]:
+    def ode_MPP_landmarks(c:Tuple[ndarray, ndarray, ndarray],
+                          y:Tuple[ndarray, ndarray]
+                          )->Tuple[ndarray, ndarray]:
         
         t,xlambd,chart = c
         qp, = y
@@ -54,10 +54,10 @@ def initialize(M:object,
         
         return jnp.stack((dx.flatten(),dlambd.flatten()))
 
-    def chart_update_MPP_landmarks(xlambd:tuple[ndarray, ndarray],
+    def chart_update_MPP_landmarks(xlambd:Tuple[ndarray, ndarray],
                                    chart:ndarray,
                                    y:ndarray
-                                   )->tuple[ndarray, ndarray]:
+                                   )->Tuple[ndarray, ndarray]:
         
         if M.do_chart_update is None:
             return (xlambd,chart)
@@ -76,11 +76,11 @@ def initialize(M:object,
                                 new_chart,
                                 chart))
     
-    def MPP_landmarks(x:tuple[ndarray, ndarray],
+    def MPP_landmarks(x:Tuple[ndarray, ndarray],
                       lambd:ndarray,
                       qps:ndarray,
                       dts:ndarray
-                      )->tuple[ndarray, ndarray, ndarray]:
+                      )->Tuple[ndarray, ndarray, ndarray]:
         
         (ts,xlambds,charts) = integrate(ode_MPP_landmarks,chart_update_MPP_landmarks,jnp.stack((x[0],lambd)),x[1],dts,qps)
         

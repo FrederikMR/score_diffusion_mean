@@ -27,24 +27,23 @@ from jaxgeometry.setup import *
 
 # hit target v at time t=Tend
 def get_guided(M:object,
-               sde:Callable[[tuple[ndarray, ndarray, ndarray, ...], ndarray],
-                            tuple[ndarray, ndarray, ndarray, ...]],
-               chart_update:Callable[[ndarray, ndarray, ...], tuple[ndarray, ndarray, ...]],
-               phi:Callable[[tuple[ndarray, ndarray], ndarray, ...], ndarray],
-               sqrtCov:Callable[[ndarray, ...], ndarray]=None,
+               sde,
+               chart_update,
+               phi,
+               sqrtCov=None,
                A:Callable[[ndarray], ndarray]=None,
                logdetA:Callable=None,
                method:str='DelyonHu',
                integration:str='ito'
-               )->tuple[Callable, Callable, Callable, Callable, Callable]:
+               ):
     """ 
     guided diffusions 
     guided processes, Delyon/Hu 2006                                    
     """
 
-    def sde_guided(c:tuple[ndarray, ndarray, ndarray, ndarray, ndarray, ndarray, ndarray, ...],
-                   y:tuple[ndarray, ndarray]
-                   )->tuple[ndarray, ndarray, ndarray, ndarray, ndarray, ndarray, ndarray, ...]:
+    def sde_guided(c,
+                   y
+                   ):
         
         t,x,chart,log_likelihood,log_varphi,T,v,*cy = c
         xchart = (x,chart)
@@ -111,7 +110,7 @@ def get_guided(M:object,
                             T:ndarray,
                             v:ndarray,
                             *ys
-                            )->tuple[ndarray, ndarray, ndarray, ndarray, ndarray, ndarray, ...]:
+                            ):
         
         if chart_update is None:
             return (x,chart,log_likelihood,log_varphi,T,v,*ys)

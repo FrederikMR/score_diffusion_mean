@@ -35,7 +35,7 @@ def initialize(G:object,
     """ Most probable paths and development """
 
     def ode_mpp(sigma:ndarray,
-                c:tuple[ndarray, ndarray, ndarray],
+                c:Tuple[ndarray, ndarray, ndarray],
                 y:ndarray
                 )->ndarray:
         t,alpha,_ = c
@@ -48,7 +48,7 @@ def initialize(G:object,
 
     # reconstruction
     def ode_mpprec(sigma:ndarray,
-                   c:tuple[ndarray, ndarray, ndarray],
+                   c:Tuple[ndarray, ndarray, ndarray],
                    y:ndarray
                    )->ndarray:
         t,g,_ = c
@@ -65,7 +65,7 @@ def initialize(G:object,
 
     # tracking point (not reduced to Lie algebra) to allow point-depending drift
     def ode_mpp_drift(sigma:ndarray,
-                      c:tuple[ndarray, ndarray, ndarray],
+                      c:Tuple[ndarray, ndarray, ndarray],
                       y:ndarray
                       )->ndarray:
         t,x,_ = c
@@ -85,7 +85,7 @@ def initialize(G:object,
                      sigma:ndarray,
                      T:float=T,
                      n_steps:int=n_steps
-                     )->tuple[ndarray, ndarray]:
+                     )->Tuple[ndarray, ndarray]:
         _dts = dts(T=T,n_steps=n_steps)
         (ts,alphas) = G.mpp(alpha,_dts,sigma)
         (ts,gs) = G.mpprec(g,alphas,_dts,sigma)

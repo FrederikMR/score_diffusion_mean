@@ -45,9 +45,9 @@ def dWs(d:int,_dts:ndarray=None,num:int=1)->ndarray:
     else:
         return vmap(lambda subkey: jnp.sqrt(_dts)[:,None]*random.normal(subkey,(_dts.shape[0],d)))(subkeys)    
 
-def integrator(ode_f:Callable[tuple[ndarray, ndarray, ndarray], ndarray],
+def integrator(ode_f,
                chart_update:bool=None,
-               method:str=default_method)->Callable[[tuple[ndarray, ndarray, ndarray], tuple[ndarray, ndarray]], ndarray]:
+               method:str=default_method):
     """
     Integrator (deterministic)
     """
@@ -55,13 +55,13 @@ def integrator(ode_f:Callable[tuple[ndarray, ndarray, ndarray], ndarray],
         chart_update = lambda *args: args[0:2]
 
     # euler:
-    def euler(c:[tuple[ndarray, ndarray, ndarray]],y:[tuple[ndarray, ndarray]])->tuple[ndarray, ndarray]:
+    def euler(c,y):
         t,x,chart = c
         dt,*_ = y
         return ((t+dt,*chart_update(x+dt*ode_f(c,y[1:]),chart,y[1:])),)*2
 
     # Runge-kutta:
-    def rk4(c:[tuple[ndarray, ndarray, ndarray]],y:[tuple[ndarray, ndarray]])->tuple[ndarray, ndarray]:
+    def rk4(c,y):
         t,x,chart = c
         dt,*_ = y
         k1 = ode_f(c,y[1:])
@@ -77,22 +77,22 @@ def integrator(ode_f:Callable[tuple[ndarray, ndarray, ndarray], ndarray],
     else:
         assert(False)
 
-def integrate(ode:Callable[tuple[ndarray, ndarray, ndarray], ndarray],
+def integrate(ode,
               chart_update:bool,
-              x:ndarray,chart:ndarray,dts:ndarray,*ys) -> tuple[ndarray, ndarray]:
+              x:ndarray,chart:ndarray,dts:ndarray,*ys):
     """return symbolic path given ode and integrator"""
     _,xs = scan(integrator(ode,chart_update),
             (0.,x,chart),
             (dts,*ys))
     return xs if chart_update is not None else xs[0:2]
 
-def integrate_sde(sde:Callable[tuple[ndarray, ndarray, ndarray], ndarray],
+def integrate_sde(sde,
                   integrator:Callable,chart_update,
                   x:ndarray,
                   chart:ndarray,
                   dts:ndarray,
                   dWs:ndarray,
-                  *cy)->tuple[ndarray, ndarray]:
+                  *cy):
     """
     sde functions should return (det,sto,Sigma) where
     det is determinisitc part, sto is stochastic part,
@@ -103,13 +103,13 @@ def integrate_sde(sde:Callable[tuple[ndarray, ndarray, ndarray], ndarray],
             (dts,dWs,))
     return xs
 
-def integrator_stratonovich(sde_f:Callable[tuple[ndarray, ndarray, ndarray], ndarray],
-                            chart_update:Callable[[ndarray, ndarray, ...], tuple[ndarray, ndarray, ...]]=None):
+def integrator_stratonovich(sde_f,
+                            chart_update=None):
     """Stratonovich integration for SDE"""
     if chart_update == None: # no chart update
         chart_update = lambda xp,chart,*cy: (xp,chart,*cy)
 
-    def euler_heun(c:[tuple[ndarray, ndarray, ndarray]],y:[tuple[ndarray, ndarray]])->tuple[ndarray, ndarray]:
+    def euler_heun(c,y):
         t,x,chart,*cy = c
         dt,dW = y
 
@@ -120,15 +120,15 @@ def integrator_stratonovich(sde_f:Callable[tuple[ndarray, ndarray, ndarray], nda
 
     return euler_heun
 
-def integrator_ito(sde_f:Callable[tuple[ndarray, ndarray, ndarray], ndarray],
-                   chart_update:Callable[[ndarray, ndarray, ...], tuple[ndarray, ndarray, ...]]=None):
+def integrator_ito(sde_f,
+                   chart_update=None):
     
     """Ito integration for SDE"""
     
     if chart_update == None: # no chart update
         chart_update = lambda xp,chart,*cy: (xp,chart,*cy)
 
-    def euler(c:[tuple[ndarray, ndarray, ndarray]],y:[tuple[ndarray, ndarray]])->tuple[ndarray, ndarray]:
+    def euler(c,y):
         t,x,chart,*cy = c
         dt,dW = y
 

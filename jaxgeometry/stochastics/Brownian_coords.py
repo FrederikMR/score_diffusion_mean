@@ -28,9 +28,9 @@ from jaxgeometry.setup import *
 def initialize(M:object)->None:
     """ Brownian motion in coordinates """
 
-    def sde_Brownian_coords(c:tuple[ndarray, ndarray, ndarray],
-                            y:tuple[ndarray, ndarray]
-                            )->tuple[ndarray, ndarray, ndarray, float]:
+    def sde_Brownian_coords(c:Tuple[ndarray, ndarray, ndarray],
+                            y:Tuple[ndarray, ndarray]
+                            )->Tuple[ndarray, ndarray, ndarray, float]:
         
         t,x,chart,s = c
         dt,dW = y
@@ -42,10 +42,10 @@ def initialize(M:object)->None:
         
         return (det,sto,X,0.)
     
-    def chart_update_Brownian_coords(x:tuple[ndarray, ndarray],
+    def chart_update_Brownian_coords(x:Tuple[ndarray, ndarray],
                                      chart:ndarray,
                                      *ys
-                                     )->tuple[ndarray, ndarray, ...]:
+                                     ):
         
         if M.do_chart_update is None:
             return (x,chart,*ys)
