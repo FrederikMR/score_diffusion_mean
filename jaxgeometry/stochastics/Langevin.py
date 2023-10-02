@@ -44,7 +44,7 @@ def initialize(M:object)->None:
     def chart_update_Langevin(xp:ndarray,
                               chart:ndarray,
                               *cy
-                              )->Tuple[ndarray, ndarray, ...]:
+                              ):
         
         if M.do_chart_update is None:
             return (xp,chart,*cy)

@@ -59,7 +59,7 @@ def initialize(M:object,
     def chart_update_Eulerian(xp:ndarray,
                               chart:ndarray,
                               *cy
-                              )->Tuple[ndarray, ndarray, ...]:
+                              ):
         
         if M.do_chart_update is None:
             return (xp,chart,*cy)

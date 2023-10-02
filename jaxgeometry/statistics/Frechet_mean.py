@@ -60,7 +60,7 @@ def initialize(M:object,
     
         return v_f, g_f
 
-    def Frechet_mean(ys:Tuple[...],
+    def Frechet_mean(ys,
                      x0:Tuple[ndarray, ndarray],
                      Log:Callable=None,
                      options:dict={}

@@ -17,7 +17,7 @@ from JAXGeometry.params import *
 
 @jit
 def RMNewtonsMethod(mu_init:ndarray,
-                    M:object,
+                    M:object,   
                     grad_fn:Callable[[Tuple[ndarray, ndarray]], ndarray],
                     ggrad_fn:Callable[[Tuple[ndarray, ndarray]], ndarray] = None,
                     step_size:float = 0.1,
