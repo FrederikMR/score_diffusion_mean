@@ -68,11 +68,11 @@ from jaxgeometry.stochastics.product_sde import tile
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="MNIST",
+    parser.add_argument('--manifold', default="SN",
                         type=str)
     parser.add_argument('--N', default=2,
                         type=int)
-    parser.add_argument('--loss_type', default="dsm",
+    parser.add_argument('--loss_type', default="vsm",
                         type=str)
     parser.add_argument('--train_net', default="s1",
                         type=str)

@@ -71,6 +71,12 @@ def train_s1(M:object,
             
             return jnp.sum(loss*loss)
         
+            #s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
+            #s1 = s1_model(x0,M.F((xt,chart)), t)
+            #s1_proj = proj_grad(s1_model,x0,(xt,chart), t)
+            #loss = jnp.sum(noise*noise/(dt**2))+jnp.sum(s1*s1)+2*jnp.sum(noise*s1_proj/dt)
+            #return loss
+        
         x0 = data[:,:N_dim]
         xt = data[:,N_dim:(2*N_dim)]
         (xt,chart) = vmap(update_coords)(xt)

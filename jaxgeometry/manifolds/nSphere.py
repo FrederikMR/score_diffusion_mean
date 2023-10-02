@@ -41,19 +41,19 @@ class nSphere(Ellipsoid):
                            chart_center=chart_center,
                            use_spherical_coords=use_spherical_coords)
         
-        self.hk = jit(lambda x,y,t: hk(self, x,y, t))
-        self.log_hk = jit(lambda x,y,t: log_hk(self, x, y, t))
-        self.gradx_log_hk = jit(lambda x,y,t: gradx_log_hk(self, x, y, t))
-        self.grady_log_hk = jit(lambda x,y,t: grady_log_hk(self, x, y, t))
+        self.hk = jit(lambda x,y,t, N_terms=100: hk(self, x,y, t, N_terms))
+        self.log_hk = jit(lambda x,y,t, N_terms=100: log_hk(self, x, y, t, N_terms))
+        self.gradx_log_hk = jit(lambda x,y,t, N_terms=100: gradx_log_hk(self, x, y, t, N_terms))
+        self.grady_log_hk = jit(lambda x,y,t, N_terms=100: grady_log_hk(self, x, y, t, N_terms))
         #self.ggrady_log_hk = jit(lambda x,y,t: -jnp.eye(self.dim)/t)
-        self.gradt_log_hk = jit(lambda x,y,t: gradt_log_hk(self, x, y, t))
+        self.gradt_log_hk = jit(lambda x,y,t, N_terms=100: gradt_log_hk(self, x, y, t, N_terms))
     
     def __str__(self):
         return "%dd sphere (ellipsoid parameters %s, spherical_coords: %s)" % (self.dim,self.params,self.use_spherical_coords)
 
 #%% Heat Kernels
 
-def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float) -> float:
+def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float, N_terms=100) -> float:
     
     def sum_term(l:int, C_l:float) -> float:
     
@@ -76,6 +76,8 @@ def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float) -> float:
     x1 = x[1]
     y1 = y[1]
     xy_dot = jnp.dot(x1,y1)
+    m1 = M.dim-1
+    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5)))
     
     alpha = m1*0.5
     C_0 = 1.0
@@ -86,17 +88,14 @@ def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float) -> float:
     grid = jnp.arange(2,N_terms,1)
     
     val, _ = scan(step, (val, C_1, C_0), xs=grid)
-    
-    m1 = M.dim-1
-    Am_inv = jscipy((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5))
         
     return val[0]*Am_inv/m1
 
-def log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float) -> float:
+def log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float, N_terms=100) -> float:
     
-    return jnp.log(hk(x,y,t))
+    return jnp.log(hk(x,y,t, N_terms))
 
-def gradx_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> float:
+def gradx_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -> float:
     
     def get_coords(Fx:jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray]:
 
@@ -105,14 +104,14 @@ def gradx_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> float:
 
     def to_TM(Fx:jnp.ndarray, v:jnp.ndarray) -> jnp.ndarray:
         
-        x = get_coords(M, Fx)
+        x = get_coords(Fx)
         JFx = M.JF(x)
         
         return jnp.dot(JFx,jnp.linalg.lstsq(JFx,v)[0])
 
     def to_TMx(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
 
-        x = get_coords(M, Fx)
+        x = get_coords(Fx)
 
         return jnp.dot(M.invJF((Fx,x[1])),v)
     
@@ -139,6 +138,8 @@ def gradx_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> float:
     
     xy_dot = jnp.dot(x1, y1)
     alpha = (M.dim+1)*0.5
+    m1 = M.dim-1
+    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5)))
     
     C_0 = 1.0
     C_1 = 2*alpha*xy_dot
@@ -149,14 +150,11 @@ def gradx_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> float:
     
     val, _ = scan(step, (val, C_1, C_0), xs=grid)
     
-    grad = val[0]*y1*Am_inv/hk(x,y,t)
+    grad = val[0]*y1*Am_inv/hk(M,x,y,t,N_terms)
     
-    m1 = M.dim-1
-    Am_inv = jscipy((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5))
-    
-    return (to_TMx(M, x1, grad), to_TM(M, x1, grad))
+    return (to_TMx(x1, grad), to_TM(x1, grad))
 
-def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> float:
+def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -> float:
     
     def get_coords(Fx:jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray]:
 
@@ -165,14 +163,14 @@ def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> float:
 
     def to_TM(Fx:jnp.ndarray, v:jnp.ndarray) -> jnp.ndarray:
         
-        x = get_coords(M, Fx)
+        x = get_coords(Fx)
         JFx = M.JF(x)
         
         return jnp.dot(JFx,jnp.linalg.lstsq(JFx,v)[0])
 
     def to_TMx(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
 
-        x = get_coords(M, Fx)
+        x = get_coords(Fx)
 
         return jnp.dot(M.invJF((Fx,x[1])),v)
     
@@ -199,6 +197,8 @@ def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> float:
     
     xy_dot = jnp.dot(x1, y1)
     alpha = (M.dim+1)*0.5
+    m1 = M.dim-1
+    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5)))
     
     C_0 = 1.0
     C_1 = 2*alpha*xy_dot
@@ -209,14 +209,11 @@ def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> float:
     
     val, _ = scan(step, (val, C_1, C_0), xs=grid)
     
-    grad = val[0]*x1*Am_inv/hk(x,y,t)
+    grad = val[0]*x1*Am_inv/hk(M,x,y,t,N_terms)
     
-    m1 = M.dim-1
-    Am_inv = jscipy((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5))
-    
-    return (to_TMx(M, y1, grad), to_TM(M, y1, grad))
+    return (to_TMx(y1, grad), to_TM(y1, grad))
 
-def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> float:
+def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -> float:
     
     def sum_term(l:int, C_l:float) -> float:
     
@@ -240,6 +237,8 @@ def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> float:
     y1 = y[1]
     
     xy_dot = jnp.dot(x1,y1)
+    m1 = M.dim-1
+    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5)))
     
     alpha = m1*0.5
     C_0 = 1.0
@@ -249,12 +248,9 @@ def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> float:
     
     grid = jnp.arange(2,N_terms,1)
     
-    m1 = M.dim-1
-    Am_inv = jscipy((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5))
-    
     val, _ = scan(step, (val, C_1, C_0), xs=grid)
         
-    return val[0]*Am_inv/(m1*hk(x,y,t))
+    return val[0]*Am_inv/(m1*hk(M,x,y,t,N_terms))
 
 #%% Old code
 
