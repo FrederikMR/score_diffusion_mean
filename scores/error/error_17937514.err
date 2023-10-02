@@ -1,0 +1,26 @@
+Switching from python to 3/3.9.11
+  ERROR: Unable to locate a modulefile for '3/3.9.11'
+2023-10-02 13:16:23.012153: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for more info.)
+Traceback (most recent call last):
+  File "train_score.py", line 58, in <module>
+    from jaxgeometry.manifolds import Euclidean, nSphere, Ellipsoid, Cylinder, S1, Torus, \
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/__init__.py", line 24, in <module>
+    from jaxgeometry.setup import *
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/setup.py", line 81, in <module>
+    from jaxgeometry.autodiff import *
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/autodiff/__init__.py", line 24, in <module>
+    from .tuple_autodiff import *
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/autodiff/tuple_autodiff.py", line 28, in <module>
+    def gradx(f:Callable[[Tuple[ndarray, ndarray], ...], ndarray])->Callable[[Tuple[ndarray, ndarray], ...], ndarray]:
+  File "/appl/python/3.8.2/lib/python3.8/typing.py", line 813, in __getitem__
+    return self.__getitem_inner__(params)
+  File "/appl/python/3.8.2/lib/python3.8/typing.py", line 261, in inner
+    return func(*args, **kwds)
+  File "/appl/python/3.8.2/lib/python3.8/typing.py", line 836, in __getitem_inner__
+    args = tuple(_type_check(arg, msg) for arg in args)
+  File "/appl/python/3.8.2/lib/python3.8/typing.py", line 836, in <genexpr>
+    args = tuple(_type_check(arg, msg) for arg in args)
+  File "/appl/python/3.8.2/lib/python3.8/typing.py", line 149, in _type_check
+    raise TypeError(f"{msg} Got {arg!r:.100}.")
+TypeError: Callable[[arg, ...], result]: each arg must be a type. Got Ellipsis.

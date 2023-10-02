@@ -1,0 +1,23 @@
+Switching from python to 3/3.9.11
+  ERROR: Unable to locate a modulefile for '3/3.9.11'
+2023-10-02 13:26:02.184694: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for more info.)
+2023-10-02 13:26:11.596796: W tensorflow/core/common_runtime/gpu/gpu_device.cc:1960] Cannot dlopen some GPU libraries. Please make sure the missing libraries mentioned above are installed properly if you would like to use GPU. Follow the guide at https://www.tensorflow.org/install/gpu for how to download and setup the required libraries for your platform.
+Skipping registering GPU devices...
+/zhome/77/8/118225/.local/lib/python3.8/site-packages/numpy/core/getlimits.py:518: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
+  setattr(self, word, getattr(machar, word).flat[0])
+/zhome/77/8/118225/.local/lib/python3.8/site-packages/numpy/core/getlimits.py:89: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
+  return self._float_to_str(self.smallest_subnormal)
+Traceback (most recent call last):
+  File "train_score.py", line 670, in <module>
+    trainxt(manifold=args.manifold,
+  File "train_score.py", line 647, in trainxt
+    score_matching.trainxt.train_s1(M=M,
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/statistics/score_matching/trainxt.py", line 148, in train_s1
+    np.save(os.path.join(save_path, "loss_arrays.npy"), jnp.stack(loss))
+  File "<__array_function__ internals>", line 200, in save
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/numpy/lib/npyio.py", line 518, in save
+    file_ctx = open(file, "wb")
+FileNotFoundError: [Errno 2] No such file or directory: 'scores/R3/vsm/loss_arrays.npy'
+2023-10-02 13:26:21.692106: W tensorflow/core/kernels/data/generator_dataset_op.cc:108] Error occurred when finalizing GeneratorDataset iterator: FAILED_PRECONDITION: Python interpreter state is not initialized. The process may be terminated.
+	 [[{{node PyFunc}}]]
