@@ -52,6 +52,15 @@ def initialize(M:object)->None:
         F_fun = lambda x: x[0]
         
     # guide function
+    #phi = lambda q,v,s: jnp.tensordot((1/s)*jnp.linalg.cholesky(M.g(q)).T,M.StdLog(q,M.F((v,q[1]))).flatten(),(1,0))
+    #A = lambda x,v,w,s: (s**(-2))*jnp.dot(v,jnp.dot(M.g(x),w))
+    #logdetA = lambda x,s: jnp.linalg.slogdet(s**(-2)*M.g(x))[1]
+    
+    #(Brownian_coords_guided,sde_Brownian_coords_guided,chart_update_Brownian_coords_guided,log_p_T,neg_log_p_Ts) = get_guided(
+    #    M,M.sde_Brownian_coords,M.chart_update_Brownian_coords,phi,
+    #    lambda x,s: s*jnp.linalg.cholesky(M.gsharp(x)),A,logdetA)
+    
+    # guide function
     phi = lambda q,v,s: jnp.tensordot((1/s)*jnp.linalg.cholesky(M.g(q)).T,
                                       M.Log(q,F_fun((v,q[1]))).flatten(),
                                       (1,0))
