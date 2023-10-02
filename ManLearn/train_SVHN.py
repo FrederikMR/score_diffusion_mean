@@ -59,7 +59,7 @@ class TrainingState(NamedTuple):
 
 def load_dataset(split: str='train[:80%]', batch_size: int=100, seed: int=2712) -> Iterator[Batch]:
   ds = (
-      tfds.load("svhn_cropped", split=split, data_dir="../Data/", download=False)
+      tfds.load("svhn_cropped", split=split, data_dir="../../Data/", download=True)
       .shuffle(buffer_size=10 * batch_size, seed=seed)
       .batch(batch_size)
       .prefetch(buffer_size=5)

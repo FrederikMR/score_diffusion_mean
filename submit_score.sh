@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/s
 #BSUB -q gpuv100
 #BSUB -gpu "num=1"
-#BSUB -J R2
+#BSUB -J SPDN10
 #BSUB -n 4
 #BSUB -W 24:00
 #BSUB -R "rusage[mem=32GB]"
@@ -17,8 +17,8 @@ module swap cuda/8.0
 module swap cudnn/v7.0-prod-cuda8
 
 python3 train_score.py \
-    --manifold RN \
-    --N 2 \
+    --manifold SPDN \
+    --N 10 \
     --loss_type dsm \
     --train_net s1 \
     --max_T 1.0 \
