@@ -1,7 +1,7 @@
-#!/bin/s
+#!/bin/sh
 #BSUB -q gpuv100
 #BSUB -gpu "num=1"
-#BSUB -J Torus
+#BSUB -J R3
 #BSUB -n 4
 #BSUB -W 24:00
 #BSUB -R "rusage[mem=32GB]"
@@ -12,13 +12,14 @@
 #BSUB -N
 
 #Load the following in case
-module swap python3/3.9.11
+#module load python/3.8
+module swap python 3/3.9.11
 module swap cuda/8.0
 module swap cudnn/v7.0-prod-cuda8
 
 python3 train_score.py \
-    --manifold Torus \
-    --N 2 \
+    --manifold RN \
+    --N 3 \
     --loss_type vsm \
     --train_net s1 \
     --max_T 1.0 \
