@@ -493,14 +493,9 @@ def trainxt(manifold:str="RN",
         Brownian_coords(M)
         
         N_dim = M.dim
-        x0 = M.coords([0.]*N)
+        x0 = M.coords([0.]*2)
         
-        if N<10:
-            layers = [50,100,100,50]
-        elif N<50:
-            layers = [50,100,200,200,100,50]
-        else:
-            layers = [50,100,200,400,400,200,100,50]
+        layers = [50,100,100,50]
         
         s1_model = hk.transform(lambda x: models.MLP_s1(dim=N_dim, layers=layers)(x))
         s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
