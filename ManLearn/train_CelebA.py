@@ -57,7 +57,7 @@ class TrainingState(NamedTuple):
   
 #%% Load Dataset
 
-def load_dataset(data_dir:str = '../Data/CelebA/celeb_a/img_align_celeba',
+def load_dataset(data_dir:str = '../../Data/CelebA/celeba/img',
                  img_size:tuple[int, int] = (64, 64), batch_size: int=100, seed: int=2712) -> Iterator[Batch]:
     
     def preprocess_image(filename:str):
