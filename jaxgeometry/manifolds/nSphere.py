@@ -47,9 +47,33 @@ class nSphere(Ellipsoid):
         self.grady_log_hk = jit(lambda x,y,t, N_terms=100: grady_log_hk(self, x, y, t, N_terms))
         #self.ggrady_log_hk = jit(lambda x,y,t: -jnp.eye(self.dim)/t)
         self.gradt_log_hk = jit(lambda x,y,t, N_terms=100: gradt_log_hk(self, x, y, t, N_terms))
+        
+        #self.Exp = self.Exp_map
     
     def __str__(self):
         return "%dd sphere (ellipsoid parameters %s, spherical_coords: %s)" % (self.dim,self.params,self.use_spherical_coords)
+    
+    def Exp_map(self, x,v,T=1.0):
+        Fx = self.F(x) # from ellipsoid to S^n
+        
+        theta = jnp.arccos(Fx[2])
+        phi = jnp.sign(Fx[1])*jnp.arccos(Fx[0]/jnp.sqrt(Fx[0]**2+Fx[1]**2))
+        
+        rot_x = jnp.array([[0.0,0.0,0.0],
+                           [0.0, jnp.cos(theta), jnp.sin(theta)],
+                           [0.0, -jnp.sin(theta), jnp.cos(theta)]])
+        rot_y = jnp.array([[jnp.cos(jnp.pi/2-phi), jnp.sin(jnp.pi/2-phi), 0.0],
+                           [-jnp.sin(jnp.pi/2-phi), jnp.cos(jnp.pi/2-phi), 0.0],
+                           [0.0, 0.0, 1.0]])
+        
+        Fv = rot_y.dot(rot_x).dot(jnp.array([v[0],v[1],0.0]))
+        
+        normv = jnp.linalg.norm(Fv,2)
+        y = jnp.cos(normv)*Fx+Fv*jnp.sin(normv)/normv
+        
+        chart = self.centered_chart(y)
+        
+        return (self.invF((y,chart)),chart)
 
 #%% Heat Kernels
 

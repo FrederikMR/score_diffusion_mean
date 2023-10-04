@@ -40,8 +40,8 @@ class S1(riemannian.EmbeddedManifold):
         self.use_spherical_coords = use_spherical_coords
         self.angle_shift = angle_shift
         
-        self.F_spherical_inv = lambda x: (jnp.arctan2(x[1][1],x[1][0]) % self.angle_shift).reshape(1)
         self.F_spherical = lambda x: jnp.array([jnp.cos(x[0]), jnp.sin(x[0])]).reshape(2)
+        self.F_spherical_inv = lambda x: (jnp.arctan2(x[1][1],x[1][0]) % self.angle_shift).reshape(1)
         
         self.F_steographic_inv = lambda x: (x[1][0]/(1-x[1][1])).reshape(1)
         self.F_steographic = lambda x: (jnp.array([2*x[0], x[0]**2-1])/(x[0]**2+1)).reshape(2)
@@ -111,7 +111,7 @@ class S1(riemannian.EmbeddedManifold):
         v = y-proj(Fx,y)
         theta = jnp.arccos(jnp.dot(Fx,y))
         normv = jnp.linalg.norm(v,2)
-        w = jax.lax.cond(normv >= 1e-5,
+        w = cond(normv >= 1e-5,
                          lambda _: theta/normv*v,
                          lambda _: jnp.zeros_like(v),
                          None)
@@ -122,7 +122,7 @@ class S1(riemannian.EmbeddedManifold):
 
 #%% Heat Kernel
 
-def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float)->float:
+def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float,N_terms=20)->float:
     
     def step(carry:float, k:int)->Tuple[float, None]:
         
@@ -130,10 +130,12 @@ def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float)->float:
         
         return carry, None
     
-    x1 = jnp.arctan2(x[1][1]/x[1][0]) % (2*jnp.pi)
-    y1 = jnp.arctan2(y[1][1]/y[1][0]) % (2*jnp.pi)
+    x1 = jnp.arctan2(x[1][1],x[1][0]) % (2*jnp.pi)
+    y1 = jnp.arctan2(y[1][1],y[1][0]) % (2*jnp.pi)
+    
+    const = 1/jnp.sqrt(2*jnp.pi*t)
    
-    val, _ = lax.scan(step, init=jnp.zeros(1), xs=N_terms) 
+    val, _ = scan(step, init=jnp.zeros(1), xs=jnp.arange(0,N_terms,1)) 
    
     return val*const
 
@@ -141,7 +143,7 @@ def log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float)->float:
     
     return jnp.log(hk(x,y,t))
 
-def gradx_log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float)->Tuple[jnp.ndarray, jnp.ndarray]:
+def gradx_log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float, N_terms=20)->Tuple[jnp.ndarray, jnp.ndarray]:
     
     def get_coords(Fx:jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
 
@@ -150,14 +152,14 @@ def gradx_log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float)->Tuple[jnp.ndarr
 
     def to_TMchart(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
         
-        x = invF_spherical((Fx, Fx))
-        JFx = Jf_spherical(x)
+        x = invF_spherical(Fx)
+        invJFx = JinvF_spherical((x,Fx))
         
-        return jnp.dot(JFx,v)
+        return jnp.dot(invJFx.reshape(-1,1),v)
 
     def to_TMx(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
 
-        x = get_coords(M, Fx)
+        x = get_coords(Fx)
 
         return jnp.dot(M.invJF((Fx,x[1])),v)
     
@@ -179,15 +181,15 @@ def gradx_log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float)->Tuple[jnp.ndarr
     y1 = jnp.arctan2(y[1][1]/y[1][0]) % (2*jnp.pi)
     tinv = 1/t
    
-    val, _ = lax.scan(step, init=jnp.zeros(1), xs=N_terms) 
-    grad = val*const/hk(x,y,t)
+    val, _ = scan(step, init=jnp.zeros(1), xs=jnp.arange(0,N_terms,1)) 
+    grad = val*const/hk(M,x,y,t)
     
-    grad_chart = to_TMchart(x[1], grad)
+    grad_chart = to_TMchart(x, grad)
     grad_x = to_TMx(x[1], grad_chart)
    
     return grad_x, grad_chart
 
-def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> Tuple[jnp.ndarray, jnp.ndarray]:
+def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=20) -> Tuple[jnp.ndarray, jnp.ndarray]:
     
     def get_coords(Fx:jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
 
@@ -196,14 +198,14 @@ def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> Tuple[jnp.n
 
     def to_TMchart(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
         
-        x = invF_spherical((Fx, Fx))
-        JFx = Jf_spherical(x)
+        x = invF_spherical(Fx)
+        invJFx = JinvF_spherical((x,Fx))
         
-        return jnp.dot(JFx,v)
+        return jnp.dot(invJFx.reshape(-1,1),v)
 
     def to_TMx(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
 
-        x = get_coords(M, Fx)
+        x = get_coords(Fx)
 
         return jnp.dot(M.invJF((Fx,x[1])),v)
     
@@ -216,24 +218,26 @@ def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float) -> Tuple[jnp.n
         return carry, None
     
     F_spherical = lambda x: jnp.array([jnp.cos(x[0]), jnp.sin(x[0])])
-    invF_spherical = lambda x: jnp.arctan2(x[1][1]/x[1][0]) % (2*jnp.pi)
+    invF_spherical = lambda x: jnp.arctan2(x[1][1],x[1][0]) % (2*jnp.pi)
     Jf_spherical = jacfwdx(F_spherical)
+    JinvF_spherical = jacfwdx(invF_spherical)
 
     const = 1/jnp.sqrt(2*jnp.pi*t)
     
-    x1 = jnp.arctan2(x[1][1]/x[1][0]) % (2*jnp.pi)
-    y1 = jnp.arctan2(y[1][1]/y[1][0]) % (2*jnp.pi)
+    x1 = jnp.arctan2(x[1][1],x[1][0]) % (2*jnp.pi)
+    y1 = jnp.arctan2(y[1][1],y[1][0]) % (2*jnp.pi)
     tinv = 1/t
     
-    val, _ = lax.scan(step, init=jnp.zeros(1), xs=N_terms) 
-    grad = val*const/hk(x,y,t)
+    val, _ = scan(step, init=jnp.zeros(1), xs=jnp.arange(0,N_terms,1)) 
+    grad = val*const/hk(M,x,y,t)
+    print(grad)
    
-    grad_chart = to_TMchart(y[1], grad)
+    grad_chart = to_TMchart(y, grad)
     grad_x = to_TMx(y[1], grad_chart)
    
     return grad_x, grad_chart
 
-def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float)->float:
+def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=20)->float:
     
     def step1(carry:float, k:int)->Tuple[float,None]:
         
@@ -249,15 +253,16 @@ def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float)->float:
         
         return carry, None
     
-    x1 = jnp.arctan2(x[1][1]/x[1][0]) % (2*jnp.pi)
-    y1 = jnp.arctan2(y[1][1]/y[1][0]) % (2*jnp.pi)
+    x1 = jnp.arctan2(x[1][1],x[1][0]) % (2*jnp.pi)
+    y1 = jnp.arctan2(y[1][1],y[1][0]) % (2*jnp.pi)
         
+    const = 1/jnp.sqrt(2*jnp.pi*t)
     const2 = -1/(jnp.sqrt(jnp.pi)*(2*t)**(3/2))
    
-    val1, _ = lax.scan(step1, init=jnp.zeros(1), xs=N_terms) 
+    val1, _ = scan(step1, init=jnp.zeros(1), xs=jnp.arange(0,N_terms,1)) 
     val1 *= const1
     
-    val2, _ = lax.scan(step2, init=jnp.zeros(1), xs=N_terms) 
+    val2, _ = scan(step2, init=jnp.zeros(1), xs=jnp.arange(0,N_terms,1)) 
     val2 *= const2
    
-    return (val1+val2)/hk(x,y,t)
+    return (val1+val2)/hk(M,x,y,t)

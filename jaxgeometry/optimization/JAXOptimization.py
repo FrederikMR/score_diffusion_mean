@@ -31,11 +31,11 @@ def RMJaxOpt(mu_init:ndarray,
         
         mu, grad, opt_state = carry
         
-        grad = jnp.clip(grad, min_step, max_step)
+        #grad = jnp.clip(grad, min_step, max_step)
         
         opt_state = opt_update(idx, grad, opt_state)
         mu_rm = get_params(opt_state)
-        mu_rm = jnp.clip(mu_rm, lb, ub)
+        #mu_rm = jnp.clip(mu_rm, lb, ub)
         
         new_chart = M.centered_chart((mu_rm, mu[1]))
         mu = M.update_coords((mu_rm, mu[1]),new_chart)
@@ -59,7 +59,7 @@ def RMJaxOpt(mu_init:ndarray,
         
     opt_state = opt_init(mu_init[0])
     grad = grad_fn(mu_init)
-    _, out = lax.scan(update, init = (mu_init, grad, opt_state), xs = jnp.arange(0,max_iter,1))
+    _, out = scan(update, init = (mu_init, grad, opt_state), xs = jnp.arange(0,max_iter,1))
     mu = out[0]
     grad = out[1]
     
@@ -84,7 +84,7 @@ def JaxOpt(mu_init:ndarray,
         
         mu, grad, opt_state = carry
         
-        grad = jnp.clip(grad, min_step, max_step)
+        #grad = jnp.clip(grad, min_step, max_step)
         
         opt_state = opt_update(idx, grad, opt_state)
         mu = get_params(opt_state)
@@ -110,7 +110,7 @@ def JaxOpt(mu_init:ndarray,
         
     opt_state = opt_init(mu_init)
     grad = grad_fn(mu_init)
-    _, out = lax.scan(update, init = (mu_init, grad, opt_state), xs = jnp.arange(0,max_iter,1))
+    _, out = scan(update, init = (mu_init, grad, opt_state), xs = jnp.arange(0,max_iter,1))
     mu = out[0]
     grad = out[1]
     

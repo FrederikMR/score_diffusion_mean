@@ -62,13 +62,14 @@ from jaxgeometry.statistics import score_matching
 from jaxgeometry.statistics.score_matching.model_loader import load_model
 from jaxgeometry.stochastics import Brownian_coords, product_sde, Brownian_sR
 from jaxgeometry.stochastics.product_sde import tile
+from jaxgeometry.stochastics.GRW import initialize
 
 #%% Args Parser
 
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SN",
+    parser.add_argument('--manifold', default="S1",
                         type=str)
     parser.add_argument('--N', default=2,
                         type=int)
@@ -159,7 +160,36 @@ def proj_hessx(s1_model:Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.nd
     return s2_model(x0,x[0],t)
 
 #%% Generate Data in the embedded space of the manifold
+"""
+def chartgenerator(M:object, 
+                   product:Callable[[Tuple[jnp.ndarray, jnp.ndarray], jnp.ndarray, jnp.ndarray], jnp.ndarray],
+                   x_samples:int=2**5,
+                   t_samples:int=2**7,
+                   N_sim:int = 2**8,
+                   max_T:float=1.0, 
+                   dt_steps:int=1000):
+    while True:
+        global x0s
+        _dts = dts(T=max_T, n_steps=dt_steps)
+        dW = dWs(N_sim*M.dim,_dts).reshape(-1,N_sim,M.dim)
+        (ts, xss, chartss) = M.product_GRW((jnp.repeat(x0s[0],x_samples,axis=0), jnp.repeat(x0s[1],x_samples,axis=0)),
+                                           _dts, dW)
+        Fx0s = vmap(lambda x,chart: M.F((x,chart)))(*x0s)
+        x0s = (xss[-1,::x_samples],chartss[-1,::x_samples])
+       
+        inds = jnp.array(random.sample(range(_dts.shape[0]), t_samples))
+        ts = ts[inds]
+        samples = xss[inds]
+        charts = chartss[inds]
+       
+        yield jnp.hstack((jnp.tile(jnp.repeat(Fx0s,x_samples,axis=0),(t_samples,1)),
+                         vmap(lambda x,chart: M.F((x,chart)))(samples.reshape((-1,M.dim)),charts.reshape((-1,chartss.shape[-1]))),
+                         jnp.repeat(ts,N_sim).reshape((-1,1)),
+                         dW[inds].reshape(-1,M.dim),
+                         jnp.repeat(_dts[inds],N_sim).reshape((-1,1)),
+                        ))
 
+"""
 def chartgenerator(M:object, 
                    product:Callable[[Tuple[jnp.ndarray, jnp.ndarray], jnp.ndarray, jnp.ndarray], jnp.ndarray],
                    x_samples:int=2**5,
@@ -187,6 +217,7 @@ def chartgenerator(M:object,
                          dW[inds].reshape(-1,M.dim),
                          jnp.repeat(_dts[inds],N_sim).reshape((-1,1)),
                         ))
+
         
 #%% Update Coordinates, which are sampled in the embedded space
 
@@ -204,7 +235,8 @@ def proj_gradchart(M:object,
                    x:Tuple[jnp.ndarray, jnp.ndarray], 
                    t:jnp.ndarray):
     
-    Fx = M.F(x)
+    Fx = x[1]
+    x = update_chartcoords(M, Fx)
 
     return jnp.dot(M.invJF((Fx,x[1])), s1_model(x0,Fx,t))
 
@@ -228,7 +260,7 @@ def proj_hesschart(M:object,
 
 #%% train for (x,y,t)
 
-def trainxt(manifold:str="RN",
+def trainxt(manifold:str="SN",
             N:int=2, 
             loss_type:str='dsm',
             train_net:str="s1",
@@ -253,6 +285,7 @@ def trainxt(manifold:str="RN",
         s2_path = ''.join(('scores/R',str(N),'/s2/'))
         M = Euclidean(N=N)
         Brownian_coords(M)
+        initialize(M)
         
         N_dim = M.dim
         x0 = M.coords([0.]*N)
@@ -286,7 +319,8 @@ def trainxt(manifold:str="RN",
         M = S1(use_spherical_coords=True)
         Brownian_coords(M)
         
-        N_dim = M.emb_dim
+        #N_dim = M.emb_dim
+        N_dim = M.dim
         x0 = M.coords([0.])
         layers = [50,100,50]
         
@@ -294,16 +328,27 @@ def trainxt(manifold:str="RN",
         s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
                                                         dim=N_dim, r = max(N_dim//2,1))(x))
         
-        data_generator = lambda : chartgenerator(M, 
+        data_generator = lambda : xgenerator(M, 
                                             product,
                                             x_samples=x_samples,
                                             t_samples=t_samples,
                                             N_sim = N_sim,
                                             max_T = max_T, 
                                             dt_steps = dt_steps)
-        update_coords = lambda Fx: update_chartcoords(M, Fx)
-        proj_grad = lambda s1, x0, x, t: proj_gradchart(M, s1, x0, x,t)
-        proj_hess = lambda s1, s2, x0, x, t: proj_hesschart(M, s1, s2, x0, x, t)
+        update_coords = lambda Fx: update_xcoords(M, Fx)
+        proj_grad = lambda s1, x0, x, t: proj_gradx(s1, x0, x,t)
+        proj_hess = lambda s1, s2, x0, x, t: proj_hessx(s1, s2, x0, x, t)
+        
+        #data_generator = lambda : chartgenerator(M, 
+        #                                    product,
+        #                                    x_samples=x_samples,
+        #                                    t_samples=t_samples,
+        #                                    N_sim = N_sim,
+        #                                    max_T = max_T, 
+        #                                    dt_steps = dt_steps)
+        #update_coords = lambda Fx: update_chartcoords(M, Fx)
+        #proj_grad = lambda s1, x0, x, t: proj_gradchart(M, s1, x0, x,t)
+        #proj_hess = lambda s1, s2, x0, x, t: proj_hesschart(M, s1, s2, x0, x, t)
         
     elif manifold == "SN":
         
@@ -311,6 +356,7 @@ def trainxt(manifold:str="RN",
         s2_path = ''.join(('scores/S',str(N),'/s2'))
         M = nSphere(N=N)
         Brownian_coords(M)
+        initialize(M)
         
         N_dim = M.emb_dim
         x0 = M.coords([0.]*N)

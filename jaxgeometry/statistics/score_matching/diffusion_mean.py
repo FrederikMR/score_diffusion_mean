@@ -11,7 +11,8 @@ Created on Mon Sep 18 10:37:20 2023
 #%% Modules
 
 from jaxgeometry.setup import *
-from jaxgeometry.optimization.JAXOptimization import JointJaxOpt
+from jaxgeometry.optimization.JAXOptimization import JointJaxOpt, RMJaxOpt, JaxOpt
+from jaxgeometry.optimization.GradientDescent import JointGradientDescent, RMGradientDescent, GradientDescent
 
 #%% Diffusion Mean Estimation
 
@@ -43,24 +44,55 @@ def initialize(M:object,
         
         return gradx
     
-    M.sm_dmxt = lambda X_obs, x0, t: JointJaxOpt(x0,
-                                                 jnp.array(t),
+    if method == "JAX":
+        M.sm_dmxt = lambda X_obs, x0, t, max_iter=1000: JointJaxOpt(x0,
+                                                     jnp.array(t),
+                                                     M,
+                                                     grad_fn_rm = lambda y,t: gradx_loss(X_obs, y, t),
+                                                     grad_fn_euc = lambda y,t: gradt_loss(X_obs, y, t),
+                                                     max_iter=max_iter,
+                                                     bnds_euc=(0.0,1.0),
+                                                     )
+        
+        M.sm_dmx = lambda X_obs, x0, t, max_iter=1000: RMJaxOpt(x0,
                                                  M,
-                                                 grad_fn_rm = lambda y,t: gradx_loss(X_obs, y, t),
-                                                 grad_fn_euc = lambda y,t: gradt_loss(X_obs, y, t),
-                                                 max_iter=1000,
-                                                 bnds_euc=(0.0,None),
+                                                 grad_fn=lambda y: gradx_loss(X_obs, y, t),
+                                                 max_iter=max_iter,
                                                  )
-    M.sm_dmx = lambda X_obs, x0, t: RMJaxOpt(x0,
-                                             M,
-                                             grad_fn=lambda y: gradx_loss(X_obs, y, t),
-                                             max_iter=1000,
-                                             )
-    M.sm_dmt = lambda X_obs, x0, t: JaxOpt(t,
-                                           M,
-                                           grad_fn = lambda t: gradt_loss(X_obs, x0, t),
-                                           max_iter=1000,
-                                           bnds=(0.0,None),
-                                           )
+        M.sm_dmt = lambda X_obs, x0, t, max_iter=1000: JaxOpt(t,
+                                               M,
+                                               grad_fn = lambda t: gradt_loss(X_obs, x0, t),
+                                               max_iter=max_iter,
+                                               bnds=(0.0,1.0),
+                                               )
+    elif method == "Gradient":
+        
+        M.sm_dmxt = lambda X_obs, x0, t, step_size=0.1, max_iter=1000: JointGradientDescent(x0,
+                                                                                            jnp.array(t),
+                                                                                            M,
+                                                                                            grad_fn_rm = lambda y,t: gradx_loss(X_obs, y, t),
+                                                                                            grad_fn_euc = lambda y,t: gradt_loss(X_obs, y, t),
+                                                                                            step_size_rm=step_size,
+                                                                                            step_size_euc=step_size,
+                                                                                            max_iter = max_iter,
+                                                                                            bnds_euc = (0.0,1.0)
+                                                                                            )
+        
+        M.sm_dmx = lambda X_obs, x0, t, step_size=0.1, max_iter=1000: RMGradientDescent(x0,
+                                                                                        M,
+                                                                                        grad_fn = lambda y: gradx_loss(X_obs, y, t),
+                                                                                        step_size=step_size,
+                                                                                        max_iter = max_iter
+                                                                                        )
+        
+        M.sm_dmt = lambda X_obs, x0, t, step_size=0.1, max_iter=1000: GradientDescent(t,
+                                                                                      M,
+                                                                                      grad_fn = lambda t: gradt_loss(X_obs, y, t),
+                                                                                      step_size=step_size,
+                                                                                      max_iter = max_iter,
+                                                                                      bnds=(0.0,1.0)
+                                                                                      )
+    
+    
     
     return
