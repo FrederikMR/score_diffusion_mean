@@ -1,0 +1,18 @@
+Switching from python to 3/3.9.11
+  ERROR: Unable to locate a modulefile for '3/3.9.11'
+Traceback (most recent call last):
+  File "train_score.py", line 37, in <module>
+    from ManLearn.VAE.VAE_MNIST import model as mnist_model
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/ManLearn/VAE/VAE_MNIST.py", line 13, in <module>
+    from ManLearn.initialize import *
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/ManLearn/initialize.py", line 38, in <module>
+    import tensorflow as tf
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow/__init__.py", line 38, in <module>
+    from tensorflow.python.tools import module_util as _module_util
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow/python/__init__.py", line 36, in <module>
+    from tensorflow.python import pywrap_tensorflow as _pywrap_tensorflow
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow/python/pywrap_tensorflow.py", line 26, in <module>
+    self_check.preload_check()
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow/python/platform/self_check.py", line 63, in preload_check
+    from tensorflow.python.platform import _pywrap_cpu_feature_guard
+KeyboardInterrupt

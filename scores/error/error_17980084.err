@@ -1,0 +1,5 @@
+Switching from python to 3/3.9.11
+  ERROR: Unable to locate a modulefile for '3/3.9.11'
+2023-10-04 09:24:45.957278: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for more info.)
+/zhome/77/8/118225/.lsbatch/1696404274.17980084.shell: line 33: 31085 Killed                  python3 train_score.py --manifold Ellipsoid --N 100 --loss_type vsm --train_net s1 --max_T 1.0 --lr_rate 0.001 --epochs 50000 --x_samples 32 --t_samples 128 --repeats 8 --samples_per_batch 16 --dt_steps 1000 --save_step 10 --seed 2712

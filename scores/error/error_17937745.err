@@ -1,0 +1,84 @@
+Switching from python to 3/3.9.11
+  ERROR: Unable to locate a modulefile for '3/3.9.11'
+2023-10-04 09:17:16.164258: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for more info.)
+2023-10-04 09:17:20.973738: W tensorflow/core/common_runtime/gpu/gpu_device.cc:1960] Cannot dlopen some GPU libraries. Please make sure the missing libraries mentioned above are installed properly if you would like to use GPU. Follow the guide at https://www.tensorflow.org/install/gpu for how to download and setup the required libraries for your platform.
+Skipping registering GPU devices...
+Traceback (most recent call last):
+  File "train_score.py", line 670, in <module>
+    trainxt(manifold=args.manifold,
+  File "train_score.py", line 647, in trainxt
+    score_matching.trainxt.train_s1(M=M,
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/statistics/score_matching/trainxt.py", line 132, in train_s1
+    initial_params = model.init(random.PRNGKey(seed), next(train_dataset)[:,:(2*N_dim+1)])
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/haiku/_src/transform.py", line 170, in init_fn
+    params, state = f.init(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/haiku/_src/transform.py", line 427, in init_fn
+    f(*args, **kwargs)
+  File "train_score.py", line 473, in <lambda>
+    s1_model = hk.transform(lambda x: models.MLP_s1(dim=N_dim, layers=layers)(x))
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/haiku/_src/module.py", line 465, in wrapped
+    out = f(*args, **kwargs)
+  File "/appl/python/3.8.2/lib/python3.8/contextlib.py", line 75, in inner
+    return func(*args, **kwds)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/haiku/_src/module.py", line 306, in run_interceptors
+    return bound_method(*args, **kwargs)
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/scores/models.py", line 55, in __call__
+    return self.model()(x)+grad_euc
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/haiku/_src/module.py", line 465, in wrapped
+    out = f(*args, **kwargs)
+  File "/appl/python/3.8.2/lib/python3.8/contextlib.py", line 75, in inner
+    return func(*args, **kwds)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/haiku/_src/module.py", line 306, in run_interceptors
+    return bound_method(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/haiku/_src/basic.py", line 127, in __call__
+    out = layer(out)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/haiku/_src/module.py", line 465, in wrapped
+    out = f(*args, **kwargs)
+  File "/appl/python/3.8.2/lib/python3.8/contextlib.py", line 75, in inner
+    return func(*args, **kwds)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/haiku/_src/module.py", line 306, in run_interceptors
+    return bound_method(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/haiku/_src/basic.py", line 178, in __call__
+    w = hk.get_parameter("w", [input_size, output_size], dtype, init=w_init)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/haiku/_src/base.py", line 602, in wrapped
+    return wrapped._current(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/haiku/_src/base.py", line 682, in get_parameter
+    param = init(shape, dtype)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/haiku/_src/initializers.py", line 130, in __call__
+    return s * unscaled + m
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/numpy/array_methods.py", line 258, in deferring_binary_op
+    return binary_op(*args)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/traceback_util.py", line 166, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 250, in cache_miss
+    outs, out_flat, out_tree, args_flat, jaxpr = _python_pjit_helper(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 163, in _python_pjit_helper
+    out_flat = pjit_p.bind(*args_flat, **params)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/core.py", line 2677, in bind
+    return self.bind_with_trace(top_trace, args, params)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/core.py", line 383, in bind_with_trace
+    out = trace.process_primitive(self, map(trace.full_raise, args), params)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/core.py", line 815, in process_primitive
+    return primitive.impl(*tracers, **params)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 1203, in _pjit_call_impl
+    return xc._xla.pjit(name, f, call_impl_cache_miss, [], [], donated_argnums,
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 1187, in call_impl_cache_miss
+    out_flat, compiled = _pjit_call_impl_python(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 1120, in _pjit_call_impl_python
+    compiled = _pjit_lower(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/interpreters/pxla.py", line 2323, in compile
+    executable = UnloadedMeshExecutable.from_hlo(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/interpreters/pxla.py", line 2645, in from_hlo
+    xla_executable, compile_options = _cached_compilation(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/interpreters/pxla.py", line 2555, in _cached_compilation
+    xla_executable = dispatch.compile_or_get_cached(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/dispatch.py", line 497, in compile_or_get_cached
+    return backend_compile(backend, computation, compile_options,
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/profiler.py", line 314, in wrapper
+    return func(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/dispatch.py", line 465, in backend_compile
+    return backend.compile(built_c, compile_options=options)
+KeyboardInterrupt
+2023-10-04 09:17:25.109072: W tensorflow/core/kernels/data/generator_dataset_op.cc:108] Error occurred when finalizing GeneratorDataset iterator: FAILED_PRECONDITION: Python interpreter state is not initialized. The process may be terminated.
+	 [[{{node PyFunc}}]]

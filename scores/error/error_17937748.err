@@ -1,0 +1,47 @@
+Switching from python to 3/3.9.11
+  ERROR: Unable to locate a modulefile for '3/3.9.11'
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/numpy/__init__.py", line 152, in <module>
+    from . import random
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/numpy/random/__init__.py", line 180, in <module>
+    from . import _pickle
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/numpy/random/_pickle.py", line 6, in <module>
+    from ._generator import Generator
+  File "<frozen importlib._bootstrap>", line 389, in parent
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "train_score.py", line 37, in <module>
+    from ManLearn.VAE.VAE_MNIST import model as mnist_model
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/ManLearn/VAE/VAE_MNIST.py", line 13, in <module>
+    from ManLearn.initialize import *
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/ManLearn/initialize.py", line 35, in <module>
+    import optax
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/optax/__init__.py", line 17, in <module>
+    from optax import contrib
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/optax/contrib/__init__.py", line 17, in <module>
+    from optax._src.contrib.mechanic import MechanicState
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/optax/_src/contrib/mechanic.py", line 38, in <module>
+    from optax._src import utils
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/optax/_src/utils.py", line 22, in <module>
+    import jax.scipy.stats.norm as multivariate_normal
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/scipy/stats/__init__.py", line 18, in <module>
+    from jax.scipy.stats import bernoulli as bernoulli
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/scipy/stats/bernoulli.py", line 18, in <module>
+    from jax._src.scipy.stats.bernoulli import (
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/scipy/stats/bernoulli.py", line 16, in <module>
+    import scipy.stats as osp_stats
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/scipy/stats/__init__.py", line 485, in <module>
+    from ._stats_py import *
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/scipy/stats/_stats_py.py", line 46, in <module>
+    from . import distributions
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/scipy/stats/distributions.py", line 10, in <module>
+    from . import _continuous_distns
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/scipy/stats/_continuous_distns.py", line 153, in <module>
+    ksone = ksone_gen(a=0.0, b=1.0, name='ksone')
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/scipy/stats/_distn_infrastructure.py", line 1904, in __init__
+    super().__init__(seed)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/scipy/stats/_distn_infrastructure.py", line 616, in __init__
+    self._random_state = check_random_state(seed)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/scipy/_lib/_util.py", line 196, in check_random_state
+    return np.random.mtrand._rand
+AttributeError: module 'numpy.random' has no attribute 'mtrand'
