@@ -69,7 +69,7 @@ from jaxgeometry.stochastics.GRW import initialize
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SN",
+    parser.add_argument('--manifold', default="Torus",
                         type=str)
     parser.add_argument('--N', default=2,
                         type=int)
