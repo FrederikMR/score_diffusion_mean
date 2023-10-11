@@ -263,11 +263,11 @@ def proj_gradchart(M:object,
                    t:jnp.ndarray):
     
     #Fx = x[1]
-    x = update_chartcoords(M, Fx[1])
+    x = update_chartcoords(M, M.F(Fx))
 
     #x0: 3d
     #x: (2d, 3d)
-    return jnp.dot(M.invJF((x[1],Fx[1])), s1_model(x0,x[1],t))
+    return jnp.dot(M.invJF((M.F(Fx),x[1])), s1_model(x0,M.F(Fx),t))
 
 #%% Apply the model and project it onto the manifold
 
