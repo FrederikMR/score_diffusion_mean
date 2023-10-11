@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q compute
-#BSUB -J R2T
+#BSUB -J CylinderT
 #BSUB -n 4
 #BSUB -W 24:00
 #BSUB -R "rusage[mem=32GB]"
@@ -17,7 +17,7 @@ module swap cuda/8.0
 module swap cudnn/v7.0-prod-cuda8
 
 python3 train_score.py \
-    --manifold RN \
+    --manifold Cylinder \
     --N 2 \
     --loss_type T \
     --train_net s1 \
