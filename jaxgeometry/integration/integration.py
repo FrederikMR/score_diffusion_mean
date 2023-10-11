@@ -46,7 +46,7 @@ def dWs(d:int,_dts:ndarray=None,num:int=1)->ndarray:
         return vmap(lambda subkey: jnp.sqrt(_dts)[:,None]*random.normal(subkey,(_dts.shape[0],d)))(subkeys)    
 
 def integrator(ode_f,
-               chart_update:bool=None,
+               chart_update=None,
                method:str=default_method):
     """
     Integrator (deterministic)
@@ -78,9 +78,10 @@ def integrator(ode_f,
         assert(False)
 
 def integrate(ode,
-              chart_update:bool,
+              chart_update,
               x:ndarray,chart:ndarray,dts:ndarray,*ys):
     """return symbolic path given ode and integrator"""
+
     _,xs = scan(integrator(ode,chart_update),
             (0.,x,chart),
             (dts,*ys))

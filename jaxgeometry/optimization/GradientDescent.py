@@ -63,7 +63,7 @@ def GradientDescent(mu_init:ndarray,
                     step_size:float = 0.1,
                     max_iter:int=100,
                     bnds:Tuple[ndarray, ndarray]=(None,None),
-                    max_step:ndarray=None
+                    max_step:ndarray=0.1
                     )->Tuple[ndarray, ndarray]:
     
     @jit
@@ -72,7 +72,7 @@ def GradientDescent(mu_init:ndarray,
         
         mu, grad = carry
         
-        grad = grad #jnp.clip(grad, min_step, max_step)
+        grad = jnp.clip(grad, min_step/step_size, max_step/step_size)
         mu -= step_size*grad
         mu = jnp.clip(mu, lb, ub)
         
@@ -108,7 +108,7 @@ def JointGradientDescent(mu_rm:ndarray,
                          max_iter:int=100,
                          bnds_rm:Tuple[ndarray, ndarray]=(None,None),
                          bnds_euc:Tuple[ndarray, ndarray]=(None,None),
-                         max_step:ndarray=None
+                         max_step:ndarray=0.1
                          )->Tuple[ndarray, ndarray, ndarray, ndarray]:
     
     @jit
@@ -119,7 +119,7 @@ def JointGradientDescent(mu_rm:ndarray,
         mu_rm, mu_euc, grad_rm, grad_euc = carry
         
         grad_rm = grad_rm #jnp.clip(grad_rm, min_step, max_step)
-        grad_euc = grad_euc #jnp.clip(grad_euc, min_step, max_step)
+        grad_euc = jnp.clip(grad_euc, min_step/step_size_euc, max_step/step_size_euc)
         
         mu_rm = M.Exp(mu_rm, -step_size_rm*grad_rm)
         #mu_rm[0] = jnp.clip(mu_rm[0], lb_rm, ub_rm)

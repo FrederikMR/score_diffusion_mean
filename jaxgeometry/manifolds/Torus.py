@@ -75,6 +75,8 @@ class Torus(riemannian.EmbeddedManifold):
         riemannian.Log(self)
         riemannian.parallel_transport(self)
         
+        self.Log = self.StdLog
+        
     def __str__(self):
         return "torus in R^3, radius %s, Radius %s, axis %s" % (self.radius,self.Radius,self.orientation)
 

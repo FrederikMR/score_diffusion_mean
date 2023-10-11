@@ -85,12 +85,12 @@ class S1(riemannian.EmbeddedManifold):
         self.gradx_log_hk = jit(lambda x,y,t: gradx_log_hk(self, x, y, t))
         self.grady_log_hk = jit(lambda x,y,t: grady_log_hk(self, x, y, t))
         #self.ggrady_log_hk = jit(lambda x,y,t: -jnp.eye(self.dim)/t)
-        self.gradt_log_hk = jit(lambda x,y,t: gradt_log_hk(self, x, y, t))
+        self.gradt_log_hk = lambda x,y,t: gradt_log_hk(self, x, y, t)
     
     def centered_chart_spherical(self,x):
         """ return centered coordinate chart """
         if type(x) == type(()): # coordinate tuple
-            return stop_gradient(x[0] % self.angle_shift)
+            return stop_gradient(self.F(x))
         else:
             return x % self.angle_shift # already in embedding space
 
@@ -130,12 +130,12 @@ def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float,N_terms=20)->float:
         
         return carry, None
     
-    x1 = jnp.arctan2(x[1][1],x[1][0]) % (2*jnp.pi)
-    y1 = jnp.arctan2(y[1][1],y[1][0]) % (2*jnp.pi)
+    x1 = x[0]#jnp.arctan2(x[1][1],x[1][0]) % (2*jnp.pi)
+    y1 = y[0]#jnp.arctan2(y[1][1],y[1][0]) % (2*jnp.pi)
     
     const = 1/jnp.sqrt(2*jnp.pi*t)
    
-    val, _ = scan(step, init=jnp.zeros(1), xs=jnp.arange(0,N_terms,1)) 
+    val, _ = scan(step, init=jnp.zeros(1), xs=jnp.arange(-N_terms+1,N_terms,1)) 
    
     return val*const
 
@@ -187,7 +187,7 @@ def gradx_log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float, N_terms=20)->Tup
     grad_chart = to_TMchart(x, grad)
     grad_x = to_TMx(x[1], grad_chart)
    
-    return grad_x, grad_chart
+    return grad#grad_x, grad_chart
 
 def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=20) -> Tuple[jnp.ndarray, jnp.ndarray]:
     
@@ -224,18 +224,17 @@ def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=20) ->
 
     const = 1/jnp.sqrt(2*jnp.pi*t)
     
-    x1 = jnp.arctan2(x[1][1],x[1][0]) % (2*jnp.pi)
-    y1 = jnp.arctan2(y[1][1],y[1][0]) % (2*jnp.pi)
+    x1 = x[0]#jnp.arctan2(x[1][1],x[1][0]) % jnp.pi
+    y1 = y[0]#jnp.arctan2(y[1][1],y[1][0]) % jnp.pi
     tinv = 1/t
     
-    val, _ = scan(step, init=jnp.zeros(1), xs=jnp.arange(0,N_terms,1)) 
+    val, _ = scan(step, init=jnp.zeros(1), xs=jnp.arange(-N_terms+1,N_terms,1)) 
     grad = val*const/hk(M,x,y,t)
-    print(grad)
    
     grad_chart = to_TMchart(y, grad)
     grad_x = to_TMx(y[1], grad_chart)
    
-    return grad_x, grad_chart
+    return grad#grad_x, grad_chart
 
 def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=20)->float:
     
@@ -243,26 +242,30 @@ def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=20)->f
         
         term1 = 0.5*(2*jnp.pi*k+x1-y1)**2
         
-        carry += jnp.exp(term1/t)*term1/(t**2)
+        carry += jnp.exp(-term1/t)*term1/(t**2)
         
         return carry, None
     
     def step2(carry:float, k:int)->Tuple[float,None]:
         
-        carry += jnp.exp(-0.5*(2*jnp.pi*k+x1-y1)**2/t)
+        carry += jnp.exp(-(0.5*(2*jnp.pi*k+x1-y1)**2)/t)
         
         return carry, None
     
-    x1 = jnp.arctan2(x[1][1],x[1][0]) % (2*jnp.pi)
-    y1 = jnp.arctan2(y[1][1],y[1][0]) % (2*jnp.pi)
+    x1 = x[0]#jnp.arctan2(x[1][1],x[1][0]) % (2*jnp.pi)
+    y1 = y[0]#jnp.arctan2(y[1][1],y[1][0]) % (2*jnp.pi)
         
-    const = 1/jnp.sqrt(2*jnp.pi*t)
-    const2 = -1/(jnp.sqrt(jnp.pi)*(2*t)**(3/2))
+    const1 = 1/jnp.sqrt(2*jnp.pi*t)
+    const2 = -1/(2*jnp.sqrt(jnp.pi)*(t)**(3/2))
    
-    val1, _ = scan(step1, init=jnp.zeros(1), xs=jnp.arange(0,N_terms,1)) 
+    val1, _ = scan(step1, init=jnp.zeros(1), xs=jnp.arange(-N_terms+1,N_terms,1)) 
     val1 *= const1
     
-    val2, _ = scan(step2, init=jnp.zeros(1), xs=jnp.arange(0,N_terms,1)) 
+    val2, _ = scan(step2, init=jnp.zeros(1), xs=jnp.arange(-N_terms+1,N_terms,1)) 
     val2 *= const2
+    
+    print(val1)
+    print(val2)
+    print(hk(M,x,y,t))
    
     return (val1+val2)/hk(M,x,y,t)

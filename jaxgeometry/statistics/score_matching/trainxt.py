@@ -31,6 +31,7 @@ def train_s1(M:object,
              proj_grad:Callable[[hk.Params, dict, Array, jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray],
              N_dim:int,
              batch_size:int,
+             state:TrainingState = None,
              lr_rate:float = 0.001,
              gamma:float=1.0,
              epochs:int=100,
@@ -62,10 +63,14 @@ def train_s1(M:object,
 
     def loss_dsm(params:hk.Params, state_val:dict, rng_key:Array, data:jnp.ndarray)->float:
         
-        def f(x0,xt,chart,t,noise,dt):
+        def f(x0,xt,t,noise,dt):
             
             s1 = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
-            s1 = proj_grad(s1, x0, (xt,chart), t)
+            s1 = proj_grad(s1, x0, xt, t)
+            #s1 = s1(x0, M.F((xt,chart)), t)
+            
+            #JFx = M.JF((xt,chart))
+            #noise = jnp.dot(JFx,noise)
 
             loss = noise/dt+s1
             
@@ -79,7 +84,6 @@ def train_s1(M:object,
         
         x0 = data[:,:N_dim]
         xt = data[:,N_dim:(2*N_dim)]
-        (xt,chart) = vmap(update_coords)(xt)
         t = data[:,2*N_dim]
         noise = data[:,(2*N_dim+1):-1]
         dt = data[:,-1]
@@ -93,7 +97,7 @@ def train_s1(M:object,
         
         loss = jnp.mean(vmap(
                         f,
-                        (0,0,0,0,0,0))(x0,xt,chart,t,noise,dt))
+                        (0,0,0,0,0))(x0,xt,t,noise,dt))
     
         return loss
     
@@ -104,7 +108,6 @@ def train_s1(M:object,
         loss, gradients = value_and_grad(loss_fun)(state.params, state.state_val, rng_key, data)
         updates, new_opt_state = optimizer.update(gradients, state.opt_state)
         new_params = optax.apply_updates(state.params, updates)
-        
         return TrainingState(new_params, state.state_val, new_opt_state, rng_key), loss
     
     if loss_type == "vsm":
@@ -129,14 +132,16 @@ def train_s1(M:object,
         
     initial_rng_key = random.PRNGKey(seed)
     if type(model) == hk.Transformed:
-        initial_params = model.init(random.PRNGKey(seed), next(train_dataset)[:,:(2*N_dim+1)])
-        initial_opt_state = optimizer.init(initial_params)
-        state = TrainingState(initial_params, None, initial_opt_state, initial_rng_key)
+        if state is None:
+            initial_params = model.init(random.PRNGKey(seed), next(train_dataset)[:,:(2*N_dim+1)])
+            initial_opt_state = optimizer.init(initial_params)
+            state = TrainingState(initial_params, None, initial_opt_state, initial_rng_key)
         apply_fn = lambda params, data, rng_key, state_val: model.apply(params, rng_key, data)
     elif type(model) == hk.TransformedWithState:
-        initial_params, init_state = model.init(random.PRNGKey(seed), next(train_dataset)[:,:(2*N_dim+1)])
-        initial_opt_state = optimizer.init(initial_params)
-        state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
+        if state is None:
+            initial_params, init_state = model.init(random.PRNGKey(seed), next(train_dataset)[:,:(2*N_dim+1)])
+            initial_opt_state = optimizer.init(initial_params)
+            state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
         apply_fn = lambda params, data, rng_key, state_val: model.apply(params, state_val, rng_key, data)[0]
     
     loss = []

@@ -57,6 +57,7 @@ def initialize(M:object) -> None:
             T:float=T,
             n_steps:int=n_steps
             )->Tuple[ndarray, ndarray]:
+        
         curve = M.geodesic(x,v,dts(T,n_steps))
         x = curve[1][-1,0]
         chart = curve[2][-1]

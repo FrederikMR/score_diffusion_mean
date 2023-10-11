@@ -56,8 +56,8 @@ class SPDN(riemannian.EmbeddedManifold):
         self.gsharp = lambda x: gsharp(self,x)
         self.det = lambda x,A=None: det(self, x, A)
         self.Gamma_g = lambda x: Gamma(self, x)
-        self.Expt = lambda x,v,t: Expt(self, x, v, t)
-        self.Exp = lambda x,v: self.Expt(x,v,1.0)
+        #self.Expt = lambda x,v,t: Expt(self, x, v, t)
+        #self.Exp = lambda x,v: self.Expt(x,v,1.0)
         self.Log = lambda x,y: Log(self, x, y)
         self.dist = lambda x,y: dist(self, x,y)
 
@@ -69,7 +69,7 @@ class SPDN(riemannian.EmbeddedManifold):
         if type(x) == type(()): # coordinate tuple
             return stop_gradient(self.F(x))
         else:
-            return x # already in embedding space
+            return self.F((x,jnp.zeros(self.N*self.N))) # already in embedding space
     
     def chart(self):
         """ return default coordinate chart """
@@ -123,7 +123,7 @@ class SPDN(riemannian.EmbeddedManifold):
             except:
                 (fig,ax) = newfig3d()
             #draw ellipsoid, from https://stackoverflow.com/questions/7819498/plotting-ellipsoid-with-matplotlib
-            U, ss, rotation = np.linalg.svd(x)
+            U, ss, rotation = np.linalg.svd(x)  
             radii = np.sqrt(ss)
             u = np.linspace(0., 2.*np.pi, 20)
             v = np.linspace(0., np.pi, 10)
@@ -186,6 +186,9 @@ def Gamma(M:object, x:Tuple[ndarray, ndarray])->ndarray:
 def Expt(M:object, x:Tuple[ndarray, ndarray], v:ndarray, t:float)->ndarray:
     
     P = x[1].reshape(M.N,M.N)
+
+    v = jnp.dot(M.JF(x),v)
+    
     v = v.reshape(M.N,M.N)
     
     P_phalf = fractional_matrix_power(P,0.5)
