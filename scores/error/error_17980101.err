@@ -337,4 +337,4 @@ No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for
 Generating test examples...: 9810 examples [00:03, 2600.14 examples/s][A
                                                                       [A
 Shuffling /zhome/77/8/118225/tensorflow_datasets/mnist/3.0.1.incomplete38OIW7/mnist-test.tfrecord*...:   0%|          | 0/10000 [00:00<?, ? examples/s][A
-                                                                                                                                                       [AGenerating splits...: 100%|██████████| 2/2 [00:28<00:00, 12.34s/ splits]                                                                        
+                                                                                                                                                       [AGenerating splits...: 100%|██████████| 2/2 [00:28<00:00, 12.34s/ splits]                                                                        User defined signal 2
