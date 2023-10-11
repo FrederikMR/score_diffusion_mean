@@ -69,11 +69,11 @@ from jaxgeometry.stochastics.GRW import initialize
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Torus",
+    parser.add_argument('--manifold', default="SPDN",
                         type=str)
     parser.add_argument('--N', default=2,
                         type=int)
-    parser.add_argument('--loss_type', default="T",
+    parser.add_argument('--loss_type', default="vsm",
                         type=str)
     parser.add_argument('--train_net', default="s1",
                         type=str)
@@ -115,10 +115,18 @@ def xgenerator(M:object,
         global x0s
         _dts = dts(T=max_T, n_steps=dt_steps)
         dW = dWs(N_sim*M.dim,_dts).reshape(-1,N_sim,M.dim)
-        (ts,xss,chartss,*_) = product((jnp.repeat(x0s[0],x_samples,axis=0),jnp.repeat(x0s[1],x_samples,axis=0)),
-                                      _dts,dW,jnp.repeat(1.,N_sim))
+        #(ts,xss,chartss,*_) = product((jnp.repeat(x0s[0],x_samples,axis=0),jnp.repeat(x0s[1],x_samples,axis=0)),
+        #                              _dts,dW,jnp.repeat(1.,N_sim))
+        (ts,xss,chartss) = M.product_GRW((jnp.repeat(x0s[0],x_samples,axis=0),jnp.repeat(x0s[1],x_samples,axis=0)),
+                                      _dts,dW)
+        
+        
         Fx0s = x0s[0]
         if jnp.isnan(jnp.sum(xss)):
+            #print(xss.shape)
+            #xss = xss[~jnp.isnan(xss).any(axis=(1,2))]
+            #print(xss.shape)
+            #chartss = chartss[~jnp.isnan(xss).any(axis=1)]
             x0s = (xss[-1,::x_samples],chartss[-1,::x_samples])
         else:
             next
@@ -218,31 +226,6 @@ def chartgenerator(M:object,
                          jnp.repeat(ts,N_sim).reshape((-1,1)),
                          dW[inds].reshape(-1,M.dim),
                          jnp.repeat(_dts[inds],N_sim).reshape((-1,1)),
-                        ))
-        
-def chartgeneratorx(M:object, 
-                    product:Callable[[Tuple[jnp.ndarray, jnp.ndarray], jnp.ndarray, jnp.ndarray], jnp.ndarray],
-                    x_samples = 2**5,
-                    N_sim:int = 2**8,
-                    max_T:float=1.0, 
-                    dt_steps:int=1000):
-    while True:
-        global x0s
-        _dts = dts(T=max_T, n_steps=dt_steps)
-        dW = dWs(N_sim*M.dim,_dts).reshape(-1,N_sim,M.dim)
-        (ts,xss,chartss,*_) = product((jnp.repeat(x0s[0],N_sim,axis=0),jnp.repeat(x0s[1],N_sim,axis=0)),
-                                      _dts,dW,jnp.repeat(1.,N_sim))
-        Fx0s = vmap(lambda x,chart: M.F((x,chart)))(*x0s) #x0s[1]
-        x0s = (xss[-1,::x_samples],chartss[-1,::x_samples])
-        
-        samples = xss[-1]
-        charts = chartss[-1]
-       
-        yield jnp.hstack((jnp.repeat(Fx0s,x_samples,axis=0),
-                         vmap(lambda x,chart: M.F((x,chart)))(samples.reshape((-1,M.dim)),charts.reshape((-1,chartss.shape[-1]))), #charts.reshape(-1,chartss.shape[-1]), #
-                         ts[-1,::x_samples].reshape((-1,1)),
-                         dW[-1,::x_samples].reshape(-1,M.dim),
-                         jnp.repeat(_dts[-1],N_sim).reshape((-1,1)),
                         ))
 
         
@@ -554,10 +537,11 @@ def trainxt(manifold:str="RN",
         M = SPDN(N=N)
         
         Brownian_coords(M)
+        initialize(M)
         
         #N_dim = M.emb_dim
         N_dim = M.dim
-        x0 = M.coords([1.]*(N*(N+1)//2))
+        x0 = M.coords([10.]*(N*(N+1)//2))
         if N*N<10:
             layers = [50,100,100,50]
         elif N*N<50:

@@ -45,7 +45,7 @@ class SPDN(riemannian.EmbeddedManifold):
         self.dupmat = duplication_fun(N)
         self.dupmat_inv = jnp.linalg.pinv(self.dupmat)
         self.g = lambda x: g(self, x)
-        self.do_chart_update = lambda x: False
+        self.do_chart_update = lambda x: True
         
         riemannian.metric(self)
         riemannian.curvature(self)
@@ -56,8 +56,8 @@ class SPDN(riemannian.EmbeddedManifold):
         self.gsharp = lambda x: gsharp(self,x)
         self.det = lambda x,A=None: det(self, x, A)
         self.Gamma_g = lambda x: Gamma(self, x)
-        #self.Expt = lambda x,v,t: Expt(self, x, v, t)
-        #self.Exp = lambda x,v: self.Expt(x,v,1.0)
+        self.Expt = lambda x,v,T: Expt(self, x, v, T)
+        self.Exp = lambda x,v,T=1.0: self.Expt(x,v,T)
         self.Log = lambda x,y: Log(self, x, y)
         self.dist = lambda x,y: dist(self, x,y)
 
@@ -145,26 +145,31 @@ def F(M:object, x:Tuple[ndarray, ndarray])->ndarray:
     P = jnp.zeros((M.N, M.N))
     P = P.at[jnp.triu_indices(M.N, k=0)].set(x[0])
     
-    return (P+P.T-jnp.diag(jnp.diag(P))).reshape(-1)
+    l = P#(P+P.T-jnp.diag(jnp.diag(P)))
+    
+    return l.T.dot(l).reshape(-1)
 
 def invF(M:object, x:Tuple[ndarray, ndarray])->ndarray:
     
     P = x[1].reshape(M.N, M.N)
+    l = jnp.linalg.cholesky(P).T
     
-    return P[jnp.triu_indices(M.N, k=0)]
+    l = l[jnp.triu_indices(M.N, k=0)]  
+    
+    return l.reshape(-1)
             
 #%% Metric
 
 def g(M:object, x:Tuple[ndarray,ndarray])->ndarray:
     
-    P = x[1].reshape(M.N, M.N)
+    P = M.F(x).reshape(M.N, M.N)
     D = M.dupmat_inv
     
     return jnp.matmul(D,jnp.linalg.solve(jnp.kron(P,P), D.T))
 
 def gsharp(M:object, x:Tuple[ndarray,ndarray])->ndarray:
     
-    P = x[1].reshape(M.N, M.N)
+    P = M.F(x).reshape(M.N, M.N)
     D = M.dupmat_inv
     
     return jnp.matmul(D,jnp.matmul(jnp.kron(P,P), D.T))
@@ -179,29 +184,31 @@ def Gamma(M:object, x:Tuple[ndarray, ndarray])->ndarray:
     p = M.N*(M.N+1)//2
     E = jnp.eye(M.N*M.N)[:p]
     D = M.dupmat
-    P = x[1].reshape(M.N,M.N)
+    P = M.F(x).reshape(M.N,M.N)
         
     return -vmap(lambda e: jnp.matmul(D.T,jnp.matmul(jnp.kron(jnp.linalg.inv(P), e.reshape(M.N,M.N)), D)))(E)
 
 def Expt(M:object, x:Tuple[ndarray, ndarray], v:ndarray, t:float)->ndarray:
     
-    P = x[1].reshape(M.N,M.N)
+    P = M.F(x).reshape(M.N,M.N)
 
     v = jnp.dot(M.JF(x),v)
     
     v = v.reshape(M.N,M.N)
     
-    P_phalf = fractional_matrix_power(P,0.5)
-    P_nhalf = fractional_matrix_power(P,-0.5)
+    P_phalf = jnp.array(jscipy.linalg.sqrtm(P), dtype=jnp.float32)
+    P_nhalf = jnp.array(jscipy.linalg.sqrtm(jnp.linalg.inv(P)), dtype=jnp.float32)
     
-    return jnp.matmul(jnp.matmul(P_phalf, \
+    P_exp = jnp.matmul(jnp.matmul(P_phalf, \
                                  jscipy.linalg.expm(t*jnp.matmul(jnp.matmul(P_nhalf, v), P_nhalf))),
                       P_phalf)
+    
+    return (M.invF((x[1], P_exp)), P_exp.reshape(-1))
         
 def Log(M:object, x:Tuple[ndarray, ndarray], y:Tuple[ndarray,ndarray])->ndarray:
     
-    P = x[1].reshape(M.N,M.N)
-    S = y[1].reshape(M.N,M.N)
+    P = M.F(x).reshape(M.N,M.N)
+    S = M.F(y).reshape(M.N,M.N)
     
     P_phalf = fractional_matrix_power(P,0.5)
     P_nhalf = fractional_matrix_power(P,-0.5)
@@ -212,8 +219,8 @@ def Log(M:object, x:Tuple[ndarray, ndarray], y:Tuple[ndarray,ndarray])->ndarray:
 
 def dist(M:object, x:Tuple[ndarray, ndarray], y:Tuple[ndarray,ndarray])->ndarray:
     
-    P = x[1].reshape(M.N,M.N)
-    S = y[1].reshape(M.N,M.N)
+    P = M.F(x).reshape(M.N,M.N)
+    S = M.F(y).reshape(M.N,M.N)
     
     P_phalf = fractional_matrix_power(P,0.5)
     P_nhalf = fractional_matrix_power(P,-0.5)

@@ -100,15 +100,17 @@ def train_s1(M:object,
                         (0,0,0,0,0))(x0,xt,t,noise,dt))
     
         return loss
-    
-    @jit
+    #@jit
     def update(state:TrainingState, data:jnp.ndarray):
         
         rng_key, next_rng_key = random.split(state.rng_key)
         loss, gradients = value_and_grad(loss_fun)(state.params, state.state_val, rng_key, data)
-        updates, new_opt_state = optimizer.update(gradients, state.opt_state)
-        new_params = optax.apply_updates(state.params, updates)
-        return TrainingState(new_params, state.state_val, new_opt_state, rng_key), loss
+        if jnp.isnan(loss):
+            return state, loss
+        else:
+            updates, new_opt_state = optimizer.update(gradients, state.opt_state)
+            new_params = optax.apply_updates(state.params, updates)
+            return TrainingState(new_params, state.state_val, new_opt_state, rng_key), loss
     
     if loss_type == "vsm":
         loss_fun = jit(loss_vsm)
