@@ -1,0 +1,208 @@
+Switching from python to 3/3.9.11
+  ERROR: Unable to locate a modulefile for '3/3.9.11'
+2023-10-11 02:08:11.312695: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for more info.)
+/zhome/77/8/118225/.local/lib/python3.8/site-packages/numpy/core/getlimits.py:518: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
+  setattr(self, word, getattr(machar, word).flat[0])
+/zhome/77/8/118225/.local/lib/python3.8/site-packages/numpy/core/getlimits.py:89: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
+  return self._float_to_str(self.smallest_subnormal)
+Traceback (most recent call last):
+  File "train_score.py", line 788, in <module>
+    trainxt(manifold=args.manifold,
+  File "train_score.py", line 764, in trainxt
+    score_matching.trainxt.train_s1(M=M,
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/statistics/score_matching/trainxt.py", line 149, in train_s1
+    state, loss_val = update(state, next(train_dataset))
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/traceback_util.py", line 166, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 250, in cache_miss
+    outs, out_flat, out_tree, args_flat, jaxpr = _python_pjit_helper(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 158, in _python_pjit_helper
+    args_flat, _, params, in_tree, out_tree, _ = infer_params_fn(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/api.py", line 306, in infer_params
+    return pjit.common_infer_params(pjit_info_args, *args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 505, in common_infer_params
+    jaxpr, consts, canonicalized_out_shardings_flat = _pjit_jaxpr(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 971, in _pjit_jaxpr
+    jaxpr, final_consts, out_type = _create_pjit_jaxpr(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/linear_util.py", line 345, in memoized_fun
+    ans = call(fun, *args)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 924, in _create_pjit_jaxpr
+    jaxpr, global_out_avals, consts = pe.trace_to_jaxpr_dynamic(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/profiler.py", line 314, in wrapper
+    return func(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/interpreters/partial_eval.py", line 2155, in trace_to_jaxpr_dynamic
+    jaxpr, out_avals, consts = trace_to_subjaxpr_dynamic(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/interpreters/partial_eval.py", line 2177, in trace_to_subjaxpr_dynamic
+    ans = fun.call_wrapped(*in_tracers_)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/linear_util.py", line 188, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/statistics/score_matching/trainxt.py", line 108, in update
+    loss, gradients = value_and_grad(loss_fun)(state.params, state.state_val, rng_key, data)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/traceback_util.py", line 166, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/api.py", line 723, in value_and_grad_f
+    ans, vjp_py = _vjp(f_partial, *dyn_args, reduce_axes=reduce_axes)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/api.py", line 2208, in _vjp
+    out_primal, out_vjp = ad.vjp(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/interpreters/ad.py", line 139, in vjp
+    out_primals, pvals, jaxpr, consts = linearize(traceable, *primals)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/interpreters/ad.py", line 128, in linearize
+    jaxpr, out_pvals, consts = pe.trace_to_jaxpr_nounits(jvpfun_flat, in_pvals)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/profiler.py", line 314, in wrapper
+    return func(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/interpreters/partial_eval.py", line 777, in trace_to_jaxpr_nounits
+    jaxpr, (out_pvals, consts, env) = fun.call_wrapped(pvals)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/linear_util.py", line 188, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/traceback_util.py", line 166, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 250, in cache_miss
+    outs, out_flat, out_tree, args_flat, jaxpr = _python_pjit_helper(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 158, in _python_pjit_helper
+    args_flat, _, params, in_tree, out_tree, _ = infer_params_fn(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/api.py", line 306, in infer_params
+    return pjit.common_infer_params(pjit_info_args, *args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 505, in common_infer_params
+    jaxpr, consts, canonicalized_out_shardings_flat = _pjit_jaxpr(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 971, in _pjit_jaxpr
+    jaxpr, final_consts, out_type = _create_pjit_jaxpr(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/linear_util.py", line 345, in memoized_fun
+    ans = call(fun, *args)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 924, in _create_pjit_jaxpr
+    jaxpr, global_out_avals, consts = pe.trace_to_jaxpr_dynamic(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/profiler.py", line 314, in wrapper
+    return func(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/interpreters/partial_eval.py", line 2155, in trace_to_jaxpr_dynamic
+    jaxpr, out_avals, consts = trace_to_subjaxpr_dynamic(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/interpreters/partial_eval.py", line 2177, in trace_to_subjaxpr_dynamic
+    ans = fun.call_wrapped(*in_tracers_)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/linear_util.py", line 188, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/statistics/score_matching/trainxt.py", line 60, in loss_vsm
+    divs = vmap(lambda x0, xt, chart, t: M.div((xt, chart), lambda x: proj_grad(s1, x0, x, t)))(x0,xts,chartts,t)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/traceback_util.py", line 166, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/api.py", line 1240, in vmap_f
+    out_flat = batching.batch(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/linear_util.py", line 188, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/statistics/score_matching/trainxt.py", line 60, in <lambda>
+    divs = vmap(lambda x0, xt, chart, t: M.div((xt, chart), lambda x: proj_grad(s1, x0, x, t)))(x0,xts,chartts,t)
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/manifolds/riemannian/metric.py", line 97, in <lambda>
+    M.div = lambda x,X: jnp.trace(jacfwdx(X)(x))+.5*jnp.dot(X(x),gradx(M.logAbsDet)(x))
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/autodiff/tuple_autodiff.py", line 41, in jacf
+    return jacfwd(fxchart,argnums=0)(x[0],x[1],*args,**kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/api.py", line 842, in jacfun
+    y, jac = vmap(pushfwd, out_axes=(None, -1))(_std_basis(dyn_args))
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/traceback_util.py", line 166, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/api.py", line 1240, in vmap_f
+    out_flat = batching.batch(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/linear_util.py", line 188, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/api.py", line 1959, in _jvp
+    out_primals, out_tangents = ad.jvp(flat_fun).call_wrapped(ps_flat, ts_flat)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/linear_util.py", line 188, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/autodiff/tuple_autodiff.py", line 39, in fxchart
+    return f((x,chart),*args,**kwargs)
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/statistics/score_matching/trainxt.py", line 60, in <lambda>
+    divs = vmap(lambda x0, xt, chart, t: M.div((xt, chart), lambda x: proj_grad(s1, x0, x, t)))(x0,xts,chartts,t)
+  File "train_score.py", line 510, in <lambda>
+    proj_grad = lambda s1, x0, x, t: proj_gradchart(M, s1, x0, x,t)
+  File "train_score.py", line 270, in proj_gradchart
+    return jnp.dot(M.invJF((Fx,Fx)), s1_model(x0,Fx,t))
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/autodiff/tuple_autodiff.py", line 41, in jacf
+    return jacfwd(fxchart,argnums=0)(x[0],x[1],*args,**kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/api.py", line 842, in jacfun
+    y, jac = vmap(pushfwd, out_axes=(None, -1))(_std_basis(dyn_args))
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/traceback_util.py", line 166, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/api.py", line 1240, in vmap_f
+    out_flat = batching.batch(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/linear_util.py", line 188, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/api.py", line 1959, in _jvp
+    out_primals, out_tangents = ad.jvp(flat_fun).call_wrapped(ps_flat, ts_flat)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/linear_util.py", line 188, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/autodiff/tuple_autodiff.py", line 39, in fxchart
+    return f((x,chart),*args,**kwargs)
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/manifolds/Torus.py", line 42, in invF
+    Rinvx = jnp.linalg.solve(self.get_B(self.orientation),x[0])
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/traceback_util.py", line 166, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 250, in cache_miss
+    outs, out_flat, out_tree, args_flat, jaxpr = _python_pjit_helper(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 158, in _python_pjit_helper
+    args_flat, _, params, in_tree, out_tree, _ = infer_params_fn(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/api.py", line 306, in infer_params
+    return pjit.common_infer_params(pjit_info_args, *args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 505, in common_infer_params
+    jaxpr, consts, canonicalized_out_shardings_flat = _pjit_jaxpr(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 971, in _pjit_jaxpr
+    jaxpr, final_consts, out_type = _create_pjit_jaxpr(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/linear_util.py", line 345, in memoized_fun
+    ans = call(fun, *args)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/pjit.py", line 924, in _create_pjit_jaxpr
+    jaxpr, global_out_avals, consts = pe.trace_to_jaxpr_dynamic(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/profiler.py", line 314, in wrapper
+    return func(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/interpreters/partial_eval.py", line 2155, in trace_to_jaxpr_dynamic
+    jaxpr, out_avals, consts = trace_to_subjaxpr_dynamic(
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/interpreters/partial_eval.py", line 2177, in trace_to_subjaxpr_dynamic
+    ans = fun.call_wrapped(*in_tracers_)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/linear_util.py", line 188, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/numpy/linalg.py", line 606, in solve
+    check_arraylike("jnp.linalg.solve", a, b)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/numpy/util.py", line 328, in check_arraylike
+    raise TypeError(msg.format(fun_name, type(arg), pos))
+jax._src.traceback_util.UnfilteredStackTrace: TypeError: jnp.linalg.solve requires ndarray or scalar arguments, got <class 'tuple'> at position 1.
+
+The stack trace below excludes JAX-internal frames.
+The preceding is the original exception that occurred, unmodified.
+
+--------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "train_score.py", line 788, in <module>
+    trainxt(manifold=args.manifold,
+  File "train_score.py", line 764, in trainxt
+    score_matching.trainxt.train_s1(M=M,
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/statistics/score_matching/trainxt.py", line 149, in train_s1
+    state, loss_val = update(state, next(train_dataset))
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/statistics/score_matching/trainxt.py", line 108, in update
+    loss, gradients = value_and_grad(loss_fun)(state.params, state.state_val, rng_key, data)
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/statistics/score_matching/trainxt.py", line 60, in loss_vsm
+    divs = vmap(lambda x0, xt, chart, t: M.div((xt, chart), lambda x: proj_grad(s1, x0, x, t)))(x0,xts,chartts,t)
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/statistics/score_matching/trainxt.py", line 60, in <lambda>
+    divs = vmap(lambda x0, xt, chart, t: M.div((xt, chart), lambda x: proj_grad(s1, x0, x, t)))(x0,xts,chartts,t)
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/manifolds/riemannian/metric.py", line 97, in <lambda>
+    M.div = lambda x,X: jnp.trace(jacfwdx(X)(x))+.5*jnp.dot(X(x),gradx(M.logAbsDet)(x))
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/autodiff/tuple_autodiff.py", line 41, in jacf
+    return jacfwd(fxchart,argnums=0)(x[0],x[1],*args,**kwargs)
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/autodiff/tuple_autodiff.py", line 39, in fxchart
+    return f((x,chart),*args,**kwargs)
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/statistics/score_matching/trainxt.py", line 60, in <lambda>
+    divs = vmap(lambda x0, xt, chart, t: M.div((xt, chart), lambda x: proj_grad(s1, x0, x, t)))(x0,xts,chartts,t)
+  File "train_score.py", line 510, in <lambda>
+    proj_grad = lambda s1, x0, x, t: proj_gradchart(M, s1, x0, x,t)
+  File "train_score.py", line 270, in proj_gradchart
+    return jnp.dot(M.invJF((Fx,Fx)), s1_model(x0,Fx,t))
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/autodiff/tuple_autodiff.py", line 41, in jacf
+    return jacfwd(fxchart,argnums=0)(x[0],x[1],*args,**kwargs)
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/autodiff/tuple_autodiff.py", line 39, in fxchart
+    return f((x,chart),*args,**kwargs)
+  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/jaxgeometry/manifolds/Torus.py", line 42, in invF
+    Rinvx = jnp.linalg.solve(self.get_B(self.orientation),x[0])
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/numpy/linalg.py", line 606, in solve
+    check_arraylike("jnp.linalg.solve", a, b)
+  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/jax/_src/numpy/util.py", line 328, in check_arraylike
+    raise TypeError(msg.format(fun_name, type(arg), pos))
+TypeError: jnp.linalg.solve requires ndarray or scalar arguments, got <class 'tuple'> at position 1.
+terminate called without an active exception
+/zhome/77/8/118225/.lsbatch/1696982878.18196082.shell: line 33: 12293 Aborted                 python3 train_score.py --manifold Torus --N 5 --loss_type T --train_net s1 --max_T 0.1 --lr_rate 0.001 --epochs 50000 --x_samples 32 --t_samples 128 --repeats 8 --samples_per_batch 16 --dt_steps 1000 --save_step 10 --seed 2712
