@@ -69,7 +69,7 @@ from jaxgeometry.stochastics.GRW import initialize
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SPDN",
+    parser.add_argument('--manifold', default="SN",
                         type=str)
     parser.add_argument('--N', default=2,
                         type=int)
@@ -77,7 +77,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--train_net', default="s1",
                         type=str)
-    parser.add_argument('--max_T', default=0.1,
+    parser.add_argument('--max_T', default=1.0,
                         type=float)
     parser.add_argument('--lr_rate', default=0.001,
                         type=float)
@@ -263,11 +263,11 @@ def proj_gradchart(M:object,
                    t:jnp.ndarray):
     
     #Fx = x[1]
-    #x = update_chartcoords(M, Fx)
+    x = update_chartcoords(M, Fx[1])
 
     #x0: 3d
     #x: (2d, 3d)
-    return jnp.dot(M.invJF((Fx,Fx)), s1_model(x0,Fx,t))
+    return jnp.dot(M.invJF((x[1],Fx[1])), s1_model(x0,x[1],t))
 
 #%% Apply the model and project it onto the manifold
 
