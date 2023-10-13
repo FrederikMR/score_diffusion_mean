@@ -69,15 +69,15 @@ from jaxgeometry.stochastics.GRW import initialize
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SN",
+    parser.add_argument('--manifold', default="Landmarks",
                         type=str)
-    parser.add_argument('--N', default=2,
+    parser.add_argument('--N', default=10,
                         type=int)
-    parser.add_argument('--loss_type', default="T",
+    parser.add_argument('--loss_type', default="vsm",
                         type=str)
     parser.add_argument('--train_net', default="s1",
                         type=str)
-    parser.add_argument('--max_T', default=0.01,
+    parser.add_argument('--max_T', default=1.0,
                         type=float)
     parser.add_argument('--lr_rate', default=0.001,
                         type=float)
@@ -505,6 +505,15 @@ def trainxt(manifold:str="RN",
         N_dim = M.dim
         x0 = M.coords(jnp.vstack((jnp.linspace(-10.0,10.0,M.N),jnp.linspace(10.0,-10.0,M.N))).T.flatten())
         #x0 = M.coords(jnp.vstack((jnp.linspace(-5.0,5.0,M.N),jnp.zeros(M.N))).T.flatten())
+        
+        if N >=10:
+            with open('../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt', 'r') as the_file:
+                all_data = [line.strip() for line in the_file.readlines()]
+                
+                x1 = jnp.array([float(x) for x in all_data[0].split()[2:]])
+                x2 = jnp.array([float(x) for x in all_data[1].split()[2:]])
+                
+                x0 = M.coords(jnp.vstack((x1[::len(x1)//N],x2[::len(x2)//N])).T.flatten())
         
         if 2*N<10:
             layers = [50,100,100,50]
