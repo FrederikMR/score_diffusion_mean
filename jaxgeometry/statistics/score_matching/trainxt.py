@@ -57,7 +57,7 @@ def train_s1(M:object,
         (xts,chartts) = vmap(update_coords)(xt)
         
         s1 = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
-        divs = vmap(lambda x0, xt, chart, t: M.div((xt, chart), lambda x: proj_grad(s1, x0, x, t)))(x0,xts,chartts,t)
+        s = vmap(lambda x0, xt, chart, t: M.div((xt, chart), lambda x: proj_grad(s1, x0, x, t)))(x0,xts,chartts,t)
         
         return jnp.mean(norm2s+2.0*divs)
 
