@@ -69,15 +69,15 @@ from jaxgeometry.stochastics.GRW import initialize
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SPDN",
+    parser.add_argument('--manifold', default="SN",
                         type=str)
     parser.add_argument('--N', default=2,
                         type=int)
-    parser.add_argument('--loss_type', default="vsm",
+    parser.add_argument('--loss_type', default="T",
                         type=str)
     parser.add_argument('--train_net', default="s1",
                         type=str)
-    parser.add_argument('--max_T', default=1.0,
+    parser.add_argument('--max_T', default=0.01,
                         type=float)
     parser.add_argument('--lr_rate', default=0.001,
                         type=float)
@@ -242,15 +242,15 @@ def update_chartcoords(M:object, Fx:jnp.ndarray)->Tuple[jnp.ndarray, jnp.ndarray
 def proj_gradchart(M:object,
                    s1_model:Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray],
                    x0:jnp.ndarray, 
-                   Fx:jnp.ndarray, 
+                   x:Tuple[jnp.ndarray, jnp.ndarray], 
                    t:jnp.ndarray):
     
-    #Fx = x[1]
-    x = update_chartcoords(M, M.F(Fx))
+    Fx = x[1]
+    x = update_chartcoords(M, Fx)
 
     #x0: 3d
     #x: (2d, 3d)
-    return jnp.dot(M.invJF((M.F(Fx),x[1])), s1_model(x0,M.F(Fx),t))
+    return jnp.dot(M.invJF((Fx,x[1])), s1_model(x0,Fx,t))
 
 #%% Apply the model and project it onto the manifold
 

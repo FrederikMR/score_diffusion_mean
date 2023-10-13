@@ -90,13 +90,13 @@ def initialize(M:object,
         #             vvs,gvs = vgv_c(params,paramsx,paramsvs[i],*ys[i])
         #             valuevs += (vvs,); gradvs += gvs
                 
-                valuevs,gradvs = jax.vmap(M.Frechet_mean_vgv_c,(None,None,0,0,0))(params,paramsx,paramsvs,ys,y_charts)
+                valuevs,gradvs = vmap(M.Frechet_mean_vgv_c,(None,None,0,0,0))(params,paramsx,paramsvs,ys,y_charts)
                 opt_statevs = opt_updatevs(step, jnp.array(gradvs).squeeze(), opt_statevs)
                 if step % optx_update_mod == 0:
         #             for i in range(N):
         #                 vx,gx = vgx_f(params,paramsx,paramsvs[i],*ys[i])
         #                 valuex += 1/N*vx; gradx = gradx+1/N*gx[0]
-                    valuex,gradx = jax.vmap(M.Frechet_mean_vgx_f,(None,None,0,0,0))(params,paramsx,paramsvs,ys,y_charts)
+                    valuex,gradx = vmap(M.Frechet_mean_vgx_f,(None,None,0,0,0))(params,paramsx,paramsvs,ys,y_charts)
                     valuex = jnp.mean(valuex,0); gradx = jnp.mean(gradx,0)
                     opt_statex = opt_updatex(step, gradx, opt_statex)
                 return (valuex, valuevs), (opt_statex, opt_statevs)
@@ -160,9 +160,9 @@ def initialize(M:object,
     M.Frechet_mean_f = f
     
     # derivatives
-    M.Frechet_mean_vgv_c = jit(jax.value_and_grad(c,(2,)))
-    M.Frechet_mean_jacxv_c = jit(jax.jacrev(_c,(1,2)))
-    M.Frechet_mean_jacxv_f = jit(jax.value_and_grad(f,(1,2)))
+    M.Frechet_mean_vgv_c = jit(value_and_grad(c,(2,)))
+    M.Frechet_mean_jacxv_c = jit(jacrev(_c,(1,2)))
+    M.Frechet_mean_jacxv_f = jit(value_and_grad(f,(1,2)))
     
     M.Frechet_mean_vgx_f = vgx_f
 
