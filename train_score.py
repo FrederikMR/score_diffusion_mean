@@ -115,10 +115,10 @@ def xgenerator(M:object,
         global x0s
         _dts = dts(T=max_T, n_steps=dt_steps)
         dW = dWs(N_sim*M.dim,_dts).reshape(-1,N_sim,M.dim)
-        #(ts,xss,chartss,*_) = product((jnp.repeat(x0s[0],x_samples,axis=0),jnp.repeat(x0s[1],x_samples,axis=0)),
-        #                              _dts,dW,jnp.repeat(1.,N_sim))
-        (ts,xss,chartss) = M.product_GRW((jnp.repeat(x0s[0],x_samples,axis=0),jnp.repeat(x0s[1],x_samples,axis=0)),
-                                      _dts,dW)
+        (ts,xss,chartss,*_) = product((jnp.repeat(x0s[0],x_samples,axis=0),jnp.repeat(x0s[1],x_samples,axis=0)),
+                                      _dts,dW,jnp.repeat(1.,N_sim))
+        #(ts,xss,chartss) = M.product_GRW((jnp.repeat(x0s[0],x_samples,axis=0),jnp.repeat(x0s[1],x_samples,axis=0)),
+        #                              _dts,dW)
         
         
         Fx0s = x0s[0]
@@ -503,8 +503,8 @@ def trainxt(manifold:str="RN",
         Brownian_coords(M)
         
         N_dim = M.dim
-        #x0 = M.coords(jnp.vstack((jnp.linspace(-5.0,5.0,M.N),jnp.linspace(5.0,-5.0,M.N))).T.flatten())
-        x0 = M.coords(jnp.vstack((jnp.linspace(-5.0,5.0,M.N),jnp.zeros(M.N))).T.flatten())
+        x0 = M.coords(jnp.vstack((jnp.linspace(-10.0,10.0,M.N),jnp.linspace(10.0,-10.0,M.N))).T.flatten())
+        #x0 = M.coords(jnp.vstack((jnp.linspace(-5.0,5.0,M.N),jnp.zeros(M.N))).T.flatten())
         
         if 2*N<10:
             layers = [50,100,100,50]
