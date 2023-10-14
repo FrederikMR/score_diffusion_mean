@@ -42,10 +42,10 @@ class SPDN(riemannian.EmbeddedManifold):
         self.act = lambda g,q: jnp.tensordot(g,jnp.tensordot(q.reshape((N,N)),g,(1,1)),(1,0)).flatten()
         self.acts = vmap(self.act,(0,None))
         
-        self.dupmat = duplication_fun(N)
-        self.dupmat_inv = jnp.linalg.pinv(self.dupmat)
-        self.g = lambda x: g(self, x)
-        self.do_chart_update = lambda x: True
+        #self.dupmat = duplication_fun(N)
+        #self.dupmat_inv = jnp.linalg.pinv(self.dupmat)
+        #self.g = lambda x: g(self, x)
+        #self.do_chart_update = lambda x: True
         
         riemannian.metric(self)
         riemannian.curvature(self)
@@ -53,13 +53,13 @@ class SPDN(riemannian.EmbeddedManifold):
         riemannian.Log(self)
         riemannian.parallel_transport(self)
         
-        self.gsharp = lambda x: gsharp(self,x)
-        self.det = lambda x,A=None: det(self, x, A)
-        self.Gamma_g = lambda x: Gamma(self, x)
-        self.Expt = lambda x,v,T: Expt(self, x, v, T)
-        self.Exp = lambda x,v,T=1.0: self.Expt(x,v,T)
-        self.Log = lambda x,y: Log(self, x, y)
-        self.dist = lambda x,y: dist(self, x,y)
+        #self.gsharp = lambda x: gsharp(self,x)
+        #self.det = lambda x,A=None: det(self, x, A)
+        #self.Gamma_g = lambda x: Gamma(self, x)
+        #self.Expt = lambda x,v,T: Expt(self, x, v, T)
+        #self.Exp = lambda x,v,T=1.0: self.Expt(x,v,T)
+        #self.Log = lambda x,y: Log(self, x, y)
+        #self.dist = lambda x,y: dist(self, x,y)
 
     def __str__(self):
         return "SPDN(%d), dim %d" % (self.N,self.dim)
@@ -69,7 +69,7 @@ class SPDN(riemannian.EmbeddedManifold):
         if type(x) == type(()): # coordinate tuple
             return stop_gradient(self.F(x))
         else:
-            return self.F((x,jnp.zeros(self.N*self.N))) # already in embedding space
+            return x#self.F((x,jnp.zeros(self.N*self.N))) # already in embedding space
     
     def chart(self):
         """ return default coordinate chart """
@@ -151,7 +151,7 @@ def F(M:object, x:Tuple[ndarray, ndarray])->ndarray:
 
 def invF(M:object, x:Tuple[ndarray, ndarray])->ndarray:
     
-    P = x[1].reshape(M.N, M.N)
+    P = x[0].reshape(M.N, M.N)
     l = jnp.linalg.cholesky(P).T
     
     l = l[jnp.triu_indices(M.N, k=0)]  

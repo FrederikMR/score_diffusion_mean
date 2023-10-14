@@ -69,7 +69,7 @@ from jaxgeometry.stochastics.GRW import initialize
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Landmarks",
+    parser.add_argument('--manifold', default="SPDN",
                         type=str)
     parser.add_argument('--N', default=10,
                         type=int)
@@ -159,6 +159,13 @@ def proj_gradx(s1_model:Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.nd
     
     return s1_model(x0, x[0], t)
 
+def proj_gradspdn(s1_model:Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray], 
+               x0:jnp.ndarray, 
+               x:Tuple[jnp.ndarray, jnp.ndarray], 
+               t:jnp.ndarray):
+    
+    return s1_model(x0, x[1], t)
+
 #%% Apply the model and project it onto the manifold
 
 def proj_hessx(s1_model:Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray], jnp.ndarray], 
@@ -213,6 +220,8 @@ def chartgenerator(M:object,
         dW = dWs(N_sim*M.dim,_dts).reshape(-1,N_sim,M.dim)
         (ts,xss,chartss,*_) = product((jnp.repeat(x0s[0],x_samples,axis=0),jnp.repeat(x0s[1],x_samples,axis=0)),
                                       _dts,dW,jnp.repeat(1.,N_sim))
+        #(ts,xss,chartss) = M.product_GRW((jnp.repeat(x0s[0],x_samples,axis=0),jnp.repeat(x0s[1],x_samples,axis=0)),
+        #                              _dts,dW)
         Fx0s = vmap(lambda x,chart: M.F((x,chart)))(*x0s) #x0s[1]
         x0s = (xss[-1,::x_samples],chartss[-1,::x_samples])
        
@@ -548,8 +557,8 @@ def trainxt(manifold:str="RN",
         Brownian_coords(M)
         initialize(M)
         
-        #N_dim = M.emb_dim
-        N_dim = M.dim
+        N_dim = M.emb_dim
+        #N_dim = M.dim
         x0 = M.coords([10.]*(N*(N+1)//2))
         if N*N<10:
             layers = [50,100,100,50]
@@ -563,27 +572,27 @@ def trainxt(manifold:str="RN",
                                                         dim=N_dim, r = max(N_dim//2,1))(x))
         
         
-        data_generator = lambda : xgenerator(M, 
-                                            product,
-                                            x_samples=x_samples,
-                                            t_samples=t_samples,
-                                            N_sim = N_sim,
-                                            max_T = max_T, 
-                                            dt_steps = dt_steps)
-        update_coords = lambda Fx: update_xcoords(M, Fx)
-        proj_grad = lambda s1, x0, x, t: proj_gradx(s1, x0, x,t)
-        proj_hess = lambda s1, s2, x0, x, t: proj_hessx(s1, s2, x0, x, t)
-        
-        #data_generator = lambda : chartgenerator(M, 
+        #data_generator = lambda : xgenerator(M, 
         #                                    product,
         #                                    x_samples=x_samples,
         #                                    t_samples=t_samples,
         #                                    N_sim = N_sim,
         #                                    max_T = max_T, 
         #                                    dt_steps = dt_steps)
-        #update_coords = lambda Fx: update_chartcoords(M, Fx)
-        #proj_grad = lambda s1, x0, x, t: proj_gradchart(M, s1, x0, x,t)
-        #proj_hess = lambda s1, s2, x0, x, t: proj_hesschart(M, s1, s2, x0, x, t)
+        #update_coords = lambda Fx: update_xcoords(M, Fx)
+        #proj_grad = lambda s1, x0, x, t: proj_gradspdn(s1, x0, x,t)
+        #proj_hess = lambda s1, s2, x0, x, t: proj_hessx(s1, s2, x0, x, t)
+        
+        data_generator = lambda : chartgenerator(M, 
+                                            product,
+                                            x_samples=x_samples,
+                                            t_samples=t_samples,
+                                            N_sim = N_sim,
+                                            max_T = max_T, 
+                                            dt_steps = dt_steps)
+        update_coords = lambda Fx: update_chartcoords(M, Fx)
+        proj_grad = lambda s1, x0, x, t: proj_gradchart(M, s1, x0, x,t)
+        proj_hess = lambda s1, s2, x0, x, t: proj_hesschart(M, s1, s2, x0, x, t)
         
     elif manifold == "HypParaboloid":
 
