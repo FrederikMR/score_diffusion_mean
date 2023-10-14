@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q compute
-#BSUB -J Landmarks20
+#BSUB -J Landmarks2T
 #BSUB -n 4
 #BSUB -W 24:00
 #BSUB -R "rusage[mem=32GB]"
@@ -18,10 +18,10 @@ module swap cudnn/v7.0-prod-cuda8
 
 python3 train_score.py \
     --manifold Landmarks \
-    --N 20 \
-    --loss_type vsm \
+    --N 2 \
+    --loss_type T \
     --train_net s1 \
-    --max_T 1.0 \
+    --max_T 0.1 \
     --lr_rate 0.001 \
     --epochs 50000 \
     --x_samples 32 \
