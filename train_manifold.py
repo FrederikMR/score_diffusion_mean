@@ -23,7 +23,7 @@ from ManLearn.train_CelebA import train_vae as train_celeba
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="CelebA",
+    parser.add_argument('--manifold', default="MNIST",
                         type=str)
 
     args = parser.parse_args()

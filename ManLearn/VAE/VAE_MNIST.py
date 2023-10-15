@@ -85,6 +85,9 @@ class Encoder(hk.Module):
 @dataclasses.dataclass
 class Decoder(hk.Module):
   """Decoder model."""
+  
+  A: Array
+  mu: Array
 
   def __call__(self, z: Array) -> Array:
 
@@ -105,7 +108,7 @@ class Decoder(hk.Module):
         
         x_hat = hk.Linear(output_size=28*28)(x_hat)
         
-        return x_hat.reshape(-1,28,28,1)
+        return (x_hat+z.dot(self.A)+self.mu).reshape(-1,28,28,1)
 
 @dataclasses.dataclass
 class VariationalAutoEncoder(hk.Module):
@@ -128,9 +131,13 @@ class VariationalAutoEncoder(hk.Module):
 @hk.transform
 def model(x):
     
+    X_train = x.reshape(-1,28*28)
+    mu_mean = X_train.mean(axis=0)
+    U, S, VT = jnp.linalg.svd(X_train - mu_mean)
+    
     vae = VariationalAutoEncoder(
     encoder=Encoder(latent_dim=2),
-    decoder=Decoder(),
+    decoder=Decoder(VT[:2],mu_mean),
     )
   
     return vae(x)

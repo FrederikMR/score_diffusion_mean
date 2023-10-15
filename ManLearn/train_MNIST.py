@@ -14,7 +14,7 @@ Created on Fri May 12 14:14:54 2023
 
 #ManLearn
 from ManLearn.initialize import *
-from ManLearn.VAE.VAE_MNIST import model, VAEOutput
+from ManLearn.VAE.VAE_MNIST import VAEOutput, model
 from ManLearn.model_loader import save_model
 
 #%% Parser for command line arguments
@@ -110,6 +110,7 @@ def train_vae():
     # Load datasets.
     train_dataset = load_dataset("train", 64, 2712)
     optimizer = optax.adam(args.lr_rate)
+
     
     # Initialise the training state.
     initial_rng_key = jran.PRNGKey(args.seed)
