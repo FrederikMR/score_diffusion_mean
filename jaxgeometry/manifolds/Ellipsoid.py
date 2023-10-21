@@ -132,11 +132,19 @@ class Ellipsoid(riemannian.EmbeddedManifold):
 
     def get_B(self,v):
         """ R^N basis with first basis vector v """
-        b1 = v.reshape(-1,1)
-        u, _, _ = jnp.linalg.svd(b1)
-        bn = u[:,1:]
+        if self.dim == 2:
+            b1 = v
+            k = jnp.argmin(jnp.abs(v))
+            ek = jnp.eye(3)[:,k]
+            b2 = ek-v[k]*v
+            b3 = cross(b1,b2)
+            return jnp.stack((b1,b2,b3),axis=1)
+        else:
+            b1 = v.reshape(-1,1)
+            u, _, _ = jnp.linalg.svd(b1)
+            bn = u[:,1:]
         
-        return jnp.concatenate((b1, bn), axis=1)
+            return jnp.concatenate((b1, bn), axis=1)
 
     # Logarithm with standard Riemannian metric on S^n
     def StdLogEmb(self, x,y):

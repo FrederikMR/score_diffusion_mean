@@ -95,6 +95,10 @@ def initialize(M:object)->None:
                                                                                       _dts.shape[0],
                                                                                       N,
                                                                                       M.dim)))
+                                                
+    M.transition_density = lambda x0, xt, t, N=N: log_p_T(x0,xt,dWs(N*M.dim,_dts).reshape(_dts.shape[0],
+                                                                                         N,
+                                                                                         M.dim),_dts,*t)
                                                
     return
     

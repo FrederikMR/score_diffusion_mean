@@ -177,8 +177,8 @@ def gradx_log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float, N_terms=20)->Tup
 
     const = 1/jnp.sqrt(2*jnp.pi*t)
         
-    x1 = jnp.arctan2(x[1][1]/x[1][0]) % (2*jnp.pi)
-    y1 = jnp.arctan2(y[1][1]/y[1][0]) % (2*jnp.pi)
+    x1 = x[0]#jnp.arctan2(x[1][1]/x[1][0]) % (2*jnp.pi)
+    y1 = y[0]#jnp.arctan2(y[1][1]/y[1][0]) % (2*jnp.pi)
     tinv = 1/t
    
     val, _ = scan(step, init=jnp.zeros(1), xs=jnp.arange(0,N_terms,1)) 
@@ -263,9 +263,5 @@ def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=20)->f
     
     val2, _ = scan(step2, init=jnp.zeros(1), xs=jnp.arange(-N_terms+1,N_terms,1)) 
     val2 *= const2
-    
-    print(val1)
-    print(val2)
-    print(hk(M,x,y,t))
    
     return (val1+val2)/hk(M,x,y,t)
