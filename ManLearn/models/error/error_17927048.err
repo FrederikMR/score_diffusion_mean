@@ -1,9 +1,0 @@
-Loaded dependency [python3/3.9.11]: gcc/10.3.0-binutils-2.36.1
-
-Switching from python3/3.8.2 to python3/3.9.11
-  Loading requirement: gcc/10.3.0-binutils-2.36.1
-2023-10-01 01:45:19.183842: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
-usage: train_manifold.py [-h] [--save_path SAVE_PATH] [--save_step SAVE_STEP]
-                         [--split SPLIT] [--batch_size BATCH_SIZE]
-                         [--seed SEED] [--lr_rate LR_RATE] [--epochs EPOCHS]
-train_manifold.py: error: unrecognized arguments: --manifold CelebA
