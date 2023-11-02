@@ -1,8 +1,0 @@
-Switching from python to 3/3.9.11
-  ERROR: Unable to locate a modulefile for '3/3.9.11'
-2023-10-13 22:38:49.008447: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
-No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for more info.)
-/zhome/77/8/118225/.local/lib/python3.8/site-packages/numpy/core/getlimits.py:518: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
-  setattr(self, word, getattr(machar, word).flat[0])
-/zhome/77/8/118225/.local/lib/python3.8/site-packages/numpy/core/getlimits.py:89: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
-  return self._float_to_str(self.smallest_subnormal)

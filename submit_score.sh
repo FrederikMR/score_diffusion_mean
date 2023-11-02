@@ -1,7 +1,8 @@
 #!/bin/sh
-#BSUB -q compute
-#BSUB -J MNIST
+#BSUB -q gpuv100
+#BSUB -J SPDN10
 #BSUB -n 4
+#BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
 #BSUB -R "rusage[mem=32GB]"
 #BSUB -u fmry@dtu.dk
@@ -12,12 +13,12 @@
 
 #Load the following in case
 #module load python/3.8
-module swap python 3/3.9.11
-module swap cuda/8.0
-module swap cudnn/v7.0-prod-cuda8
+module swap cuda/12.0
+module swap cudnn/v8.9.1.23-prod-cuda-12.X
+module swap python3/3.10.12
 
 python3 train_score.py \
-    --manifold MNIST \
+    --manifold SPDN \
     --N 10 \
     --loss_type vsm \
     --train_net s1 \

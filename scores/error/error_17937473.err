@@ -1,9 +1,0 @@
-Switching from python to 3/3.9.11
-  ERROR: Unable to locate a modulefile for '3/3.9.11'
-2023-10-02 13:03:12.251179: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
-Traceback (most recent call last):
-  File "train_score.py", line 54, in <module>
-    from ManLearn.train_CelebA import load_dataset as load_celeba
-  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/ManLearn/train_CelebA.py", line 61, in <module>
-    img_size:tuple[int, int] = (64, 64), batch_size: int=100, seed: int=2712) -> Iterator[Batch]:
-TypeError: 'type' object is not subscriptable

@@ -1,214 +1,0 @@
-Switching from python to 3/3.9.11
-  ERROR: Unable to locate a modulefile for '3/3.9.11'
-2023-10-04 09:17:39.555098: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
-No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for more info.)
-2023-10-04 09:17:44.033218: W tensorflow/tsl/platform/cloud/google_auth_provider.cc:184] All attempts to get a Google authentication bearer token failed, returning an empty token. Retrieving token from files failed with "NOT_FOUND: Could not locate the credentials file.". Retrieving token from GCE failed with "FAILED_PRECONDITION: Error executing an HTTP request: libcurl code 6 meaning 'Couldn't resolve host name', error details: Could not resolve host: metadata.google.internal".
-Dl Completed...: 0 url [00:00, ? url/s]
-Dl Size...: 0 MiB [00:00, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:   0%|          | 0/1 [00:00<?, ? url/s]
-Dl Size...: 0 MiB [00:00, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:   0%|          | 0/2 [00:00<?, ? url/s]
-Dl Size...: 0 MiB [00:00, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:   0%|          | 0/3 [00:00<?, ? url/s]
-Dl Size...: 0 MiB [00:00, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:   0%|          | 0/4 [00:00<?, ? url/s]
-Dl Size...: 0 MiB [00:00, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:   0%|          | 0/4 [00:00<?, ? url/s]
-Dl Size...: 0 MiB [00:00, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:   0%|          | 0/4 [00:00<?, ? url/s]
-Dl Size...:   0%|          | 0/1 [00:00<?, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:   0%|          | 0/4 [00:00<?, ? url/s]
-Dl Size...:   0%|          | 0/1 [00:00<?, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:  25%|██▌       | 1/4 [00:00<00:01,  2.77 url/s]Dl Completed...:  25%|██▌       | 1/4 [00:00<00:01,  2.77 url/s]
-Dl Size...:   0%|          | 0/1 [00:00<?, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:  25%|██▌       | 1/4 [00:00<00:01,  2.77 url/s]
-Dl Size...:   0%|          | 0/10 [00:00<?, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:  25%|██▌       | 1/4 [00:00<00:01,  2.77 url/s]
-Dl Size...:   0%|          | 0/10 [00:00<?, ? MiB/s][A
-
-Extraction completed...:   0%|          | 0/1 [00:00<?, ? file/s][A[A
-
-Extraction completed...: 100%|██████████| 1/1 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  25%|██▌       | 1/4 [00:00<00:01,  2.77 url/s]
-Dl Size...:   0%|          | 0/10 [00:00<?, ? MiB/s][A
-
-Extraction completed...: 100%|██████████| 1/1 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  50%|█████     | 2/4 [00:00<00:00,  2.77 url/s]
-Dl Size...:   0%|          | 0/10 [00:00<?, ? MiB/s][A
-
-Extraction completed...: 100%|██████████| 1/1 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  50%|█████     | 2/4 [00:00<00:00,  2.77 url/s]
-Dl Size...:   0%|          | 0/10 [00:00<?, ? MiB/s][A
-
-Extraction completed...:  50%|█████     | 1/2 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  50%|█████     | 2/4 [00:00<00:00,  2.77 url/s]
-Dl Size...:   0%|          | 0/10 [00:00<?, ? MiB/s][A
-
-Extraction completed...: 100%|██████████| 2/2 [00:00<00:00,  2.66 file/s][A[A
-Dl Size...:  10%|█         | 1/10 [00:00<00:05,  1.74 MiB/s][ADl Completed...:  50%|█████     | 2/4 [00:00<00:00,  2.77 url/s]
-Dl Size...:  10%|█         | 1/10 [00:00<00:05,  1.74 MiB/s][A
-
-Extraction completed...: 100%|██████████| 2/2 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  50%|█████     | 2/4 [00:00<00:00,  2.77 url/s]
-Dl Size...:  20%|██        | 2/10 [00:00<00:04,  1.74 MiB/s][A
-
-Extraction completed...: 100%|██████████| 2/2 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  75%|███████▌  | 3/4 [00:00<00:00,  5.30 url/s]Dl Completed...:  75%|███████▌  | 3/4 [00:00<00:00,  5.30 url/s]
-Dl Size...:  20%|██        | 2/10 [00:00<00:04,  1.74 MiB/s][A
-
-Extraction completed...: 100%|██████████| 2/2 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  75%|███████▌  | 3/4 [00:00<00:00,  5.30 url/s]
-Dl Size...:  30%|███       | 3/10 [00:00<00:04,  1.74 MiB/s][A
-
-Extraction completed...: 100%|██████████| 2/2 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  75%|███████▌  | 3/4 [00:00<00:00,  5.30 url/s]
-Dl Size...:  40%|████      | 4/10 [00:00<00:03,  1.74 MiB/s][A
-
-Extraction completed...: 100%|██████████| 2/2 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  75%|███████▌  | 3/4 [00:00<00:00,  5.30 url/s]
-Dl Size...:  50%|█████     | 5/10 [00:00<00:02,  1.74 MiB/s][A
-
-Extraction completed...: 100%|██████████| 2/2 [00:00<00:00,  2.66 file/s][A[A
-Dl Size...:  60%|██████    | 6/10 [00:00<00:00, 11.14 MiB/s][ADl Completed...:  75%|███████▌  | 3/4 [00:00<00:00,  5.30 url/s]
-Dl Size...:  60%|██████    | 6/10 [00:00<00:00, 11.14 MiB/s][A
-
-Extraction completed...: 100%|██████████| 2/2 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  75%|███████▌  | 3/4 [00:00<00:00,  5.30 url/s]
-Dl Size...:  70%|███████   | 7/10 [00:00<00:00, 11.14 MiB/s][A
-
-Extraction completed...: 100%|██████████| 2/2 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  75%|███████▌  | 3/4 [00:00<00:00,  5.30 url/s]
-Dl Size...:  70%|███████   | 7/10 [00:00<00:00, 11.14 MiB/s][A
-
-Extraction completed...:  67%|██████▋   | 2/3 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  75%|███████▌  | 3/4 [00:00<00:00,  5.30 url/s]
-Dl Size...:  80%|████████  | 8/10 [00:00<00:00, 11.14 MiB/s][A
-
-Extraction completed...:  67%|██████▋   | 2/3 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  75%|███████▌  | 3/4 [00:00<00:00,  5.30 url/s]
-Dl Size...:  90%|█████████ | 9/10 [00:00<00:00, 11.14 MiB/s][A
-
-Extraction completed...:  67%|██████▋   | 2/3 [00:00<00:00,  2.66 file/s][A[ADl Completed...:  75%|███████▌  | 3/4 [00:00<00:00,  5.30 url/s]
-Dl Size...: 100%|██████████| 10/10 [00:00<00:00, 11.14 MiB/s][A
-
-Extraction completed...:  67%|██████▋   | 2/3 [00:00<00:00,  2.66 file/s][A[A
-
-Extraction completed...: 100%|██████████| 3/3 [00:00<00:00,  3.87 file/s][A[ADl Completed...:  75%|███████▌  | 3/4 [00:00<00:00,  5.30 url/s]
-Dl Size...: 100%|██████████| 10/10 [00:00<00:00, 11.14 MiB/s][A
-
-Extraction completed...: 100%|██████████| 3/3 [00:00<00:00,  3.87 file/s][A[ADl Completed...: 100%|██████████| 4/4 [00:00<00:00,  4.79 url/s]Dl Completed...: 100%|██████████| 4/4 [00:00<00:00,  4.79 url/s]
-Dl Size...: 100%|██████████| 10/10 [00:00<00:00, 11.14 MiB/s][A
-
-Extraction completed...: 100%|██████████| 3/3 [00:00<00:00,  3.87 file/s][A[ADl Completed...: 100%|██████████| 4/4 [00:01<00:00,  4.79 url/s]
-Dl Size...: 100%|██████████| 10/10 [00:01<00:00, 11.14 MiB/s][A
-
-Extraction completed...:  75%|███████▌  | 3/4 [00:01<00:00,  3.87 file/s][A[A
-
-Extraction completed...: 100%|██████████| 4/4 [00:01<00:00,  2.19 file/s][A[ADl Completed...: 100%|██████████| 4/4 [00:01<00:00,  4.79 url/s]
-Dl Size...: 100%|██████████| 10/10 [00:01<00:00, 11.14 MiB/s][A
-
-Extraction completed...: 100%|██████████| 4/4 [00:01<00:00,  2.19 file/s][A[AExtraction completed...: 100%|██████████| 4/4 [00:01<00:00,  2.43 file/s]
-Dl Size...: 100%|██████████| 10/10 [00:01<00:00,  6.08 MiB/s]
-Dl Completed...: 100%|██████████| 4/4 [00:01<00:00,  2.43 url/s]
-Generating splits...:   0%|          | 0/2 [00:00<?, ? splits/s]
-Generating train examples...: 0 examples [00:00, ? examples/s][A2023-10-04 09:17:47.953128: W tensorflow/core/common_runtime/gpu/gpu_device.cc:1960] Cannot dlopen some GPU libraries. Please make sure the missing libraries mentioned above are installed properly if you would like to use GPU. Follow the guide at https://www.tensorflow.org/install/gpu for how to download and setup the required libraries for your platform.
-Skipping registering GPU devices...
-
-Generating train examples...: 1 examples [00:00,  1.79 examples/s][A
-Generating train examples...: 405 examples [00:00, 825.15 examples/s][A
-Generating train examples...: 817 examples [00:00, 1568.04 examples/s][A
-Generating train examples...: 1226 examples [00:00, 2182.13 examples/s][A
-Generating train examples...: 1645 examples [00:00, 2699.41 examples/s][A
-Generating train examples...: 2063 examples [00:01, 3097.60 examples/s][A
-Generating train examples...: 2481 examples [00:01, 3398.28 examples/s][A
-Generating train examples...: 2900 examples [00:01, 3622.40 examples/s][A
-Generating train examples...: 3320 examples [00:01, 3788.17 examples/s][A
-Generating train examples...: 3740 examples [00:01, 3905.94 examples/s][A
-Generating train examples...: 4160 examples [00:01, 3990.02 examples/s][A
-Generating train examples...: 4581 examples [00:01, 4052.30 examples/s][A
-Generating train examples...: 4998 examples [00:01, 4084.87 examples/s][A
-Generating train examples...: 5417 examples [00:01, 4113.66 examples/s][A
-Generating train examples...: 5837 examples [00:01, 4137.47 examples/s][A
-Generating train examples...: 6256 examples [00:02, 4151.48 examples/s][A
-Generating train examples...: 6676 examples [00:02, 4165.16 examples/s][A
-Generating train examples...: 7097 examples [00:02, 4176.77 examples/s][A
-Generating train examples...: 7519 examples [00:02, 4187.43 examples/s][A
-Generating train examples...: 7939 examples [00:02, 4190.83 examples/s][A
-Generating train examples...: 8359 examples [00:02, 4191.19 examples/s][A
-Generating train examples...: 8779 examples [00:02, 4188.26 examples/s][A
-Generating train examples...: 9199 examples [00:02, 4181.24 examples/s][A
-Generating train examples...: 9619 examples [00:02, 4183.83 examples/s][A
-Generating train examples...: 10038 examples [00:02, 4184.17 examples/s][A
-Generating train examples...: 10457 examples [00:03, 4184.67 examples/s][A
-Generating train examples...: 10876 examples [00:03, 4184.91 examples/s][A
-Generating train examples...: 11296 examples [00:03, 4187.64 examples/s][A
-Generating train examples...: 11717 examples [00:03, 4193.79 examples/s][A
-Generating train examples...: 12137 examples [00:03, 4183.81 examples/s][A
-Generating train examples...: 12556 examples [00:03, 4178.74 examples/s][A
-Generating train examples...: 12975 examples [00:03, 4179.51 examples/s][A
-Generating train examples...: 13393 examples [00:03, 4172.59 examples/s][A
-Generating train examples...: 13812 examples [00:03, 4177.29 examples/s][A
-Generating train examples...: 14231 examples [00:03, 4179.01 examples/s][A
-Generating train examples...: 14652 examples [00:04, 4187.29 examples/s][A
-Generating train examples...: 15074 examples [00:04, 4194.80 examples/s][A
-Generating train examples...: 15496 examples [00:04, 4201.31 examples/s][A
-Generating train examples...: 15917 examples [00:04, 4202.25 examples/s][A
-Generating train examples...: 16338 examples [00:04, 4202.76 examples/s][A
-Generating train examples...: 16759 examples [00:04, 4201.21 examples/s][A
-Generating train examples...: 17181 examples [00:04, 4204.26 examples/s][A
-Generating train examples...: 17602 examples [00:04, 4197.56 examples/s][A
-Generating train examples...: 18025 examples [00:04, 4206.03 examples/s][A
-Generating train examples...: 18449 examples [00:04, 4214.03 examples/s][A
-Generating train examples...: 18871 examples [00:05, 4208.16 examples/s][A
-Generating train examples...: 19292 examples [00:05, 4206.37 examples/s][A
-Generating train examples...: 19713 examples [00:05, 4202.26 examples/s][A
-Generating train examples...: 20134 examples [00:05, 4197.38 examples/s][A
-Generating train examples...: 20556 examples [00:05, 4202.00 examples/s][A
-Generating train examples...: 20978 examples [00:05, 4205.81 examples/s][A
-Generating train examples...: 21399 examples [00:05, 4204.11 examples/s][A
-Generating train examples...: 21820 examples [00:05, 4202.26 examples/s][A
-Generating train examples...: 22241 examples [00:05, 4193.36 examples/s][A
-Generating train examples...: 22663 examples [00:05, 4200.74 examples/s][A
-Generating train examples...: 23084 examples [00:06, 4162.95 examples/s][A
-Generating train examples...: 23505 examples [00:06, 4175.58 examples/s][A
-Generating train examples...: 23926 examples [00:06, 4185.56 examples/s][A
-Generating train examples...: 24348 examples [00:06, 4195.51 examples/s][A
-Generating train examples...: 24770 examples [00:06, 4199.80 examples/s][A
-Generating train examples...: 25194 examples [00:06, 4209.87 examples/s][A
-Generating train examples...: 25616 examples [00:06, 4208.86 examples/s][A
-Generating train examples...: 26037 examples [00:06, 4202.20 examples/s][A
-                                                                        [A                                                                Traceback (most recent call last):
-  File "train_score.py", line 670, in <module>
-    trainxt(manifold=args.manifold,
-  File "train_score.py", line 520, in trainxt
-    ds = load_mnist("train", 100, 2712)
-  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/ManLearn/train_MNIST.py", line 62, in load_dataset
-    tfds.load("mnist", split=split)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/logging/__init__.py", line 169, in __call__
-    return function(*args, **kwargs)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/load.py", line 640, in load
-    _download_and_prepare_builder(dbuilder, download, download_and_prepare_kwargs)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/load.py", line 499, in _download_and_prepare_builder
-    dbuilder.download_and_prepare(**download_and_prepare_kwargs)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/logging/__init__.py", line 169, in __call__
-    return function(*args, **kwargs)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/dataset_builder.py", line 646, in download_and_prepare
-    self._download_and_prepare(
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/dataset_builder.py", line 1535, in _download_and_prepare
-    future = split_builder.submit_split_generation(
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/split_builder.py", line 341, in submit_split_generation
-    return self._build_from_generator(**build_kwargs)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/split_builder.py", line 414, in _build_from_generator
-    example = self._features.encode_example(example)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/features/features_dict.py", line 241, in encode_example
-    example[k] = feature.encode_example(example_value)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/features/image_feature.py", line 303, in encode_example
-    return self._image_encoder.encode_image_or_path(image_or_path_or_fobj)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/features/image_feature.py", line 101, in encode_image_or_path
-    encoded_image = self._encode_image(image_or_path_or_fobj)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/features/image_feature.py", line 123, in _encode_image
-    return self._runner.run(
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/utils/tf_utils.py", line 83, in run
-    return fct(input_).numpy()
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow/python/framework/ops.py", line 1141, in numpy
-    maybe_arr = self._numpy()  # pylint: disable=protected-access
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow/python/framework/ops.py", line 1107, in _numpy
-    return self._numpy_internal()
-KeyboardInterrupt

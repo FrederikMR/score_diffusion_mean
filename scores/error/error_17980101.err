@@ -1,340 +1,0 @@
-Switching from python to 3/3.9.11
-  ERROR: Unable to locate a modulefile for '3/3.9.11'
-2023-10-04 09:26:31.755829: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
-No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for more info.)
-2023-10-04 09:26:40.108376: W tensorflow/tsl/platform/cloud/google_auth_provider.cc:184] All attempts to get a Google authentication bearer token failed, returning an empty token. Retrieving token from files failed with "NOT_FOUND: Could not locate the credentials file.". Retrieving token from GCE failed with "FAILED_PRECONDITION: Error executing an HTTP request: libcurl code 6 meaning 'Couldn't resolve host name', error details: Could not resolve host: metadata.google.internal".
-Dl Completed...: 0 url [00:00, ? url/s]
-Dl Size...: 0 MiB [00:00, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:   0%|          | 0/1 [00:00<?, ? url/s]
-Dl Size...: 0 MiB [00:00, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...: 100%|██████████| 1/1 [00:00<00:00, 243.05 url/s]
-Dl Size...: 0 MiB [00:00, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...: 100%|██████████| 1/1 [00:00<00:00, 224.17 url/s]
-Dl Size...:   0%|          | 0/1648877 [00:00<?, ? MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...: 100%|██████████| 1/1 [00:00<00:00, 207.64 url/s]
-Dl Size...: 100%|██████████| 1648877/1648877 [00:00<00:00, 370190097.24 MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:  50%|█████     | 1/2 [00:00<00:00, 112.48 url/s]
-Dl Size...: 100%|██████████| 1648877/1648877 [00:00<00:00, 192798957.28 MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...: 100%|██████████| 2/2 [00:00<00:00, 215.90 url/s]
-Dl Size...: 100%|██████████| 1648877/1648877 [00:00<00:00, 185851107.08 MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...: 100%|██████████| 2/2 [00:00<00:00, 209.70 url/s]
-Dl Size...: 100%|█████████▉| 1648877/1653419 [00:00<00:00, 180486752.87 MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...: 100%|██████████| 2/2 [00:00<00:00, 204.13 url/s]
-Dl Size...: 100%|██████████| 1653419/1653419 [00:00<00:00, 175978022.87 MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:  67%|██████▋   | 2/3 [00:00<00:00, 154.74 url/s]
-Dl Size...: 100%|██████████| 1653419/1653419 [00:00<00:00, 131318726.10 MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...: 100%|██████████| 3/3 [00:00<00:00, 225.87 url/s]
-Dl Size...: 100%|██████████| 1653419/1653419 [00:00<00:00, 128308422.46 MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...: 100%|██████████| 3/3 [00:00<00:00, 221.47 url/s]
-Dl Size...:  14%|█▍        | 1653419/11565841 [00:00<00:00, 125790243.70 MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...: 100%|██████████| 3/3 [00:00<00:00, 217.28 url/s]
-Dl Size...: 100%|██████████| 11565841/11565841 [00:00<00:00, 862825768.27 MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...:  75%|███████▌  | 3/4 [00:00<00:00, 173.78 url/s]
-Dl Size...: 100%|██████████| 11565841/11565841 [00:00<00:00, 683142797.17 MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...: 100%|██████████| 4/4 [00:00<00:00, 226.80 url/s]
-Dl Size...: 100%|██████████| 11565841/11565841 [00:00<00:00, 670481163.89 MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...: 100%|██████████| 4/4 [00:00<00:00, 222.94 url/s]
-Dl Size...: 100%|█████████▉| 11565841/11594722 [00:00<00:00, 658977832.91 MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[ADl Completed...: 100%|██████████| 4/4 [00:00<00:00, 219.14 url/s]
-Dl Size...: 100%|██████████| 11594722/11594722 [00:00<00:00, 649133570.88 MiB/s][A
-
-Extraction completed...: 0 file [00:00, ? file/s][A[AExtraction completed...: 0 file [00:00, ? file/s]
-Dl Size...: 100%|██████████| 11594722/11594722 [00:00<00:00, 571600715.37 MiB/s]
-Dl Completed...: 100%|██████████| 4/4 [00:00<00:00, 190.91 url/s]
-Generating splits...:   0%|          | 0/2 [00:00<?, ? splits/s]
-Generating train examples...: 0 examples [00:00, ? examples/s][A
-Generating train examples...: 1 examples [00:00,  1.66 examples/s][A
-Generating train examples...: 202 examples [00:00, 386.93 examples/s][A
-Generating train examples...: 424 examples [00:00, 780.55 examples/s][A
-Generating train examples...: 647 examples [00:00, 1120.09 examples/s][A
-Generating train examples...: 869 examples [00:01, 1394.92 examples/s][A
-Generating train examples...: 1106 examples [00:01, 1651.14 examples/s][A
-Generating train examples...: 1366 examples [00:01, 1909.05 examples/s][A
-Generating train examples...: 1627 examples [00:01, 2103.97 examples/s][A
-Generating train examples...: 1888 examples [00:01, 2246.43 examples/s][A
-Generating train examples...: 2148 examples [00:01, 2348.89 examples/s][A
-Generating train examples...: 2408 examples [00:01, 2421.22 examples/s][A
-Generating train examples...: 2668 examples [00:01, 2473.45 examples/s][A
-Generating train examples...: 2928 examples [00:01, 2509.24 examples/s][A
-Generating train examples...: 3189 examples [00:01, 2536.59 examples/s][A
-Generating train examples...: 3450 examples [00:02, 2557.45 examples/s][A
-Generating train examples...: 3710 examples [00:02, 2567.90 examples/s][A
-Generating train examples...: 3971 examples [00:02, 2578.36 examples/s][A
-Generating train examples...: 4232 examples [00:02, 2586.14 examples/s][A
-Generating train examples...: 4492 examples [00:02, 2590.02 examples/s][A
-Generating train examples...: 4752 examples [00:02, 2589.99 examples/s][A
-Generating train examples...: 5012 examples [00:02, 2591.16 examples/s][A
-Generating train examples...: 5272 examples [00:02, 2579.55 examples/s][A
-Generating train examples...: 5532 examples [00:02, 2584.23 examples/s][A
-Generating train examples...: 5793 examples [00:02, 2590.10 examples/s][A
-Generating train examples...: 6053 examples [00:03, 2592.26 examples/s][A
-Generating train examples...: 6313 examples [00:03, 2591.74 examples/s][A
-Generating train examples...: 6574 examples [00:03, 2595.36 examples/s][A
-Generating train examples...: 6835 examples [00:03, 2598.27 examples/s][A
-Generating train examples...: 7095 examples [00:03, 2598.13 examples/s][A
-Generating train examples...: 7357 examples [00:03, 2602.37 examples/s][A
-Generating train examples...: 7618 examples [00:03, 2601.91 examples/s][A
-Generating train examples...: 7879 examples [00:03, 2603.01 examples/s][A
-Generating train examples...: 8140 examples [00:03, 2598.93 examples/s][A
-Generating train examples...: 8400 examples [00:03, 2599.22 examples/s][A
-Generating train examples...: 8660 examples [00:04, 2599.12 examples/s][A
-Generating train examples...: 8920 examples [00:04, 2597.72 examples/s][A
-Generating train examples...: 9181 examples [00:04, 2598.66 examples/s][A
-Generating train examples...: 9441 examples [00:04, 2597.47 examples/s][A
-Generating train examples...: 9702 examples [00:04, 2599.66 examples/s][A
-Generating train examples...: 9962 examples [00:04, 2598.73 examples/s][A
-Generating train examples...: 10223 examples [00:04, 2600.13 examples/s][A
-Generating train examples...: 10484 examples [00:04, 2597.01 examples/s][A
-Generating train examples...: 10744 examples [00:04, 2596.33 examples/s][A
-Generating train examples...: 11004 examples [00:04, 2595.89 examples/s][A
-Generating train examples...: 11264 examples [00:05, 2596.34 examples/s][A
-Generating train examples...: 11524 examples [00:05, 2595.54 examples/s][A
-Generating train examples...: 11786 examples [00:05, 2601.55 examples/s][A
-Generating train examples...: 12047 examples [00:05, 2599.62 examples/s][A
-Generating train examples...: 12307 examples [00:05, 2597.46 examples/s][A
-Generating train examples...: 12567 examples [00:05, 2596.35 examples/s][A
-Generating train examples...: 12827 examples [00:05, 2594.57 examples/s][A
-Generating train examples...: 13087 examples [00:05, 2595.78 examples/s][A
-Generating train examples...: 13347 examples [00:05, 2592.34 examples/s][A
-Generating train examples...: 13607 examples [00:05, 2589.40 examples/s][A
-Generating train examples...: 13868 examples [00:06, 2594.36 examples/s][A
-Generating train examples...: 14128 examples [00:06, 2592.36 examples/s][A
-Generating train examples...: 14388 examples [00:06, 2593.60 examples/s][A
-Generating train examples...: 14648 examples [00:06, 2591.02 examples/s][A
-Generating train examples...: 14908 examples [00:06, 2591.38 examples/s][A
-Generating train examples...: 15170 examples [00:06, 2597.20 examples/s][A
-Generating train examples...: 15431 examples [00:06, 2599.33 examples/s][A
-Generating train examples...: 15692 examples [00:06, 2599.50 examples/s][A
-Generating train examples...: 15955 examples [00:06, 2605.64 examples/s][A
-Generating train examples...: 16217 examples [00:06, 2609.49 examples/s][A
-Generating train examples...: 16479 examples [00:07, 2611.44 examples/s][A
-Generating train examples...: 16741 examples [00:07, 2589.07 examples/s][A
-Generating train examples...: 17004 examples [00:07, 2599.05 examples/s][A
-Generating train examples...: 17266 examples [00:07, 2604.31 examples/s][A
-Generating train examples...: 17529 examples [00:07, 2609.32 examples/s][A
-Generating train examples...: 17791 examples [00:07, 2611.26 examples/s][A
-Generating train examples...: 18053 examples [00:07, 2612.90 examples/s][A
-Generating train examples...: 18315 examples [00:07, 2614.82 examples/s][A
-Generating train examples...: 18577 examples [00:07, 2614.60 examples/s][A
-Generating train examples...: 18839 examples [00:07, 2607.44 examples/s][A
-Generating train examples...: 19101 examples [00:08, 2608.82 examples/s][A
-Generating train examples...: 19362 examples [00:08, 2603.44 examples/s][A
-Generating train examples...: 19623 examples [00:08, 2601.47 examples/s][A
-Generating train examples...: 19884 examples [00:08, 2599.93 examples/s][A
-Generating train examples...: 20144 examples [00:08, 2596.54 examples/s][A
-Generating train examples...: 20404 examples [00:08, 2595.01 examples/s][A
-Generating train examples...: 20665 examples [00:08, 2597.11 examples/s][A
-Generating train examples...: 20927 examples [00:08, 2601.74 examples/s][A
-Generating train examples...: 21188 examples [00:08, 2601.87 examples/s][A
-Generating train examples...: 21449 examples [00:08, 2599.60 examples/s][A
-Generating train examples...: 21710 examples [00:09, 2602.00 examples/s][A
-Generating train examples...: 21971 examples [00:09, 2596.15 examples/s][A
-Generating train examples...: 22231 examples [00:09, 2594.77 examples/s][A
-Generating train examples...: 22492 examples [00:09, 2597.14 examples/s][A
-Generating train examples...: 22752 examples [00:09, 2597.80 examples/s][A
-Generating train examples...: 23013 examples [00:09, 2599.17 examples/s][A
-Generating train examples...: 23273 examples [00:09, 2598.15 examples/s][A
-Generating train examples...: 23534 examples [00:09, 2600.37 examples/s][A
-Generating train examples...: 23795 examples [00:09, 2600.46 examples/s][A
-Generating train examples...: 24056 examples [00:09, 2597.81 examples/s][A
-Generating train examples...: 24316 examples [00:10, 2597.80 examples/s][A
-Generating train examples...: 24577 examples [00:10, 2599.66 examples/s][A
-Generating train examples...: 24838 examples [00:10, 2602.17 examples/s][A
-Generating train examples...: 25099 examples [00:10, 2603.52 examples/s][A
-Generating train examples...: 25360 examples [00:10, 2599.80 examples/s][A
-Generating train examples...: 25620 examples [00:10, 2599.30 examples/s][A
-Generating train examples...: 25881 examples [00:10, 2599.59 examples/s][A
-Generating train examples...: 26142 examples [00:10, 2599.80 examples/s][A
-Generating train examples...: 26403 examples [00:10, 2602.51 examples/s][A
-Generating train examples...: 26664 examples [00:10, 2602.53 examples/s][A
-Generating train examples...: 26925 examples [00:11, 2604.22 examples/s][A
-Generating train examples...: 27186 examples [00:11, 2600.90 examples/s][A
-Generating train examples...: 27447 examples [00:11, 2598.14 examples/s][A
-Generating train examples...: 27708 examples [00:11, 2600.69 examples/s][A
-Generating train examples...: 27969 examples [00:11, 2600.86 examples/s][A
-Generating train examples...: 28230 examples [00:11, 2597.11 examples/s][A
-Generating train examples...: 28490 examples [00:11, 2596.60 examples/s][A
-Generating train examples...: 28751 examples [00:11, 2598.01 examples/s][A
-Generating train examples...: 29011 examples [00:11, 2596.19 examples/s][A
-Generating train examples...: 29272 examples [00:11, 2597.27 examples/s][A
-Generating train examples...: 29532 examples [00:12, 2595.22 examples/s][A
-Generating train examples...: 29792 examples [00:12, 2595.67 examples/s][A
-Generating train examples...: 30054 examples [00:12, 2601.68 examples/s][A
-Generating train examples...: 30315 examples [00:12, 2601.15 examples/s][A
-Generating train examples...: 30576 examples [00:12, 2598.74 examples/s][A
-Generating train examples...: 30837 examples [00:12, 2600.80 examples/s][A
-Generating train examples...: 31098 examples [00:12, 2599.00 examples/s][A
-Generating train examples...: 31359 examples [00:12, 2601.08 examples/s][A
-Generating train examples...: 31620 examples [00:12, 2603.33 examples/s][A
-Generating train examples...: 31881 examples [00:12, 2604.20 examples/s][A
-Generating train examples...: 32142 examples [00:13, 2602.70 examples/s][A
-Generating train examples...: 32403 examples [00:13, 2600.92 examples/s][A
-Generating train examples...: 32664 examples [00:13, 2600.83 examples/s][A
-Generating train examples...: 32925 examples [00:13, 2599.04 examples/s][A
-Generating train examples...: 33185 examples [00:13, 2598.53 examples/s][A
-Generating train examples...: 33446 examples [00:13, 2599.58 examples/s][A
-Generating train examples...: 33707 examples [00:13, 2601.05 examples/s][A
-Generating train examples...: 33968 examples [00:13, 2602.93 examples/s][A
-Generating train examples...: 34230 examples [00:13, 2605.68 examples/s][A
-Generating train examples...: 34491 examples [00:13, 2606.56 examples/s][A
-Generating train examples...: 34752 examples [00:14, 2605.22 examples/s][A
-Generating train examples...: 35013 examples [00:14, 2605.04 examples/s][A
-Generating train examples...: 35274 examples [00:14, 2604.17 examples/s][A
-Generating train examples...: 35535 examples [00:14, 2602.33 examples/s][A
-Generating train examples...: 35796 examples [00:14, 2600.97 examples/s][A
-Generating train examples...: 36057 examples [00:14, 2602.79 examples/s][A
-Generating train examples...: 36318 examples [00:14, 2598.04 examples/s][A
-Generating train examples...: 36578 examples [00:14, 2597.30 examples/s][A
-Generating train examples...: 36838 examples [00:14, 2593.97 examples/s][A
-Generating train examples...: 37098 examples [00:14, 2594.81 examples/s][A
-Generating train examples...: 37358 examples [00:15, 2596.26 examples/s][A
-Generating train examples...: 37618 examples [00:15, 2597.15 examples/s][A
-Generating train examples...: 37878 examples [00:15, 2596.79 examples/s][A
-Generating train examples...: 38139 examples [00:15, 2598.20 examples/s][A
-Generating train examples...: 38400 examples [00:15, 2598.94 examples/s][A
-Generating train examples...: 38661 examples [00:15, 2600.52 examples/s][A
-Generating train examples...: 38922 examples [00:15, 2600.24 examples/s][A
-Generating train examples...: 39183 examples [00:15, 2601.66 examples/s][A
-Generating train examples...: 39444 examples [00:15, 2602.10 examples/s][A
-Generating train examples...: 39705 examples [00:15, 2603.34 examples/s][A
-Generating train examples...: 39966 examples [00:16, 2602.21 examples/s][A
-Generating train examples...: 40227 examples [00:16, 2597.75 examples/s][A
-Generating train examples...: 40488 examples [00:16, 2599.42 examples/s][A
-Generating train examples...: 40749 examples [00:16, 2601.54 examples/s][A
-Generating train examples...: 41011 examples [00:16, 2604.06 examples/s][A
-Generating train examples...: 41272 examples [00:16, 2604.74 examples/s][A
-Generating train examples...: 41534 examples [00:16, 2606.42 examples/s][A
-Generating train examples...: 41796 examples [00:16, 2607.91 examples/s][A
-Generating train examples...: 42057 examples [00:16, 2607.12 examples/s][A
-Generating train examples...: 42319 examples [00:16, 2608.09 examples/s][A
-Generating train examples...: 42580 examples [00:17, 2603.87 examples/s][A
-Generating train examples...: 42841 examples [00:17, 2600.15 examples/s][A
-Generating train examples...: 43102 examples [00:17, 2586.96 examples/s][A
-Generating train examples...: 43363 examples [00:17, 2591.93 examples/s][A
-Generating train examples...: 43624 examples [00:17, 2595.12 examples/s][A
-Generating train examples...: 43885 examples [00:17, 2598.19 examples/s][A
-Generating train examples...: 44146 examples [00:17, 2601.64 examples/s][A
-Generating train examples...: 44408 examples [00:17, 2604.54 examples/s][A
-Generating train examples...: 44669 examples [00:17, 2602.26 examples/s][A
-Generating train examples...: 44930 examples [00:17, 2601.11 examples/s][A
-Generating train examples...: 45192 examples [00:18, 2604.29 examples/s][A
-Generating train examples...: 45453 examples [00:18, 2603.63 examples/s][A
-Generating train examples...: 45714 examples [00:18, 2602.44 examples/s][A
-Generating train examples...: 45975 examples [00:18, 2599.54 examples/s][A
-Generating train examples...: 46236 examples [00:18, 2602.45 examples/s][A
-Generating train examples...: 46497 examples [00:18, 2603.59 examples/s][A
-Generating train examples...: 46758 examples [00:18, 2600.82 examples/s][A
-Generating train examples...: 47019 examples [00:18, 2598.60 examples/s][A
-Generating train examples...: 47281 examples [00:18, 2602.96 examples/s][A
-Generating train examples...: 47542 examples [00:18, 2603.31 examples/s][A
-Generating train examples...: 47803 examples [00:19, 2601.36 examples/s][A
-Generating train examples...: 48064 examples [00:19, 2602.40 examples/s][A
-Generating train examples...: 48325 examples [00:19, 2601.96 examples/s][A
-Generating train examples...: 48586 examples [00:19, 2598.75 examples/s][A
-Generating train examples...: 48846 examples [00:19, 2598.32 examples/s][A
-Generating train examples...: 49107 examples [00:19, 2601.19 examples/s][A
-Generating train examples...: 49368 examples [00:19, 2599.73 examples/s][A
-Generating train examples...: 49630 examples [00:19, 2604.58 examples/s][A
-Generating train examples...: 49891 examples [00:19, 2603.82 examples/s][A
-Generating train examples...: 50152 examples [00:19, 2604.61 examples/s][A
-Generating train examples...: 50413 examples [00:20, 2603.44 examples/s][A
-Generating train examples...: 50674 examples [00:20, 2603.43 examples/s][A
-Generating train examples...: 50935 examples [00:20, 2604.48 examples/s][A
-Generating train examples...: 51196 examples [00:20, 2603.03 examples/s][A
-Generating train examples...: 51457 examples [00:20, 2604.17 examples/s][A
-Generating train examples...: 51718 examples [00:20, 2601.64 examples/s][A
-Generating train examples...: 51979 examples [00:20, 2603.76 examples/s][A
-Generating train examples...: 52242 examples [00:20, 2608.57 examples/s][A
-Generating train examples...: 52503 examples [00:20, 2607.32 examples/s][A
-Generating train examples...: 52765 examples [00:20, 2609.37 examples/s][A
-Generating train examples...: 53026 examples [00:21, 2606.96 examples/s][A
-Generating train examples...: 53287 examples [00:21, 2604.71 examples/s][A
-Generating train examples...: 53549 examples [00:21, 2607.15 examples/s][A
-Generating train examples...: 53810 examples [00:21, 2607.38 examples/s][A
-Generating train examples...: 54071 examples [00:21, 2606.14 examples/s][A
-Generating train examples...: 54333 examples [00:21, 2610.00 examples/s][A
-Generating train examples...: 54595 examples [00:21, 2605.52 examples/s][A
-Generating train examples...: 54857 examples [00:21, 2607.03 examples/s][A
-Generating train examples...: 55119 examples [00:21, 2608.50 examples/s][A
-Generating train examples...: 55381 examples [00:21, 2609.52 examples/s][A
-Generating train examples...: 55643 examples [00:22, 2609.73 examples/s][A
-Generating train examples...: 55904 examples [00:22, 2607.04 examples/s][A
-Generating train examples...: 56165 examples [00:22, 2607.24 examples/s][A
-Generating train examples...: 56426 examples [00:22, 2607.27 examples/s][A
-Generating train examples...: 56687 examples [00:22, 2606.04 examples/s][A
-Generating train examples...: 56948 examples [00:22, 2606.92 examples/s][A
-Generating train examples...: 57209 examples [00:22, 2605.04 examples/s][A
-Generating train examples...: 57470 examples [00:22, 2603.11 examples/s][A
-Generating train examples...: 57731 examples [00:22, 2601.57 examples/s][A
-Generating train examples...: 57992 examples [00:22, 2589.74 examples/s][A
-Generating train examples...: 58253 examples [00:23, 2595.20 examples/s][A
-Generating train examples...: 58514 examples [00:23, 2599.40 examples/s][A
-Generating train examples...: 58776 examples [00:23, 2603.71 examples/s][A
-Generating train examples...: 59037 examples [00:23, 2599.69 examples/s][A
-Generating train examples...: 59298 examples [00:23, 2601.38 examples/s][A
-Generating train examples...: 59559 examples [00:23, 2599.37 examples/s][A
-Generating train examples...: 59821 examples [00:23, 2602.98 examples/s][A
-                                                                        [A
-Shuffling /zhome/77/8/118225/tensorflow_datasets/mnist/3.0.1.incomplete38OIW7/mnist-train.tfrecord*...:   0%|          | 0/60000 [00:00<?, ? examples/s][A
-Shuffling /zhome/77/8/118225/tensorflow_datasets/mnist/3.0.1.incomplete38OIW7/mnist-train.tfrecord*...:  29%|██▉       | 17694/60000 [00:00<00:00, 176932.15 examples/s][A
-Shuffling /zhome/77/8/118225/tensorflow_datasets/mnist/3.0.1.incomplete38OIW7/mnist-train.tfrecord*...:  99%|█████████▉| 59501/60000 [00:00<00:00, 318766.15 examples/s][A
-                                                                                                                                                                        [AGenerating splits...:  50%|█████     | 1/2 [00:24<00:24, 24.16s/ splits]
-Generating test examples...: 0 examples [00:00, ? examples/s][A
-Generating test examples...: 19 examples [00:00, 189.30 examples/s][A
-Generating test examples...: 231 examples [00:00, 1320.70 examples/s][A
-Generating test examples...: 462 examples [00:00, 1771.40 examples/s][A
-Generating test examples...: 716 examples [00:00, 2073.58 examples/s][A
-Generating test examples...: 975 examples [00:00, 2258.38 examples/s][A
-Generating test examples...: 1234 examples [00:00, 2370.24 examples/s][A
-Generating test examples...: 1493 examples [00:00, 2440.90 examples/s][A
-Generating test examples...: 1753 examples [00:00, 2490.41 examples/s][A
-Generating test examples...: 2013 examples [00:00, 2522.99 examples/s][A
-Generating test examples...: 2272 examples [00:01, 2543.12 examples/s][A
-Generating test examples...: 2532 examples [00:01, 2558.50 examples/s][A
-Generating test examples...: 2792 examples [00:01, 2568.70 examples/s][A
-Generating test examples...: 3052 examples [00:01, 2576.34 examples/s][A
-Generating test examples...: 3312 examples [00:01, 2581.61 examples/s][A
-Generating test examples...: 3571 examples [00:01, 2581.53 examples/s][A
-Generating test examples...: 3831 examples [00:01, 2584.79 examples/s][A
-Generating test examples...: 4091 examples [00:01, 2587.30 examples/s][A
-Generating test examples...: 4352 examples [00:01, 2591.58 examples/s][A
-Generating test examples...: 4612 examples [00:01, 2591.64 examples/s][A
-Generating test examples...: 4873 examples [00:02, 2595.96 examples/s][A
-Generating test examples...: 5133 examples [00:02, 2596.68 examples/s][A
-Generating test examples...: 5393 examples [00:02, 2594.38 examples/s][A
-Generating test examples...: 5653 examples [00:02, 2588.63 examples/s][A
-Generating test examples...: 5912 examples [00:02, 2588.21 examples/s][A
-Generating test examples...: 6171 examples [00:02, 2586.69 examples/s][A
-Generating test examples...: 6430 examples [00:02, 2583.37 examples/s][A
-Generating test examples...: 6689 examples [00:02, 2584.52 examples/s][A
-Generating test examples...: 6949 examples [00:02, 2587.15 examples/s][A
-Generating test examples...: 7209 examples [00:02, 2589.07 examples/s][A
-Generating test examples...: 7469 examples [00:03, 2590.71 examples/s][A
-Generating test examples...: 7729 examples [00:03, 2592.78 examples/s][A
-Generating test examples...: 7989 examples [00:03, 2584.46 examples/s][A
-Generating test examples...: 8248 examples [00:03, 2580.30 examples/s][A
-Generating test examples...: 8507 examples [00:03, 2581.05 examples/s][A
-Generating test examples...: 8766 examples [00:03, 2580.78 examples/s][A
-Generating test examples...: 9027 examples [00:03, 2588.01 examples/s][A
-Generating test examples...: 9287 examples [00:03, 2588.87 examples/s][A
-Generating test examples...: 9549 examples [00:03, 2596.56 examples/s][A
-Generating test examples...: 9810 examples [00:03, 2600.14 examples/s][A
-                                                                      [A
-Shuffling /zhome/77/8/118225/tensorflow_datasets/mnist/3.0.1.incomplete38OIW7/mnist-test.tfrecord*...:   0%|          | 0/10000 [00:00<?, ? examples/s][A
-                                                                                                                                                       [AGenerating splits...: 100%|██████████| 2/2 [00:28<00:00, 12.34s/ splits]                                                                        User defined signal 2

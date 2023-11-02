@@ -1,66 +1,0 @@
-Switching from python to 3/3.9.11
-  ERROR: Unable to locate a modulefile for '3/3.9.11'
-2023-10-04 09:17:51.516569: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
-No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for more info.)
-2023-10-04 09:17:56.933877: W tensorflow/tsl/platform/cloud/google_auth_provider.cc:184] All attempts to get a Google authentication bearer token failed, returning an empty token. Retrieving token from files failed with "NOT_FOUND: Could not locate the credentials file.". Retrieving token from GCE failed with "FAILED_PRECONDITION: Error executing an HTTP request: libcurl code 6 meaning 'Couldn't resolve host name', error details: Could not resolve host: metadata.google.internal".
-Dl Completed...: 0 url [00:00, ? url/s]
-Dl Size...: 0 MiB [00:00, ? MiB/s][ADl Completed...:   0%|          | 0/1 [00:00<?, ? url/s]
-Dl Size...: 0 MiB [00:00, ? MiB/s][ADl Completed...:   0%|          | 0/2 [00:00<?, ? url/s]
-Dl Size...: 0 MiB [00:00, ? MiB/s][ADl Completed...:   0%|          | 0/3 [00:00<?, ? url/s]
-Dl Size...: 0 MiB [00:00, ? MiB/s][ADl Completed...:   0%|          | 0/3 [00:00<?, ? url/s]
-Dl Size...:   0%|          | 0/173 [00:00<?, ? MiB/s][ADl Completed...:   0%|          | 0/3 [00:00<?, ? url/s]
-Dl Size...:   0%|          | 0/234 [00:00<?, ? MiB/s][ADl Completed...:   0%|          | 0/3 [00:00<?, ? url/s]
-Dl Size...:   0%|          | 0/1501 [00:00<?, ? MiB/s][A
-Dl Size...:   0%|          | 1/1501 [00:02<1:11:06,  2.84s/ MiB][ADl Completed...:   0%|          | 0/3 [00:02<?, ? url/s]
-Dl Size...:   0%|          | 1/1501 [00:02<1:11:06,  2.84s/ MiB][ADl Completed...:   0%|          | 0/3 [00:02<?, ? url/s]
-Dl Size...:   0%|          | 2/1501 [00:02<1:11:03,  2.84s/ MiB][A
-Dl Size...:   0%|          | 3/1501 [00:03<19:53,  1.25 MiB/s]  [ADl Completed...:   0%|          | 0/3 [00:03<?, ? url/s]
-Dl Size...:   0%|          | 3/1501 [00:03<19:53,  1.25 MiB/s][ADl Size...:   0%|          | 3/1501 [00:03<25:19,  1.01s/ MiB]
-Dl Completed...:   0%|          | 0/3 [00:03<?, ? url/s]
-Traceback (most recent call last):
-  File "train_score.py", line 670, in <module>
-    trainxt(manifold=args.manifold,
-  File "train_score.py", line 554, in trainxt
-    ds = load_svhn()
-  File "/zhome/77/8/118225/Desktop/smrdm/smrdm/ManLearn/train_SVHN.py", line 62, in load_dataset
-    tfds.load("svhn_cropped", split=split, data_dir="../../Data/", download=True)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/logging/__init__.py", line 169, in __call__
-    return function(*args, **kwargs)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/load.py", line 640, in load
-    _download_and_prepare_builder(dbuilder, download, download_and_prepare_kwargs)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/load.py", line 499, in _download_and_prepare_builder
-    dbuilder.download_and_prepare(**download_and_prepare_kwargs)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/logging/__init__.py", line 169, in __call__
-    return function(*args, **kwargs)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/dataset_builder.py", line 646, in download_and_prepare
-    self._download_and_prepare(
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/dataset_builder.py", line 1498, in _download_and_prepare
-    split_generators = self._split_generators(  # pylint: disable=unexpected-keyword-arg
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/datasets/svhn_cropped/svhn_cropped_dataset_builder.py", line 56, in _split_generators
-    output_files = dl_manager.download({
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/download/download_manager.py", line 600, in download
-    return _map_promise(self._download, url_or_urls)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/download/download_manager.py", line 830, in _map_promise
-    res = tree_utils.map_structure(
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tree/__init__.py", line 435, in map_structure
-    [func(*args) for args in zip(*map(flatten, structures))])
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tree/__init__.py", line 435, in <listcomp>
-    [func(*args) for args in zip(*map(flatten, structures))])
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/tensorflow_datasets/core/download/download_manager.py", line 831, in <lambda>
-    lambda p: p.get(), all_promises
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/promise/promise.py", line 511, in get
-    self._wait(timeout or DEFAULT_TIMEOUT)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/promise/promise.py", line 506, in _wait
-    self.wait(self, timeout)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/promise/promise.py", line 502, in wait
-    async_instance.wait(promise, timeout)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/promise/async_.py", line 117, in wait
-    target.scheduler.wait(target, timeout)
-  File "/zhome/77/8/118225/.local/lib/python3.8/site-packages/promise/schedulers/immediate.py", line 25, in wait
-    waited = e.wait(timeout)
-  File "/appl/python/3.8.2/lib/python3.8/threading.py", line 558, in wait
-    signaled = self._cond.wait(timeout)
-  File "/appl/python/3.8.2/lib/python3.8/threading.py", line 302, in wait
-    waiter.acquire()
-KeyboardInterrupt
-Terminated
