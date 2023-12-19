@@ -38,7 +38,8 @@ class LocalSampling(object):
                  N_sim:int=2**8,
                  max_T:float=1.0,
                  dt_steps:int=1000,
-                 T_sample:float = None
+                 T_sample:bool = False,
+                 T_point:float=0.1,
                  )->None:
         
         self.M = M
@@ -48,6 +49,7 @@ class LocalSampling(object):
         self.max_T = max_T
         self.dt_steps = dt_steps
         self.T_sample = T_sample
+        self.T_point = T_point
         self.repeats = repeats
         self.x0s = tile(x0, repeats)
         
@@ -75,8 +77,7 @@ class LocalSampling(object):
             Fx0s = self.x0s[0]
             self.x0s = (xss[-1,::self.x_samples],chartss[-1,::self.x_samples])
             
-            
-            if self.t_samples is None:
+            if not self.T_sample:
                 inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
                 ts = ts[inds]
                 samples = xss[inds]
@@ -89,7 +90,7 @@ class LocalSampling(object):
                                   ))
             
             else:
-                inds = jnp.argmin(jnp.abs(ts-self.T_sample))
+                inds = jnp.argmin(jnp.abs(ts-self.T_point))
                 ts = ts[inds]
                 samples = xss[inds]
                 yield jnp.hstack((jnp.repeat(Fx0s,self.x_samples,axis=0),
@@ -180,7 +181,7 @@ class EmbeddedSampling(object):
             Fx0s = vmap(lambda x,chart: self.M.F((x,chart)))(*self.x0s) #x0s[1]
             self.x0s = (xss[-1,::self.x_samples],chartss[-1,::self.x_samples])
            
-            if self.T_sample is None:
+            if not self.T_sample:
                 inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
                 ts = ts[inds]
                 samples = xss[inds]
@@ -305,7 +306,7 @@ class TMSampling(object):
             self.x0s = (xss[-1,::self.x_samples],chartss[-1,::self.x_samples])
             
             
-            if self.t_samples is None:
+            if not self.T_sample:
                 inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
                 ts = ts[inds]
                 samples = xss[inds]
@@ -415,7 +416,7 @@ class ProjectionSampling(object):
             self.x0s = (xss[-1,::self.x_samples],chartss[-1,::self.x_samples])
             
             
-            if self.t_samples is None:
+            if not self.T_sample:
                 inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
                 ts = ts[inds]
                 samples = xss[inds]

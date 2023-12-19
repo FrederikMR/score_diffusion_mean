@@ -50,9 +50,11 @@ def parse_args():
                         type=str)
     parser.add_argument('--load_model', default=False,
                         type=bool)
-    parser.add_argument('--T_sample', default=-1.0,
+    parser.add_argument('--T_sample', default=True,
+                        type=bool)
+    parser.add_argument('--t', default=0.1,
                         type=float)
-    parser.add_argument('--train_net', default="s2",
+    parser.add_argument('--train_net', default="s1",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
@@ -92,7 +94,7 @@ def train_score()->None:
         generator_dim = args.generator_dim
     
     if args.manifold == "RN":
-        if args.T_sample <= 0.0:
+        if not args.T_sample:
             s1_path = ''.join(('scores/R',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/R',str(args.dim),'/s2/'))
         else:
@@ -115,7 +117,7 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
     
     elif args.manifold == "Circle":
-        if args.T_sample <= 0.0:
+        if not args.T_sample:
             s1_path = ''.join(('scores/S1/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S1/s2/'))
         else:
@@ -133,7 +135,7 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "SN":
-        if args.T_sample <= 0.0:
+        if not args.T_sample:
             s1_path = ''.join(('scores/S',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S',str(args.dim),'/s2/'))
         else:
@@ -156,7 +158,7 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "Ellipsoid":
-        if args.T_sample <= 0.0:
+        if not args.T_sample:
             s1_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s2/'))
         else:
@@ -180,7 +182,7 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "Cylinder":
-        if args.T_sample <= 0.0:
+        if not args.T_sample:
             s1_path = ''.join(('scores/Cylinder/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Cylinder/s2/'))
         else:
@@ -199,7 +201,7 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "Torus":
-        if args.T_sample <= 0.0:
+        if not args.T_sample:
             s1_path = ''.join(('scores/Torus/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Torus/s2/'))
         else:
@@ -217,7 +219,7 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "Landmarks":
-        if args.T_sample <= 0.0:
+        if not args.T_sample:
             s1_path = ''.join(('scores/Landmarks',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Landmarks',str(args.dim),'/s2/'))
         else:
@@ -251,7 +253,7 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "SPDN":
-        if args.T_sample is None:
+        if not args.T_sample:
             s1_path = ''.join(('scores/SPDN',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/SPDN',str(args.dim),'/s2/'))
         else:
@@ -274,7 +276,7 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "HypParaboloid":
-        if args.T_sample is None:
+        if not args.T_sample:
             s1_path = ''.join(('scores/HypParaboloid/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/HypParaboloid/s2/'))
         else:
@@ -303,7 +305,9 @@ def train_score()->None:
                                        N_sim=N_sim,
                                        max_T=args.max_T,
                                        dt_steps=args.dt_steps,
-                                       T_sample=args.T_sample)
+                                       T_sample=args.T_sample,
+                                       t=args.t
+                                       )
     elif args.sampling_method == "EmbeddedSampling":
         dW_dim = M.dim
         data_generator = EmbeddedSampling(M=M,
@@ -314,7 +318,8 @@ def train_score()->None:
                                           N_sim=N_sim,
                                           max_T=args.max_T,
                                           dt_steps=args.dt_steps,
-                                          T_sample=args.T_sample
+                                          T_sample=args.T_sample,
+                                          t=args.t
                                           )
     elif args.sampling_method == "ProjectionSampling":
         dW_dim = M.emb_dim
@@ -328,6 +333,7 @@ def train_score()->None:
                                             max_T=args.max_T,
                                             dt_steps=args.dt_steps,
                                             T_sample=args.T_sample,
+                                            t=args.t
                                             )
     elif args.sampling_method == "TMSampling":
         dW_dim = M.emb_dim
@@ -341,7 +347,8 @@ def train_score()->None:
                                     N_sim=N_sim,
                                     max_T=args.max_T,
                                     dt_steps=args.dt_steps,
-                                    T_sample=args.T_sample
+                                    T_sample=args.T_sample,
+                                    t=args.t
                                     )
     
     if not os.path.exists('scores/output/'):
@@ -350,7 +357,10 @@ def train_score()->None:
     if not os.path.exists('scores/error/'):
         os.makedirs('scores/error/')
     
-    batch_size = args.x_samples*args.t_samples*args.repeats
+    if args.T_sample:
+        batch_size = args.x_samples*args.repeats
+    else:
+        batch_size = args.x_samples*args.t_samples*args.repeats
     if args.train_net == "s2":
         state = load_model(s1_path)
         rng_key = jran.PRNGKey(2712)
