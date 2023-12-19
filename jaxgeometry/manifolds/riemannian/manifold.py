@@ -22,6 +22,7 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.autodiff import *
 
 #%% Code
 
@@ -38,7 +39,7 @@ class Manifold(object):
     def __str__(self)->str:
         return "abstract Riemannian manifold"
             
-    def chart(self)->ndarray:
+    def chart(self)->Array:
         """ return default or specified coordinate chart. This method will generally be overriding by inheriting classes """
         # default value 
         return jnp.zeros(1) 
@@ -47,9 +48,9 @@ class Manifold(object):
         """ return centered coordinate chart. Must be implemented by inheriting classes 
         Generally wish to stop gradient computations through the chart choice
         """
-        return stop_gradient(jnp.zeros(1))
+        return lax.stop_gradient(jnp.zeros(1))
     
-    def coords(self,coords:ndarray=None,chart:ndarray=None)->Tuple[ndarray, ndarray]:
+    def coords(self,coords:Array=None,chart:Array=None)->Tuple[Array, Array]:
         """ return coordinate representation of point in manifold """
         if coords is None:
             coords = jnp.zeros(self.dim)
@@ -58,17 +59,17 @@ class Manifold(object):
 
         return (jnp.array(coords),chart)
     
-    def update_coords(self,coords:ndarray,new_chart:ndarray)->ndarray:
+    def update_coords(self,coords:Array,new_chart:Array)->Array:
         """ change between charts """
         
         assert(False) #not implemented here
     
-    def update_vector(self,coords:ndarray,new_coords:ndarray,new_chart:ndarray,v:ndarray)->ndarray:
+    def update_vector(self,coords:Array,new_coords:Array,new_chart:Array,v:Array)->Array:
         """ change tangent vector between charts """
         
         assert(False) # not implemented here
         
-    def update_covector(self,coords:ndarray,new_coords:ndarray,new_chart:ndarray,p:ndarray)->ndarray:
+    def update_covector(self,coords:Array,new_coords:Array,new_chart:Array,p:Array)->Array:
         """ change cotangent vector between charts """
         assert(False) # not implemented here
         
@@ -80,10 +81,10 @@ class Manifold(object):
 class EmbeddedManifold(Manifold):
     """ Embedded Riemannian manifold in Euclidean Space base class """
     
-    def __init__(self,F:Callable[[ndarray], ndarray]=None,
+    def __init__(self,F:Callable[[Array], Array]=None,
                  dim:int=None,
                  emb_dim:int=None,
-                 invF:Callable[[ndarray], ndarray]=None)->None:
+                 invF:Callable[[Array], Array]=None)->None:
         Manifold.__init__(self)
         self.dim = dim
         self.emb_dim = emb_dim
@@ -96,7 +97,7 @@ class EmbeddedManifold(Manifold):
             self.invJF = jacfwdx(self.invF)
             
             @jit
-            def g(x:Tuple[ndarray, ndarray])->ndarray:
+            def g(x:Tuple[Array, Array])->Array:
                 
                 JF = self.JF(x)
                 
@@ -110,27 +111,27 @@ class EmbeddedManifold(Manifold):
     def __str__(self)->str:
         return "Riemannian manifold of dimension %d embedded in R^%d" % (self.dim,self.emb_dim)
     
-    def update_coords(self,coords:ndarray,new_chart:ndarray)->Tuple[ndarray, ndarray]:
+    def update_coords(self,coords:Tuple[Array,Array],new_chart:Array)->Tuple[Array, Array]:
         """ change between charts """
         return (self.invF((self.F(coords),new_chart)),new_chart)
 
-    def update_vector(self,coords:ndarray,new_coords:ndarray,new_chart:ndarray,v:ndarray)->ndarray:
+    def update_vector(self,coords:Array,new_coords:Array,new_chart:Array,v:Array)->Array:
         """ change tangent vector between charts """
         return jnp.tensordot(self.invJF((self.F((new_coords,new_chart)),new_chart)),jnp.tensordot(self.JF(coords),v,(1,0)),(1,0))
 
-    def update_covector(self,coords:ndarray,new_coords:ndarray,new_chart:ndarray,p:ndarray)->ndarray:
+    def update_covector(self,coords:Array,new_coords:Array,new_chart:Array,p:Array)->Array:
         """ change cotangent vector between charts """
         return jnp.tensordot(self.JF((new_coords,new_chart)).T,jnp.tensordot(self.invJF((self.F(coords),coords[1])).T,p,(1,0)),(1,0))
     
-    def plot_path(self, xs:Tuple[ndarray, ndarray], 
-                  vs:ndarray=None, 
+    def plot_path(self, xs:Tuple[Array, Array], 
+                  vs:Array=None, 
                   v_steps:int=None, 
                   i0:int=0, 
                   color:str='b', 
                   color_intensity:float=1., 
                   linewidth:float=1., 
                   s:int=15.,
-                  prevx:Tuple[ndarray, ndarray]=None, 
+                  prevx:Tuple[Array, Array]=None, 
                   last:bool=True) -> None:
     
         if vs is not None and v_steps is not None:
@@ -161,16 +162,16 @@ class EmbeddedManifold(Manifold):
         return
 
     # plot x. x can be either in coordinates or in R^3
-    def plotx(self, x:Tuple[ndarray, ndarray], 
-              u:ndarray=None, 
-              v:ndarray=None, 
+    def plotx(self, x:Tuple[Array, Array], 
+              u:Array=None, 
+              v:Array=None, 
               v_steps:int=None, 
               i:int=0, 
               color:str='b',               
               color_intensity:float=1., 
               linewidth:float=1., 
               s:float=15., 
-              prevx:Tuple[ndarray, ndarray]=None, 
+              prevx:Tuple[Array, Array]=None, 
               last:bool=True)->None:
     
         assert(type(x) == type(()) or x.shape[0] == self.emb_dim)

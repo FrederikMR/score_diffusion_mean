@@ -22,20 +22,21 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrate_sde, integrator_ito
 
 #%% Eulerian
 
-def initialize(M:object,
-               k:Callable[[ndarray], ndarray]=None
-               )->None:
+def Eulerian(M:object,
+             k:Callable[[Array], Array]=None
+             )->None:
     
     """
     Eulerian / stochastic EPDiff acting on landmarks
     """
 
-    def sde_Eulerian(c:Tuple[ndarray, ndarray, ndarray, ndarray, ndarray],
-                     y:Tuple[ndarray, ndarray]
-                     )->Tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
+    def sde_Eulerian(c:Tuple[Array, Array, Array, Array, Array],
+                     y:Tuple[Array, Array]
+                     )->Tuple[Array, Array, Array, Array, Array]:
         
         t,x,chart,sigmas_x,sigmas_a = c
         dt,dW = y
@@ -56,8 +57,8 @@ def initialize(M:object,
         
         return (det,sto,X,jnp.zeros_like(sigmas_x),jnp.zeros_like(sigmas_a))
 
-    def chart_update_Eulerian(xp:ndarray,
-                              chart:ndarray,
+    def chart_update_Eulerian(xp:Array,
+                              chart:Array,
                               *cy
                               ):
         

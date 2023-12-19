@@ -22,15 +22,16 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-from jaxgeometry.statistics.iterative_mle import *
+from jaxgeometry.integration import dts
+from .iterative_mle import iterative_mle
 from jaxgeometry.stochastics import get_guided
 
-#%% Code
+#%% MLE Estimate of Diffusion Mean
 
-def initialize(M:object)->None:
+def diffusion_mean(M:object)->None:
 
     # function to update charts for position depends parameters
-    def params_update(state, chart):
+    def params_update(state:Tuple[Tuple[Array, Array, Array], Array], chart:Array):
         try:
             ((x,m,v),),*s = state
             if M.do_chart_update((x,chart)):

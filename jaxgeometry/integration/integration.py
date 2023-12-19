@@ -25,29 +25,30 @@ from jaxgeometry.setup import *
 
 #%% Integration
 
-def dts(T:int=T,n_steps:int=n_steps)->ndarray:
+def dts(T:float=T,n_steps:int=n_steps)->Array:
     """time increments, deterministic"""
     return jnp.array([T/n_steps]*n_steps)
 
-def dWs(d:int,_dts:ndarray=None,num:int=1)->ndarray:
+def dWs(d:int,_dts:Array=None,num:int=1)->Array:
     """
     standard noise realisations
     time increments, stochastic
     """
     global key
-    keys = random.split(key,num=num+1)
+    keys = jrandom.split(key,num=num+1)
     key = keys[0]
     subkeys = keys[1:]
     if _dts == None:
         _dts = dts()
     if num == 1:
-        return jnp.sqrt(_dts)[:,None]*random.normal(subkeys[0],(_dts.shape[0],d))
+        return jnp.sqrt(_dts)[:,None]*jrandom.normal(subkeys[0],(_dts.shape[0],d))
     else:
-        return vmap(lambda subkey: jnp.sqrt(_dts)[:,None]*random.normal(subkey,(_dts.shape[0],d)))(subkeys)    
+        return vmap(lambda subkey: jnp.sqrt(_dts)[:,None]*jrandom.normal(subkey,(_dts.shape[0],d)))(subkeys)    
 
-def integrator(ode_f,
-               chart_update=None,
-               method:str=default_method):
+def integrator(ode_f:Callable[[Tuple[Array, Array, Array], Array], Array],
+               chart_update:Callable[[Array, Array, Array], Tuple[Array, Array]]=None,
+               method:str=default_method
+               )->Callable:
     """
     Integrator (deterministic)
     """
@@ -55,13 +56,13 @@ def integrator(ode_f,
         chart_update = lambda *args: args[0:2]
 
     # euler:
-    def euler(c,y):
+    def euler(c:Tuple[Array, Array, Array],y:Tuple[Array, Array]):
         t,x,chart = c
         dt,*_ = y
         return ((t+dt,*chart_update(x+dt*ode_f(c,y[1:]),chart,y[1:])),)*2
 
     # Runge-kutta:
-    def rk4(c,y):
+    def rk4(c:Tuple[Array, Array, Array],y:Tuple[Array, Array]):
         t,x,chart = c
         dt,*_ = y
         k1 = ode_f(c,y[1:])
@@ -77,35 +78,42 @@ def integrator(ode_f,
     else:
         assert(False)
 
-def integrate(ode,
-              chart_update,
-              x:ndarray,chart:ndarray,dts:ndarray,*ys):
+def integrate(ode:Callable[[Tuple[Array, Array, Array], Array], Array],
+              chart_update:Callable[[Array, Array, Array], Tuple[Array, Array]],
+              x:Array,
+              chart:Array,
+              dts:Array,
+              *ys
+              )->Array:
     """return symbolic path given ode and integrator"""
 
-    _,xs = scan(integrator(ode,chart_update),
-            (0.,x,chart),
-            (dts,*ys))
+    _,xs = lax.scan(integrator(ode,chart_update),
+                    (0.,x,chart),
+                    (dts,*ys))
     return xs if chart_update is not None else xs[0:2]
 
-def integrate_sde(sde,
-                  integrator:Callable,chart_update,
-                  x:ndarray,
-                  chart:ndarray,
-                  dts:ndarray,
-                  dWs:ndarray,
-                  *cy):
+def integrate_sde(sde:Callable[[Tuple[Array, Array, Array, Array], Tuple[Array, Array]], Tuple[Array, Array, Array, Array]],
+                  integrator:Callable,
+                  chart_update:Callable[[Array, Array, Array], Tuple[Array, Array]],
+                  x:Array,
+                  chart:Array,
+                  dts:Array,
+                  dWs:Array,
+                  *cy
+                  )->Array:
     """
     sde functions should return (det,sto,Sigma) where
     det is determinisitc part, sto is stochastic part,
     and Sigma stochastic generator (i.e. often sto=dot(Sigma,dW)
     """
-    _,xs = scan(integrator(sde,chart_update),
-            (0.,x,chart,*cy),
-            (dts,dWs,))
+    _,xs = lax.scan(integrator(sde,chart_update),
+                    (0.,x,chart,*cy),
+                    (dts,dWs,))
     return xs
 
-def integrator_stratonovich(sde_f,
-                            chart_update=None):
+def integrator_stratonovich(sde_f:Callable[[Tuple[Array, Array, Array, Array], Tuple[Array, Array]], Tuple[Array, Array, Array, Array]],
+                            chart_update:Callable[[Array, Array, Array], Tuple[Array, Array]]=None
+                            )->Callable:
     """Stratonovich integration for SDE"""
     if chart_update == None: # no chart update
         chart_update = lambda xp,chart,*cy: (xp,chart,*cy)
@@ -121,8 +129,10 @@ def integrator_stratonovich(sde_f,
 
     return euler_heun
 
-def integrator_ito(sde_f,
-                   chart_update=None):
+def integrator_ito(sde_f:Callable[[Tuple[Array, Array, Array, Array], Tuple[Array, Array]], Tuple[Array, Array, Array, Array]],
+                   chart_update:Callable[[Array, Array, Array], Tuple[Array, Array]]=None,
+                   step_fun:Callable[[Array, Array], Array]=lambda x,v: x[0]+v
+                   )->Callable:
     
     """Ito integration for SDE"""
     
@@ -135,6 +145,6 @@ def integrator_ito(sde_f,
 
         (detx, stox, X, *dcy) = sde_f(c,y)
         cy_new = tuple([y+dt*dy for (y,dy) in zip(cy,dcy)])
-        return ((t+dt,*chart_update(x + dt*detx + stox, chart, *cy_new)),)*2
+        return ((t+dt,*chart_update(step_fun((x,chart), dt*detx + stox), chart, *cy_new)),)*2
 
     return euler

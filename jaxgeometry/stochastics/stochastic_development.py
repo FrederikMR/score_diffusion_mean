@@ -24,12 +24,12 @@ from jaxgeometry.setup import *
 
 #%% Stochastic Development
 
-def initialize(M:object)->None:
+def stochastic_development(M:object)->None:
     """ development and stochastic development from R^d to M """
 
     # Deterministic development
-    def ode_development(c:Tuple[ndarray, ndarray, ndarray],
-                        y:Tuple[ndarray, ndarray]):
+    def ode_development(c:Tuple[Array, Array, Array],
+                        y:Tuple[Array, Array]):
         t,u,chart = c
         dgamma, = y
 
@@ -42,9 +42,9 @@ def initialize(M:object)->None:
         return det
 
     # Stochastic development
-    def sde_development(c:Tuple[ndarray, ndarray, ndarray],
-                        y:Tuple[ndarray, ndarray]
-                        )->Tuple[ndarray, ndarray, dnarray]:
+    def sde_development(c:Tuple[Array, Array, Array],
+                        y:Tuple[Array, Array]
+                        )->Tuple[Array, Array, Array]:
         
         t,u,chart = c
         dt,dW = y

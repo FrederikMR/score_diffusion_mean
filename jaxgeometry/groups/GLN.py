@@ -23,6 +23,7 @@
 
 from jaxgeometry.setup import *
 from jaxgeometry.groups import LieGroup
+from jaxgeometry.plot import *
 
 #%% GLN
 
@@ -36,20 +37,20 @@ class GLN(LieGroup):
         LieGroup.__init__(self,dim,N=N,invariance='left')
 
         # project to group, here with minimum eigenvalue 1e-3
-        def to_group(g:ndarray)->ndarray:
+        def to_group(g:Array)->Array:
             _min_eig = 1e-3
             w, V = jnp.linalg.eig(g.astype('complex128'))
             w_prime = jnp.where(abs(w) < _min_eig, _min_eig, w)
             return jnp.dot(V,jnp.dot(jnp.diag(w_prime),V.T)).real
 
         ## coordinate chart on the linking Lie algebra, trival in this case
-        def VtoLA(hatxi:ndarray)->ndarray: # from \RR^G.dim to LA
+        def VtoLA(hatxi:Array)->Array: # from \RR^G.dim to LA
             if hatxi.ndim == 1:
                 return hatxi.reshape((N,N))
             else: # matrix
                 return hatxi.reshape((N,N,-1))
         self.VtoLA = VtoLA
-        def LAtoV(m:ndarray)->ndarray: # from LA to \RR^G.dim
+        def LAtoV(m:Array)->Array: # from LA to \RR^G.dim
             if m.ndim == 2:
                 return m.reshape((self.dim,))
             elif m.ndim == 3:
@@ -59,7 +60,7 @@ class GLN(LieGroup):
         self.LAtoV = LAtoV
 
         self.Expm = jscipy.linalg.expm
-        def logm(b:ndarray)->ndarray:
+        def logm(b:Array)->Array:
             I = jnp.eye(b.shape[0])
             res = jnp.zeros_like(b)
             ITERATIONS = 20
@@ -76,11 +77,11 @@ class GLN(LieGroup):
         return "GL(%d) (dimension %d)" % (self.N,self.dim)        
 
     def plot_path(self, 
-                  g:ndarray,
+                  g:Array,
                   color_intensity:float=1.,
                   color:str=None,
                   linewidth:float=3.,
-                  prevg:ndarray=None
+                  prevg:Array=None
                   )->None:
         
         assert(len(g.shape)>2)
@@ -92,11 +93,11 @@ class GLN(LieGroup):
         return
 
     def plotg(self, 
-              g:ndarray,
+              g:Array,
               color_intensity:float=1.,
               color:str=None,
               linewidth:float=3.,
-              prevg:ndarray=None
+              prevg:Array=None
               )->None:
         
         s0 = np.eye(self.N) # shape

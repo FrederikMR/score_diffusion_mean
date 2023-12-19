@@ -22,11 +22,12 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-import jaxgeometry.manifolds.riemannian as riemannian
+from .riemannian import EmbeddedManifold, metric, curvature, geodesic, Log, parallel_transport
+from jaxgeometry.autodiff import *
 
 #%% Circle
 
-class S1(riemannian.EmbeddedManifold):
+class S1(EmbeddedManifold):
     """ 2d Ellipsoid """
     
     def __str__(self):
@@ -62,22 +63,25 @@ class S1(riemannian.EmbeddedManifold):
             self.centered_chart = self.centered_chart_steographic
             self.chart = lambda : jnp.array([0.0, -1.0])
 
-        riemannian.EmbeddedManifold.__init__(self,F,1,2,invF=invF)
+        EmbeddedManifold.__init__(self,F,1,2,invF=invF)
 
         # action of matrix group on elements
         self.act = lambda g,x: jnp.tensordot(g,x,(1,0))
         self.acts = lambda g,x: jnp.tensordot(g,x,(2,0))
         
-        riemannian.metric(self)
-        riemannian.curvature(self)
-        riemannian.geodesic(self)
-        riemannian.Log(self)
-        riemannian.parallel_transport(self)
+        metric(self)
+        curvature(self)
+        geodesic(self)
+        Log(self)
+        parallel_transport(self)
         
         if use_spherical_coords:
-            self.Log = self.StdLogSpherical
+            self.Log = self.StdLog
         else:
             self.Log = self.StdLogSteographic
+            
+        self.Exp = lambda x,v: (x[0]+v) % self.angle_shift
+        
 
         #Heat kernels
         self.hk = jit(lambda x,y,t: hk(self, x,y, t))
@@ -100,29 +104,40 @@ class S1(riemannian.EmbeddedManifold):
             return stop_gradient(self.F(x))
         else:
             return x # already in embedding space
-
-    def StdLogSpherical(self, x,y):
-
-        return (y[0]-x[0])%self.angle_shift
     
-    def StdLogEmb(self, x,y):
-        proj = lambda x,y: jnp.dot(x,y)*x
-        Fx = self.F(x)
-        v = y-proj(Fx,y)
-        theta = jnp.arccos(jnp.dot(Fx,y))
-        normv = jnp.linalg.norm(v,2)
-        w = cond(normv >= 1e-5,
-                         lambda _: theta/normv*v,
-                         lambda _: jnp.zeros_like(v),
-                         None)
+    def StdLog(self, x:Tuple[Array, Array], y:Tuple[Array, Array])->Array:
+        
+        return (y[0]-x[0]) % self.angle_shift
     
-    def StdLogSteographic(self, x,y):
-        Fx = self.F(x)
-        return jnp.dot(self.invJF((Fx,x[1])),self.StdLogEmb(x,y))
+    def StdExp(self, x:Tuple[Array, Array], v:Array)->Array:
+        
+        z = (y[0]+x[0]) % self.angle_shift
+
+        return (z, self.F((z,x[1])))
+    
+    def StdDot(self, x:Tuple[Array, Array], v:Array, w:Array)->Array:
+        
+        return v*w
+    
+    def StdNorm(self, x:Tuple[Array, Array], v:Array)->Array:
+        
+        return jnp.abs(v)
+    
+    def dist(self, x:Tuple[Array, Array], y:Tuple[Array, Array])->Array:
+        
+        return jnp.abs((x[0]-y[0])%self.angle_shift)
+    
+    def ParallelTransport(self, x:Tuple[Array, Array], y:Tuple[Array, Array], v:Array)->Array:
+        
+        return v
+    
+    def Proj(self, x:Tuple[Array, Array], v:Array)->Array:
+        
+        return v
 
 #%% Heat Kernel
 
-def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float,N_terms=20)->float:
+def hk(M:object, x:Array,y:Array,t:float,N_terms=20)->float:
     
     def step(carry:float, k:int)->Tuple[float, None]:
         
@@ -139,25 +154,25 @@ def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float,N_terms=20)->float:
    
     return val*const
 
-def log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float)->float:
+def log_hk(M:object, x:Array,y:Array,t:float)->float:
     
     return jnp.log(hk(x,y,t))
 
-def gradx_log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float, N_terms=20)->Tuple[jnp.ndarray, jnp.ndarray]:
+def gradx_log_hk(M:object, x:Array,y:Array,t:float, N_terms=20)->Tuple[Array, Array]:
     
-    def get_coords(Fx:jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    def get_coords(Fx:Array) -> Tuple[Array, Array]:
 
         chart = M.centered_chart(Fx)
         return (M.invF((Fx,chart)),chart)
 
-    def to_TMchart(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
+    def to_TMchart(Fx:Array,v:Array) -> Array:
         
         x = invF_spherical(Fx)
         invJFx = JinvF_spherical((x,Fx))
         
         return jnp.dot(invJFx.reshape(-1,1),v)
 
-    def to_TMx(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
+    def to_TMx(Fx:Array,v:Array) -> Array:
 
         x = get_coords(Fx)
 
@@ -189,21 +204,21 @@ def gradx_log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float, N_terms=20)->Tup
    
     return grad#grad_x, grad_chart
 
-def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=20) -> Tuple[jnp.ndarray, jnp.ndarray]:
+def grady_log_hk(M:object, x:Array, y:Array, t:float, N_terms=20) -> Tuple[Array, Array]:
     
-    def get_coords(Fx:jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    def get_coords(Fx:Array) -> Tuple[Array, Array]:
 
         chart = M.centered_chart(Fx)
         return (M.invF((Fx,chart)),chart)
 
-    def to_TMchart(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
+    def to_TMchart(Fx:Array,v:Array) -> Array:
         
         x = invF_spherical(Fx)
         invJFx = JinvF_spherical((x,Fx))
         
         return jnp.dot(invJFx.reshape(-1,1),v)
 
-    def to_TMx(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
+    def to_TMx(Fx:Array,v:Array) -> Array:
 
         x = get_coords(Fx)
 
@@ -236,7 +251,7 @@ def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=20) ->
    
     return grad#grad_x, grad_chart
 
-def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=20)->float:
+def gradt_log_hk(M:object, x:Array, y:Array, t:float, N_terms=20)->float:
     
     def step1(carry:float, k:int)->Tuple[float,None]:
         

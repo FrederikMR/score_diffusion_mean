@@ -22,23 +22,24 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-import jaxgeometry.manifolds.riemannian as riemannian
+from jaxgeometry.manifolds.riemannian import metric
+from jaxgeometry.integration import integrate
 
 #%% MPP Kunita
 
 ###############################################################
 # Most probable paths for Kunita flows                        #
 ###############################################################
-def initialize(M:object,
+def MPP_Kunita(M:object,
                N:object,
-               sigmas:Callable[[ndarray], ndarray],
-               u:ndarray):
+               sigmas:Callable[[Array], Array],
+               u:Array):
     """ Most probable paths for Kunita flows                 """
     """ M: shape manifold, N: embedding space, u: flow field """
 
-    def ode_MPP_AC(c:Tuple[ndarray, ndarray, ndarray],
-                   y:Tuple[ndarray, ndarray]
-                   )->ndarray:
+    def ode_MPP_AC(c:Tuple[Array, Array, Array],
+                   y:Tuple[Array, Array]
+                   )->Array:
         
         t,xx1,chart = c
         qp,dqp = y
@@ -62,10 +63,10 @@ def initialize(M:object,
         
         return jnp.stack((dx1,dx2))
 
-    def chart_update_MPP_AC(xv:ndarray,
-                            chart:ndarray,
-                            y:ndarray
-                            )->Tuple[ndarray, ndarray]:
+    def chart_update_MPP_AC(xv:Array,
+                            chart:Array,
+                            y:Array
+                            )->Tuple[Array, Array]:
         
         if M.do_chart_update is None:
             return (xv,chart)
@@ -87,7 +88,7 @@ def initialize(M:object,
     # Riemannian structure on N
     N.gsharp = lambda x: jnp.einsum('pri,qrj->ij',sigmas(x[0]),sigmas(x[0]))
     delattr(N,'g')
-    riemannian.metric(N)
+    metric(N)
 
     # scalar part of elliptic operator L = 1/2 \Delta_g + z
     z = lambda x,qp: (u(x,qp)

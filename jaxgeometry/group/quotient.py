@@ -25,12 +25,12 @@ from jaxgeometry.setup import *
 
 #%% Quotient
 
-def horz_vert_split(x:Tuple[ndarray, ndarray],
-                    proj:Callable[[Tuple[ndarray, ndarray]], ndarray],
-                    sigma:ndarray,
+def horz_vert_split(x:Tuple[Array, Array],
+                    proj:Callable[[Tuple[Array, Array]], Array],
+                    sigma:Array,
                     G:object,
                     M:object
-                    )->Tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
+                    )->Tuple[Array, Array, Array, Array, Array]:
     
     """ compute kernel of proj derivative with respect to inv A metric """
     
@@ -46,16 +46,16 @@ def horz_vert_split(x:Tuple[ndarray, ndarray],
     
     return (Xframe,Xframe_inv,proj_horz,proj_ns,horz)
 
-def get_sde_fiber(sde_f:Callable[[ndarray,ndarray], ndarray],
-                  proj:Callable[[ndarray], ndarray],
+def get_sde_fiber(sde_f:Callable[[Tuple[Array, Array, Array, Array],Tuple[Array, Array]], Tuple[Array, Array, Array, Array]],
+                  proj:Callable[[Array], Array],
                   G:object,
                   M:object
                   ):
     
     """hit target v at time t=Tend"""
     
-    def sde_fiber(c:Tuple[ndarray, ndarray, ndarray, ndarray],
-                  y:Tuple[ndarray, ndarray]
+    def sde_fiber(c:Tuple[Array, Array, Array, Array],
+                  y:Tuple[Array, Array]
                   ):
         (det,sto,X,*dys_sde) = sde_f(c,y)
         t,g,_,sigma = c
@@ -71,15 +71,15 @@ def get_sde_fiber(sde_f:Callable[[ndarray,ndarray], ndarray],
 
     return sde_fiber
 
-def get_sde_horz(sde_f:Callable[[ndarray, ndarray], ndarray],
-                 proj:Callable[[ndarray], ndarray],
+def get_sde_horz(sde_f:Callable[[Tuple[Array, Array, Array, Array],Tuple[Array, Array]], Tuple[Array, Array, Array, Array]],
+                 proj:Callable[[Array], Array],
                  G:object,
                  M:object
                  ):
     
-    def sde_horz(c:Tuple[ndarray, ndarray, ndarray, ndarray],
-                 y:Tuple[ndarray, ndarray]
-                 )->Tuple[ndarray, ndarray, ndarray,...]:
+    def sde_horz(c:Tuple[Array, Array, Array, Array],
+                 y:Tuple[Array, Array]
+                 )->Tuple[Array, Array, Array,...]:
         
         (det,sto,X,*dys_sde) = sde_f(c,y)
         t,g,_,sigma = c
@@ -94,14 +94,14 @@ def get_sde_horz(sde_f:Callable[[ndarray, ndarray], ndarray],
 
     return sde_horz
 
-def get_sde_lifted(sde_f:Callable[[ndarray, ndarray], ndarray],
-                   proj:Callable[[ndarray], ndarray],
+def get_sde_lifted(sde_f:Callable[[Tuple[Array, Array, Array, Array],Tuple[Array, Array]], Tuple[Array, Array, Array, Array]],
+                   proj:Callable[[Array], Array],
                    G:object,
                    M:object
                    ):
                               
-    def sde_lifted(c:Tuple[ndarray, ndarray, ndarray, ndarray],
-                   y:Tuple[ndarray, ndarray]
+    def sde_lifted(c:Tuple[Array, Array, Array, Array],
+                   y:Tuple[Array, Array]
                    ):
         
         t,g,chart,sigma,*cs = c

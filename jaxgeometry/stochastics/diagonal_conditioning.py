@@ -22,15 +22,16 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrate_sde, integrator_ito
 
 #%% Diagonal Conditioning
 
-def initialize(M:object,
-               sde_product,
-               chart_update_product,
-               integrator:Callable[[ndarray], ndarray]=integrator_ito,
-               T:float=1
-               )->None:
+def diagonal_conditioning(M:object,
+                          sde_product:Callable[[Tuple[Array, Array, Array, Array], Array], Tuple[Array, Array, Array, Array]],
+                          chart_update_product:Callable[[Tuple[Array, Array, Array]], Tuple[Array, Array, Array]],
+                          integrator:Callable[[Array], Array]=integrator_ito,
+                          T:float=1
+                          )->None:
     """ diagonally conditioned product diffusions """
 
     def sde_diagonal(c,
@@ -50,7 +51,7 @@ def initialize(M:object,
         else:
             xref = vmap(lambda x,chart: M.update_coords((x,chart),ref_chart)[0],0)(x,chart)
         m = jnp.mean(xref,0) # mean
-        href = cond(t<T-dt/2,
+        href = lax.cond(t<T-dt/2,
                  lambda _: (m-xref)/(T-t),
                  lambda _: jnp.zeros_like(det),
                  None)
@@ -65,8 +66,8 @@ def initialize(M:object,
         else:
             return (det+h,sto,X,0.,jnp.zeros_like(ref_chart),*dcy)
 
-    def chart_update_diagonal(x:ndarray,
-                              chart:ndarray,
+    def chart_update_diagonal(x:Array,
+                              chart:Array,
                               *ys
                               ):
         if M.do_chart_update is None:

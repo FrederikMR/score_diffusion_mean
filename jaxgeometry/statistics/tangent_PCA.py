@@ -29,9 +29,9 @@ from jaxgeometry.setup import *
 
 def tangent_PCA(M:object, 
                 Log:Callable, 
-                mean:ndarray, 
+                mean:Array, 
                 y
-                )->ndarray:
+                )->Array:
     y = list(y) # make sure y is subscriptable
     
     try:

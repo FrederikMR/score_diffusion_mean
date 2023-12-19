@@ -25,48 +25,48 @@ from jaxgeometry.setup import *
 
 #%% Energy
 
-def initialize(G:object)->None:
+def energy(G:object)->None:
     """ group Lagrangian and Hamiltonian from invariant metric """
 
-    def Lagrangian(g:ndarray,
-                   vg:ndarray
-                   )->ndarray:
+    def Lagrangian(g:Array,
+                   vg:Array
+                   )->Array:
         
         """ Lagrangian """
         
         return .5*G.gG(g,vg,vg)
     
-    def Lagrangianpsi(q:ndarray,
-                      v:ndarray
-                      )->ndarray:
+    def Lagrangianpsi(q:Array,
+                      v:Array
+                      )->Array:
         
         """ Lagrangian using psi map """
         
         return .5*G.gpsi(q,v,v)
     
-    def l(hatxi:ndarray)->ndarray:
+    def l(hatxi:Array)->Array:
         
         """ LA restricted Lagrangian """
         
         return 0.5*G.gV(hatxi,hatxi)
 
-    def Hpsi(q:ndarray,
-             p:ndarray
-             )->ndarray:
+    def Hpsi(q:Array,
+             p:Array
+             )->Array:
         
         """ Hamiltonian using psi map """
         
         return .5*G.cogpsi(q,p,p)
     
-    def Hminus(mu:ndarray)->ndarray:
+    def Hminus(mu:Array)->Array:
         
         """ LA^* restricted Hamiltonian """
         
         return .5*G.cogV(mu,mu)
 
-    def HL(q:ndarray,
-           p:ndarray
-           )->ndarray:
+    def HL(q:Array,
+           p:Array
+           )->Array:
         
         """ Legendre transformation. The above Lagrangian is hyperregular """
         
@@ -74,7 +74,7 @@ def initialize(G:object)->None:
         
         return jnp.dot(p,v)-L(q,v)
     
-    def hl(mu:ndarray)->ndarray:
+    def hl(mu:Array)->Array:
         
         hatxi = invFl(mu)
         

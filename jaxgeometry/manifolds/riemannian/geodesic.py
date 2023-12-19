@@ -22,19 +22,20 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrate, dts
 
 #%% Riemannian Geodesics
 
-def initialize(M:object) -> None:
+def geodesic(M:object) -> None:
     
-    def ode_geodesic(c:Tuple[ndarray, ndarray, ndarray],y:ndarray)->ndarray:
+    def ode_geodesic(c:Tuple[Array, Array, Array],y:Array)->Array:
         t,x,chart = c
         dx2t = -jnp.einsum('ikl,k,l->i',M.Gamma_g((x[0],chart)),x[1],x[1])
         dx1t = x[1] 
         
         return jnp.stack((dx1t,dx2t))
     
-    def chart_update_geodesic(xv:ndarray,chart:ndarray,y:ndarray)->Tuple[ndarray, ndarray]:
+    def chart_update_geodesic(xv:Array,chart:Array,y:Array)->Tuple[Array, Array]:
         if M.do_chart_update is None:
             return (xv,chart)
     
@@ -52,11 +53,11 @@ def initialize(M:object) -> None:
                                 new_chart,
                                 chart))
     
-    def Exp(x:Tuple[ndarray, ndarray],
-            v:ndarray,
+    def Exp(x:Tuple[Array, Array],
+            v:Array,
             T:float=T,
             n_steps:int=n_steps
-            )->Tuple[ndarray, ndarray]:
+            )->Tuple[Array, Array]:
         
         curve = M.geodesic(x,v,dts(T,n_steps))
         x = curve[1][-1,0]
@@ -64,11 +65,11 @@ def initialize(M:object) -> None:
         
         return(x,chart)
 
-    def Expt(x:Tuple[ndarray, ndarray],
-             v:ndarray,
+    def Expt(x:Tuple[Array, Array],
+             v:Array,
              T:float=T,
              n_steps:int=n_steps
-             )->Tuple[ndarray, ndarray]:
+             )->Tuple[Array, Array]:
         
         curve = M.geodesic(x,v,dts(T,n_steps))
         xs = curve[1][:,0]
@@ -78,3 +79,5 @@ def initialize(M:object) -> None:
     M.geodesic = jit(lambda x,v,dts: integrate(ode_geodesic,chart_update_geodesic,jnp.stack((x[0],v)),x[1],dts))
     M.Exp = Exp
     M.Expt = Expt
+    
+    return

@@ -22,13 +22,14 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrator_ito, integrate_sde
 
 #%% Product Diffusion Process
 
-def initialize(M:object,
-               sde,
-               chart_update:Callable,
-               integrator:Callable=integrator_ito):
+def product_sde(M:object,
+                sde:Callable[[Tuple[Array, Array, Array, Array], Tuple[Array, Array]], Tuple[Array, Array, Array, Array]],
+                chart_update:Callable[[Tuple[Array, Array, Array]], Tuple[Array, Array, Array]],
+                integrator:Callable[[Callable, Callable], Callable]=integrator_ito):
     """ product diffusions """
 
     def sde_product(c,
@@ -48,7 +49,7 @@ def initialize(M:object,
     return (product,sde_product,chart_update_product)
 
 # for initializing parameters
-def tile(x:ndarray,N:int):
+def tile(x:Array,N:int):
     
     try:
         return jnp.tile(x,(N,)+(1,)*x.ndim)

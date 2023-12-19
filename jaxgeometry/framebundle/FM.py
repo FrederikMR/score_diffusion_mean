@@ -25,13 +25,13 @@ from jaxgeometry.setup import *
 
 #%% Frame Bunddle
 
-def initialize(M:object)->None:
+def FM(M:object)->None:
     """ Frame Bundle geometry """
 
-    def chart_update_FM(u:ndarray,
-                        chart:ndarray,
+    def chart_update_FM(u:Array,
+                        chart:Array,
                         *args
-                        )->Tuple[ndarray, ndarray]:
+                        )->Tuple[Array, Array]:
         
         if M.do_chart_update != True:
             return (u,chart)
@@ -52,9 +52,9 @@ def initialize(M:object)->None:
 
     #### Bases shifts, see e.g. Sommer Entropy 2016 sec 2.3
     # D denotes frame adapted to the horizontal distribution
-    def to_D(u:ndarray,
-             w:ndarray
-             )->ndarray:
+    def to_D(u:Array,
+             w:Array
+             )->Array:
         
         x = (u[0][0:d],u[1])
         nu = u[0][d:].reshape((d,-1))
@@ -68,9 +68,9 @@ def initialize(M:object)->None:
 
         return jnp.concatenate((Dwx,Dwnu.flatten()))
     
-    def from_D(u:ndarray,
-               Dw:ndarray
-               )->ndarray:
+    def from_D(u:Array,
+               Dw:Array
+               )->Array:
         
         x = (u[0][0:d],u[1])
         nu = u[0][d:].reshape((d,-1))
@@ -84,9 +84,9 @@ def initialize(M:object)->None:
 
         return jnp.concatenate((wx,wnu.flatten())) 
         # corresponding dual space shifts
-    def to_Dstar(u:ndarray,
-                 p:ndarray
-                 )->ndarray:
+    def to_Dstar(u:Array,
+                 p:Array
+                 )->Array:
         
         x = (u[0][0:d],u[1])
         nu = u[0][d:].reshape((d,-1))
@@ -100,9 +100,9 @@ def initialize(M:object)->None:
 
         return jnp.concatenate((Dpx,Dpnu.flatten()))
     
-    def from_Dstar(u:ndarray,
-                   Dp:ndarray
-                   )->ndarray:
+    def from_Dstar(u:Array,
+                   Dp:Array
+                   )->Array:
         
         x = (u[0][0:d],u[1])
         nu = u[0][d:].reshape((d,-1))
@@ -117,7 +117,7 @@ def initialize(M:object)->None:
         return jnp.concatenate((px,pnu.flatten()))
     
     ##### Horizontal vector fields:
-    def Horizontal(u:ndarray)->ndarray:
+    def Horizontal(u:Array)->Array:
         
         x = (u[0][0:d],u[1])
         nu = u[0][d:].reshape((d,-1))

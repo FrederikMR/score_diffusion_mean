@@ -23,6 +23,7 @@
 
 from jaxgeometry.setup import *
 from jaxgeometry.groups import LieGroup
+from jaxgeometry.plot import *
 
 #%% SON
 
@@ -39,7 +40,7 @@ class SON(LieGroup):
         self.injectivity_radius = 2*jnp.pi
 
         # project to group (here using QR factorization)
-        def to_group(g:ndarray)->ndarray:
+        def to_group(g:Array)->Array:
             (q,r) = jnp.linalg.qr(g)
             return jnp.dot(q,jnp.diag(jnp.diag(r)))
 
@@ -49,7 +50,7 @@ class SON(LieGroup):
         tmp_mat = r[jnp.newaxis, :] + ((N * (N - 3)) // 2-(r * (r - 1)) // 2)[::-1,jnp.newaxis]
         triu_index_matrix = jnp.triu(tmp_mat+1)-jnp.diag(jnp.diagonal(tmp_mat+1))
 
-        def VtoLA(hatxi:ndarray)->ndarray: # from \RR^G_dim to LA
+        def VtoLA(hatxi:Array)->Array: # from \RR^G_dim to LA
             if hatxi.ndim == 1:
                 m = jnp.concatenate((jnp.zeros(1),hatxi))[triu_index_matrix]
                 return m-m.T
@@ -61,13 +62,13 @@ class SON(LieGroup):
 
         #import theano.tensor.slinalg
         #Expm = jnp.slinalg.Expm()
-        def Expm(g:ndarray)->ndarray: # hardcoded for skew symmetric matrices to allow higher-order gradients
+        def Expm(g:Array)->Array: # hardcoded for skew symmetric matrices to allow higher-order gradients
             (w,V) = jnp.linalg.eigh(1.j*g)
             w = -1j*w
             expm = jnp.real(jnp.tensordot(V,jnp.tensordot(jnp.diag(jnp.exp(w)),jnp.conj(V.T),(1,0)),(1,0)))
             return expm
         self.Expm = Expm
-        def logm(b:ndarray)->ndarray:
+        def logm(b:Array)->Array:
             I = jnp.eye(b.shape[0])
             res = jnp.zeros_like(b)
             ITERATIONS = 20
@@ -84,12 +85,12 @@ class SON(LieGroup):
         return "SO(%d) (dimension %d)" % (self.N,self.dim)
 
     def plot_path(self,
-                  g:ndarray,
+                  g:Array,
                   color_intensity:float=1.,
                   color:str=None,
                   linewidth:float=3.,
                   alpha:float=1.,
-                  prevg:ndarray=None
+                  prevg:Array=None
                   )->None:
         
         assert(len(g.shape)>2)
@@ -103,12 +104,12 @@ class SON(LieGroup):
         return 
 
     def plotg(self,
-              g:ndarray,
+              g:Array,
               color_intensity:float=1.,
               color:str=None,
               linewidth:float=3.,
               alpha:float=1.,
-              prevg:ndarray=None
+              prevg:Array=None
               )->None:
         
         # Grid Settings:

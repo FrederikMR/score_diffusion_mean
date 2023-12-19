@@ -21,12 +21,12 @@
 
 #%% Modules
 
-from .flow import initialize as flow
-from .Hamiltonian import initialize as Hamiltonian
-from .MPP_group import initialize as MPP_group
-from .MPP_Kunita_Log import initialize as MPP_Kunita_Log
-from .MPP_Kunita import initialize as MPP_Kunita
-from .MPP_landmarks_Log import initialize as MPP_landmarks_Log
-from .MPP_landmarks import initialize as MPP_landmarks
+from .flow import flow
+from .Hamiltonian import Hamiltonian
+from .MPP_group import MPP_group
+from .MPP_Kunita_Log import MPP_Kunita_Log
+from .MPP_Kunita import MPP_Kunita
+from .MPP_landmarks_Log import MPP_landmarks_Log
+from .MPP_landmarks import MPP_landmarks
 
 #%% Code

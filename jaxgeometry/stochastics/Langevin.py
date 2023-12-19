@@ -22,14 +22,15 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrator_ito, integrate_sde
 
 #%% Langevin
 
-def initialize(M:object)->None:
+def Langevin(M:object)->None:
 
-    def sde_Langevin(c:Tuple[ndarray, ndarray, ndarray, ndarray, ndarray],
-                     y:Tuple[ndarray, ndarray]
-                     )->Tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
+    def sde_Langevin(c:Tuple[Array, Array, Array, Array, Array],
+                     y:Tuple[Array, Array]
+                     )->Tuple[Array, Array, Array, Array, Array]:
         
         t,x,chart,l,s = c
         dt,dW = y
@@ -41,8 +42,8 @@ def initialize(M:object)->None:
         sto = jnp.tensordot(X,dW,(1,0))
         return (det,sto,X,jnp.zeros_like(l),jnp.zeros_like(s))
 
-    def chart_update_Langevin(xp:ndarray,
-                              chart:ndarray,
+    def chart_update_Langevin(xp:Array,
+                              chart:Array,
                               *cy
                               ):
         

@@ -10,26 +10,25 @@ Created on Thu Jul  6 11:50:38 2023
 
 #%% Modules
 
-from JAXGeometry.setup import *
-from JAXGeometry.params import *
+from jaxgeometry.setup import *
 
 #%% Riemannian Newton's Method
 
 @jit
-def RMNewtonsMethod(mu_init:ndarray,
+def RMNewtonsMethod(mu_init:Array,
                     M:object,   
-                    grad_fn:Callable[[Tuple[ndarray, ndarray]], ndarray],
-                    ggrad_fn:Callable[[Tuple[ndarray, ndarray]], ndarray] = None,
+                    grad_fn:Callable[[Tuple[Array, Array]], Array],
+                    ggrad_fn:Callable[[Tuple[Array, Array]], Array] = None,
                     step_size:float = 0.1,
                     max_iter:int=100,
-                    bnds:tuple[ndarray, ndarray]=(None, None),
-                    max_step:ndarray=None
-                    )->Tuple[Tuple[ndarray, ndarray], ndarray]:
+                    bnds:tuple[Array, Array]=(None, None),
+                    max_step:Array=None
+                    )->Tuple[Tuple[Array, Array], Array]:
     
     @jit
-    def update(carry:Tuple[ndarray, ndarray], idx:int
-               )->Tuple[Tuple[ndarray, ndarray],
-                        Tuple[ndarray, ndarray]]:
+    def update(carry:Tuple[Array, Array], idx:int
+               )->Tuple[Tuple[Array, Array],
+                        Tuple[Array, Array]]:
         
         mu, grad = carry
         
@@ -70,19 +69,19 @@ def RMNewtonsMethod(mu_init:ndarray,
 #%% Euclidean Newton's Method
 
 @jit
-def NewtonsMethod(mu_init:ndarray,
-                  grad_fn:Callable[[ndarray], ndarray],
-                  ggrad_fn:Callable[[Tuple[ndarray, ndarray]], ndarray] = None,
+def NewtonsMethod(mu_init:Array,
+                  grad_fn:Callable[[Array], Array],
+                  ggrad_fn:Callable[[Tuple[Array, Array]], Array] = None,
                   step_size:float = 0.1,
                   max_iter:int=100,
-                  bnds:Tuple[ndarray, ndarray]=(None,None),
-                  max_step:ndarray=None
-                  )->Tuple[ndarray, ndarray]:
+                  bnds:Tuple[Array, Array]=(None,None),
+                  max_step:Array=None
+                  )->Tuple[Array, Array]:
     
     @jit
-    def update(carry:Tuple[ndarray, ndarray], idx:int
-               )->Tuple[Tuple[ndarray, ndarray],
-                        Tuple[ndarray, ndarray]]:
+    def update(carry:Tuple[Array, Array], idx:int
+               )->Tuple[Tuple[Array, Array],
+                        Tuple[Array, Array]]:
         
         mu, grad = carry
         
@@ -120,25 +119,25 @@ def NewtonsMethod(mu_init:ndarray,
 #%% Joint Newton's Method
 
 @jit 
-def JointNewtonsMethod(mu_rm:ndarray,
-                       mu_euc:ndarray,
+def JointNewtonsMethod(mu_rm:Array,
+                       mu_euc:Array,
                        M:object,
-                       grad_fn_rm:Callable[[Tuple[ndarray, ndarray]], ndarray],
-                       grad_fn_euc:Callable[[ndarray], ndarray],
-                       ggrad_fn_rm:Callable[[Tuple[ndarray, ndarray]], ndarray] = None,
-                       ggrad_fn_euc:Callable[[ndarray], ndarray] = None,
+                       grad_fn_rm:Callable[[Tuple[Array, Array]], Array],
+                       grad_fn_euc:Callable[[Array], Array],
+                       ggrad_fn_rm:Callable[[Tuple[Array, Array]], Array] = None,
+                       ggrad_fn_euc:Callable[[Array], Array] = None,
                        step_size_rm:float = 0.1,
                        step_size_euc:float = 0.1,
                        max_iter:int=100,
-                       bnds_rm:Tuple[ndarray, ndarray]=(None,None),
-                       bnds_euc:Tuple[ndarray, ndarray]=(None,None),
-                       max_step:ndarray=None
-                       )->Tuple[Tuple[ndarray, ndarray], ndarray, ndarray, ndarray]:
+                       bnds_rm:Tuple[Array, Array]=(None,None),
+                       bnds_euc:Tuple[Array, Array]=(None,None),
+                       max_step:Array=None
+                       )->Tuple[Tuple[Array, Array], Array, Array, Array]:
     
     @jit
-    def update(carry:Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray], idx:int
-               )->Tuple[Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray],
-                        Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]]:
+    def update(carry:Tuple[jnp.Array, jnp.Array, jnp.Array, jnp.Array], idx:int
+               )->Tuple[Tuple[jnp.Array, jnp.Array, jnp.Array, jnp.Array],
+                        Tuple[jnp.Array, jnp.Array, jnp.Array, jnp.Array]]:
         
         mu_rm, mu_euc, grad_rm, grad_euc = carry
         

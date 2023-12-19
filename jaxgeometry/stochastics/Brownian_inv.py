@@ -22,15 +22,18 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrate_sde, integrator_stratonovich
 
 #%% Brownian Motion with right/left Invariant metric
 
-def initialize(G:object)->None:
+def Brownian_inv(G:object)->None:
     """ Brownian motion with respect to left/right invariant metric """
+    
+    assert(G.invariance == 'left')
 
-    def sde_Brownian_inv(c:Tuple[ndarray, ndarray, ndarray],
-                         y:Tuple[ndarray, ndarray]
-                         )->Tuple[ndarray, ndarray, ndarray, ndarray]:
+    def sde_Brownian_inv(c:Tuple[Array, Array, Array],
+                         y:Tuple[Array, Array]
+                         )->Tuple[Array, Array, Array, Array]:
         t,g,_,sigma = c
         dt,dW = y
 
@@ -39,8 +42,6 @@ def initialize(G:object)->None:
         sto = jnp.tensordot(X,dW,(2,0))
         
         return (det,sto,X,jnp.zeros_like(sigma))
-    
-    assert(G.invariance == 'left')
 
     G.sde_Brownian_inv = sde_Brownian_inv
     G.Brownian_inv = lambda g,dts,dWt,sigma=jnp.eye(G.dim): integrate_sde(G.sde_Brownian_inv,integrator_stratonovich,None,g,None,dts,dWt,sigma)[0:3]

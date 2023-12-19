@@ -22,22 +22,23 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrate
 
 #%% MPP landmarks
 
 ###############################################################
 # Most probable paths for landmarks via development           #
 ###############################################################
-def initialize(M:object,
-               sigmas:ndarray,
-               dsigmas:ndarray,
-               a:Callable[[ndarray], ndarray]):
+def MPP_landmarks(M:object,
+                  sigmas:Array,
+                  dsigmas:Array,
+                  a:Callable[[Array], Array]):
     """ Most probable paths for Kunita flows                 """
     """ M: shape manifold, a: flow field                     """
     
-    def ode_MPP_landmarks(c:Tuple[ndarray, ndarray, ndarray],
-                          y:Tuple[ndarray, ndarray]
-                          )->Tuple[ndarray, ndarray]:
+    def ode_MPP_landmarks(c:Tuple[Array, Array, Array],
+                          y:Tuple[Array, Array]
+                          )->Tuple[Array, Array]:
         
         t,xlambd,chart = c
         qp, = y
@@ -54,10 +55,10 @@ def initialize(M:object,
         
         return jnp.stack((dx.flatten(),dlambd.flatten()))
 
-    def chart_update_MPP_landmarks(xlambd:Tuple[ndarray, ndarray],
-                                   chart:ndarray,
-                                   y:ndarray
-                                   )->Tuple[ndarray, ndarray]:
+    def chart_update_MPP_landmarks(xlambd:Tuple[Array, Array],
+                                   chart:Array,
+                                   y:Array
+                                   )->Tuple[Array, Array]:
         
         if M.do_chart_update is None:
             return (xlambd,chart)
@@ -76,11 +77,11 @@ def initialize(M:object,
                                 new_chart,
                                 chart))
     
-    def MPP_landmarks(x:Tuple[ndarray, ndarray],
-                      lambd:ndarray,
-                      qps:ndarray,
-                      dts:ndarray
-                      )->Tuple[ndarray, ndarray, ndarray]:
+    def MPP_landmarks(x:Tuple[Array, Array],
+                      lambd:Array,
+                      qps:Array,
+                      dts:Array
+                      )->Tuple[Array, Array, Array]:
         
         (ts,xlambds,charts) = integrate(ode_MPP_landmarks,chart_update_MPP_landmarks,jnp.stack((x[0],lambd)),x[1],dts,qps)
         

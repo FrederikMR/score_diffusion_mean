@@ -22,11 +22,11 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-import jaxgeometry.manifolds.riemannian as riemannian
+from jaxgeometry.manifolds.riemannian import EmbeddedManifold
 
 #%% Group
 
-class LieGroup(riemannian.EmbeddedManifold):
+class LieGroup(EmbeddedManifold):
     """ Base Lie Group class """
 
     def __init__(self,
@@ -34,7 +34,7 @@ class LieGroup(riemannian.EmbeddedManifold):
                  N:int,
                  invariance:str='left'
                  )->None:
-        riemannian.EmbeddedManifold.__init__(self)
+        EmbeddedManifold.__init__(self)
 
         self.dim = dim
         self.N = N # N in SO(N)
@@ -79,11 +79,11 @@ class LieGroup(riemannian.EmbeddedManifold):
 
         ## group exp/log maps
         self.exp = self.Expm
-        def expt(xi:Tuple[ndarray, ndarray],
-                 _dts:ndarray=None
-                 )->ndarray:
+        def expt(xi:Tuple[Array, Array],
+                 _dts:Array=None
+                 )->Array:
             if _dts is None: _dts = dts()
-            return scan(lambda t,dt: (t+dt,self.exp(t*xi)),0.,_dts)
+            return lax.scan(lambda t,dt: (t+dt,self.exp(t*xi)),0.,_dts)
         self.expt = expt
         self.log = self.Logm
 
@@ -93,9 +93,9 @@ class LieGroup(riemannian.EmbeddedManifold):
         #stdLA = jnp.eye(N*N,N*N).reshape((N,N,N*N)) # standard basis for \RR^{NxN}
         #eijV = jnp.eye(G_dim) # standard basis for V
         #eijLA = jnp.zeros((N,N,G_dim)) # eij in LA
-        def bracket(xi:ndarray,
-                    eta:ndarray
-                    )->ndarray:
+        def bracket(xi:Array,
+                    eta:Array
+                    )->Array:
             if xi.ndim == 2 and eta.ndim == 2:
                 return jnp.tensordot(xi,eta,(1,0))-jnp.tensordot(eta,xi,(1,0))
             elif xi.ndim == 3 and eta.ndim == 3:
@@ -140,19 +140,19 @@ class LieGroup(riemannian.EmbeddedManifold):
         self.R = lambda g,h: jnp.tensordot(h,g,(1,0)) # right translation R_g(h)=hg
         # pushforward of L/R of vh\in T_hG
         #dL = lambda g,h,vh: theano.gradient.Rop(L(theano.gradient.disconnected_grad(g),h).flatten(),h,vh).reshape((N,N))
-        def dL(g:ndarray,
-               h:ndarray,
-               vh:ndarray=None
-               )->ndarray:
+        def dL(g:Array,
+               h:Array,
+               vh:Array=None
+               )->Array:
             dL = jacrev(self.L,1)(g,h)
             if vh is not None:
                 return jnp.tensordot(dL,vh,((2,3),(0,1)))
             return dL
         self.dL = dL
-        def dR(g:ndarray,
-               h:ndarray,
-               vh:ndarray=None
-               )->ndarray:
+        def dR(g:Array,
+               h:Array,
+               vh:Array=None
+               )->Array:
             dR = jacrev(self.R,1)(g,h)
             if vh is not None:
                 return jnp.tensordot(dR,vh,((2,3),(0,1)))

@@ -25,13 +25,13 @@ from jaxgeometry.setup import *
 
 #%% Iterative Maximum Likelihood Estimation
 
-def iterative_mle(obss:ndarray,
+def iterative_mle(obss:Array,
                   neg_log_p_Ts:Callable,
                   params,
                   params_inds,
                   params_update:Callable,
-                  chart:ndarray,
-                  _dts:ndarray,
+                  chart:Array,
+                  _dts:Array,
                   M:object,
                   N:int=1,
                   step_size:float=1e-1,

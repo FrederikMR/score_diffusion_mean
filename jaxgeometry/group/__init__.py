@@ -21,10 +21,10 @@
 
 #%% Modules
 
-from .energy import initialize as energy
-from .EulerPoincare import initialize as EulerPoincare
-from .invariant_metric import initialize as invariant_metric
-from .LiePoisson import initialize as LiePoisson
-from .quotient import horz_vert_split, get_sde_fiber, get_sde_horz, get_sde_lifted
+from .energy import energy
+from .EulerPoincare import EulerPoincare
+from .invariant_metric import invariant_metric
+from .LiePoisson import LiePoisson
+from .quotient import *
 
 #%% Code

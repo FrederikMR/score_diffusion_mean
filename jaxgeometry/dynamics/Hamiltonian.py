@@ -22,26 +22,27 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.autodiff import *
 
 #%% Code
 
-def initialize(M:object)->None:
+def Hamiltonian(M:object)->None:
     
     dq = grad(M.H,argnums=1)
     dp = lambda q,p: -gradx(M.H)(q,p)
     
-    def ode_Hamiltonian(c:Tuple[ndarray, ndarray, ndarray],
-                        y:ndarray
-                        )->ndarray:
+    def ode_Hamiltonian(c:Tuple[Array, Array, Array],
+                        y:Array
+                        )->Array:
         t,x,chart = c
         dqt = dq((x[0],chart),x[1])
         dpt = dp((x[0],chart),x[1])
         return jnp.stack((dqt,dpt))
     
-    def chart_update_Hamiltonian(xp:ndarray,
-                                 chart:ndarray,
-                                 y:ndarray
-                                 )->Tuple[ndarray, ndarray]:
+    def chart_update_Hamiltonian(xp:Array,
+                                 chart:Array,
+                                 y:Array
+                                 )->Tuple[Array, Array]:
         if M.do_chart_update is None:
             return (xp,chart)
     
@@ -63,7 +64,7 @@ def initialize(M:object)->None:
                                                            jnp.stack((q[0] if type(q)==type(()) else q,p)),
                                                            q[1] if type(q)==type(()) else None,dts))
     
-    def Exp_Hamiltonian(q:ndarray,p:ndarray,T:float=T,n_steps:int=n_steps)->Tuple[ndarray,ndarray]:
+    def Exp_Hamiltonian(q:Array,p:Array,T:float=T,n_steps:int=n_steps)->Tuple[Array,Array]:
 
         curve = M.Hamiltonian_dynamics(q,p,dts(T,n_steps))
         q = curve[1][-1,0]
@@ -71,7 +72,7 @@ def initialize(M:object)->None:
 
         return(q,chart)
     
-    def Exp_Hamiltoniant(q:ndarray,p:ndarray,T:float=T,n_steps:int=n_steps)->Tuple[ndarray, ndarray]:
+    def Exp_Hamiltoniant(q:Array,p:Array,T:float=T,n_steps:int=n_steps)->Tuple[Array, Array]:
 
         curve = M.Hamiltonian_dynamics(q,p,dts(T,n_steps))
         qs = curve[1][:,0]

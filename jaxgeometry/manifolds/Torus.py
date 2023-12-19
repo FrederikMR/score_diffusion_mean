@@ -22,11 +22,13 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-import jaxgeometry.manifolds.riemannian as riemannian
+from .riemannian import EmbeddedManifold, metric, curvature, geodesic, Log, parallel_transport
+from jaxgeometry.plot import *
+from jaxgeometry.operators.vectors import *
 
 #%% Torus
 
-class Torus(riemannian.EmbeddedManifold):
+class Torus(EmbeddedManifold):
     """ 2d torus, embedded metric """
     
     def __init__(self,params=(1.,2.,jnp.array([0.,1.,0.]))):
@@ -67,13 +69,13 @@ class Torus(riemannian.EmbeddedManifold):
             return jnp.stack([phi,theta])
         self.do_chart_update = lambda x: jnp.max(jnp.abs(x[0])) >= np.pi/4 # look for a new chart if true
 
-        riemannian.EmbeddedManifold.__init__(self,F,2,3,invF=invF)
+        EmbeddedManifold.__init__(self,F,2,3,invF=invF)
         
-        riemannian.metric(self)
-        riemannian.curvature(self)
-        riemannian.geodesic(self)
-        riemannian.Log(self)
-        riemannian.parallel_transport(self)
+        metric(self)
+        curvature(self)
+        geodesic(self)
+        Log(self)
+        parallel_transport(self)
         
         self.Log = self.StdLog
         

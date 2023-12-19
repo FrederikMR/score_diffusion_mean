@@ -24,15 +24,16 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.autodiff import *
 
 #%% Riemannian Metric
 
-def initialize(M:object)->None:
+def metric(M:object)->None:
     
     """ add metric related structures to manifold """
     
     @jit
-    def Gamma_g(x:Tuple[ndarray, ndarray])->ndarray:
+    def Gamma_g(x:Tuple[Array, Array])->Array:
         
         Dgx = M.Dg(x)
         gsharpx = M.gsharp(x)
@@ -40,19 +41,19 @@ def initialize(M:object)->None:
                    +jnp.einsum('im,lmk->ikl',gsharpx,Dgx)
                    -jnp.einsum('im,klm->ikl',gsharpx,Dgx))
  
-    def det(x:Tuple[ndarray, ndarray],A:ndarray=None)->ndarray: 
+    def det(x:Tuple[Array, Array],A:Array=None)->Array: 
         
         return jnp.linalg.det(M.g(x)) if A is None else jnp.linalg.det(jnp.tensordot(M.g(x),A,(1,0)))
     
-    def detsharp(x:Tuple[ndarray, ndarray],A:ndarray=None)->ndarray:
+    def detsharp(x:Tuple[Array, Array],A:Array=None)->Array:
         
         return jnp.linalg.det(M.gsharp(x)) if A is None else jnp.linalg.det(jnp.tensordot(M.gsharp(x),A,(1,0)))
     
-    def logAbsDet(x:Tuple[ndarray, ndarray],A:ndarray=None)->ndarray:
+    def logAbsDet(x:Tuple[Array, Array],A:Array=None)->Array:
         
         return jnp.linalg.slogdet(M.g(x))[1] if A is None else jnp.linalg.slogdet(jnp.tensordot(M.g(x),A,(1,0)))[1]
     
-    def logAbsDetsharp(x:Tuple[ndarray, ndarray],A:ndarray=None)->ndarray: 
+    def logAbsDetsharp(x:Tuple[Array, Array],A:Array=None)->Array: 
         
         return jnp.linalg.slogdet(M.gsharp(x))[1] if A is None else jnp.linalg.slogdet(jnp.tensordot(M.gsharp(x),A,(1,0)))[1]
     

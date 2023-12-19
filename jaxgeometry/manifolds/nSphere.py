@@ -22,12 +22,12 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-import jaxgeometry.manifolds.riemannian as riemannian
-from jaxgeometry.manifolds import Ellipsoid
+from .nEllipsoid import nEllipsoid
+from .riemannian import Manifold, metric, curvature, geodesic, Log, parallel_transport
 
 #%% n-Sphere
 
-class nSphere(Ellipsoid):
+class nSphere(nEllipsoid):
     """ n-Sphere """
     
     def __init__(self, N:int=2, use_spherical_coords:bool=False,chart_center:int=None):
@@ -35,7 +35,7 @@ class nSphere(Ellipsoid):
         if chart_center is None:
             chart_center = N
         
-        Ellipsoid.__init__(self,
+        nEllipsoid.__init__(self,
                            N = N,
                            params=jnp.ones(N+1,dtype=jnp.float32),
                            chart_center=chart_center,
@@ -47,37 +47,13 @@ class nSphere(Ellipsoid):
         self.grady_log_hk = jit(lambda x,y,t, N_terms=100: grady_log_hk(self, x, y, t, N_terms))
         #self.ggrady_log_hk = jit(lambda x,y,t: -jnp.eye(self.dim)/t)
         self.gradt_log_hk = jit(lambda x,y,t, N_terms=100: gradt_log_hk(self, x, y, t, N_terms))
-        
-        #self.Exp = self.Exp_map
     
     def __str__(self):
         return "%dd sphere (ellipsoid parameters %s, spherical_coords: %s)" % (self.dim,self.params,self.use_spherical_coords)
-    
-    def Exp_map(self, x,v,T=1.0):
-        Fx = self.F(x) # from ellipsoid to S^n
-        
-        theta = jnp.arccos(Fx[2])
-        phi = jnp.sign(Fx[1])*jnp.arccos(Fx[0]/jnp.sqrt(Fx[0]**2+Fx[1]**2))
-        
-        rot_x = jnp.array([[0.0,0.0,0.0],
-                           [0.0, jnp.cos(theta), jnp.sin(theta)],
-                           [0.0, -jnp.sin(theta), jnp.cos(theta)]])
-        rot_y = jnp.array([[jnp.cos(jnp.pi/2-phi), jnp.sin(jnp.pi/2-phi), 0.0],
-                           [-jnp.sin(jnp.pi/2-phi), jnp.cos(jnp.pi/2-phi), 0.0],
-                           [0.0, 0.0, 1.0]])
-        
-        Fv = rot_y.dot(rot_x).dot(jnp.array([v[0],v[1],0.0]))
-        
-        normv = jnp.linalg.norm(Fv,2)
-        y = jnp.cos(normv)*Fx+Fv*jnp.sin(normv)/normv
-        
-        chart = self.centered_chart(y)
-        
-        return (self.invF((y,chart)),chart)
 
 #%% Heat Kernels
 
-def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float, N_terms=100) -> float:
+def hk(M:object, x:Array,y:Array,t:float, N_terms=100) -> float:
     
     def sum_term(l:int, C_l:float) -> float:
     
@@ -111,29 +87,29 @@ def hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float, N_terms=100) -> float:
     
     grid = jnp.arange(2,N_terms,1)
     
-    val, _ = scan(step, (val, C_1, C_0), xs=grid)
+    val, _ = lax.scan(step, (val, C_1, C_0), xs=grid)
         
     return val[0]*Am_inv/m1
 
-def log_hk(M:object, x:jnp.ndarray,y:jnp.ndarray,t:float, N_terms=100) -> float:
+def log_hk(M:object, x:Array,y:Array,t:float, N_terms=100) -> float:
     
     return jnp.log(hk(x,y,t, N_terms))
 
-def gradx_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -> float:
+def gradx_log_hk(M:object, x:Array, y:Array, t:float, N_terms=100) -> float:
     
-    def get_coords(Fx:jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    def get_coords(Fx:Array) -> Tuple[Array, Array]:
 
         chart = M.centered_chart(Fx)
         return (M.invF((Fx,chart)),chart)
 
-    def to_TM(Fx:jnp.ndarray, v:jnp.ndarray) -> jnp.ndarray:
+    def to_TM(Fx:Array, v:Array) -> Array:
         
         x = get_coords(Fx)
         JFx = M.JF(x)
         
         return jnp.dot(JFx,jnp.linalg.lstsq(JFx,v)[0])
 
-    def to_TMx(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
+    def to_TMx(Fx:Array,v:Array) -> Array:
 
         x = get_coords(Fx)
 
@@ -172,27 +148,27 @@ def gradx_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -
     
     grid = jnp.arange(3,N_terms,1)
     
-    val, _ = scan(step, (val, C_1, C_0), xs=grid)
+    val, _ = lax.scan(step, (val, C_1, C_0), xs=grid)
     
     grad = val[0]*y1*Am_inv/hk(M,x,y,t,N_terms)
     
     return (to_TMx(x1, grad), to_TM(x1, grad))
 
-def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -> float:
+def grady_log_hk(M:object, x:Array, y:Array, t:float, N_terms=100) -> float:
     
-    def get_coords(Fx:jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    def get_coords(Fx:Array) -> Tuple[Array, Array]:
 
         chart = M.centered_chart(Fx)
         return (M.invF((Fx,chart)),chart)
 
-    def to_TM(Fx:jnp.ndarray, v:jnp.ndarray) -> jnp.ndarray:
+    def to_TM(Fx:Array, v:Array) -> Array:
         
         x = get_coords(Fx)
         JFx = M.JF(x)
         
         return jnp.dot(JFx,jnp.linalg.lstsq(JFx,v)[0])
 
-    def to_TMx(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
+    def to_TMx(Fx:Array,v:Array) -> Array:
 
         x = get_coords(Fx)
 
@@ -231,13 +207,13 @@ def grady_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -
     
     grid = jnp.arange(3,N_terms,1)
     
-    val, _ = scan(step, (val, C_1, C_0), xs=grid)
+    val, _ = lax.scan(step, (val, C_1, C_0), xs=grid)
     
     grad = val[0]*x1*Am_inv/hk(M,x,y,t,N_terms)
     
     return (to_TMx(y1, grad), to_TM(y1, grad))
 
-def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -> float:
+def gradt_log_hk(M:object, x:Array, y:Array, t:float, N_terms=100) -> float:
     
     def sum_term(l:int, C_l:float) -> float:
     
@@ -272,32 +248,32 @@ def gradt_log_hk(M:object, x:jnp.ndarray, y:jnp.ndarray, t:float, N_terms=100) -
     
     grid = jnp.arange(2,N_terms,1)
     
-    val, _ = scan(step, (val, C_1, C_0), xs=grid)
+    val, _ = lax.scan(step, (val, C_1, C_0), xs=grid)
         
     return val[0]*Am_inv/(m1*hk(M,x,y,t,N_terms))
 
 #%% Old code
 
 """
-def get_coords(Fx:jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray]:
+def get_coords(Fx:Array) -> tuple[Array, Array]:
 
     chart = M.centered_chart(Fx)
     return (M.invF((Fx,chart)),chart)
 
-def to_TM(Fx:jnp.ndarray, v:jnp.ndarray) -> jnp.ndarray:
+def to_TM(Fx:Array, v:Array) -> Array:
     
     x = get_coords(M, Fx)
     JFx = M.JF(x)
     
     return jnp.dot(JFx,jnp.linalg.lstsq(JFx,v)[0])
 
-def to_TMchart(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
+def to_TMchart(Fx:Array,v:Array) -> Array:
     
     x = get_coords(M, Fx)
     JFx = M.JF(x)
     return jnp.dot(JFx,v)
 
-def to_TMx(Fx:jnp.ndarray,v:jnp.ndarray) -> jnp.ndarray:
+def to_TMx(Fx:Array,v:Array) -> Array:
 
     x = get_coords(M, Fx)
 

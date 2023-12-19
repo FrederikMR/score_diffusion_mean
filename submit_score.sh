@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J SPDN10
+#BSUB -J RN
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
@@ -18,9 +18,13 @@ module swap cudnn/v8.9.1.23-prod-cuda-12.X
 module swap python3/3.10.12
 
 python3 train_score.py \
-    --manifold SPDN \
-    --N 10 \
-    --loss_type vsm \
+    --manifold RN \
+    --dim 2 \
+    --generator_dim 3 \
+    --loss_type dsm \
+    --sampling_method LocalSampling \
+    --load_model False \
+    --T_sample None \
     --train_net s1 \
     --max_T 1.0 \
     --lr_rate 0.001 \

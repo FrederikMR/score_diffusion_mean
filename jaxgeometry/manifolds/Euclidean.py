@@ -22,15 +22,17 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-import jaxgeometry.manifolds.riemannian as riemannian
+from .riemannian import Manifold, metric, curvature, geodesic, Log, parallel_transport
+from jaxgeometry.plot import *
+from jaxgeometry.autodiff import jacfwdx
 
 #%% Euclidean Geometry (R^n)
 
-class Euclidean(riemannian.Manifold):
+class Euclidean(Manifold):
     """ Euclidean space """
 
     def __init__(self,N:int=3)->None:
-        riemannian.Manifold.__init__(self)
+        Manifold.__init__(self)
         self.dim = N
 
         self.do_chart_update = lambda x: False
@@ -42,11 +44,11 @@ class Euclidean(riemannian.Manifold):
         # action of matrix group on elements
         self.act = lambda g,x: jnp.tensordot(g,x,(1,0))
         
-        riemannian.metric(self)
-        riemannian.curvature(self)
-        riemannian.geodesic(self)
-        riemannian.Log(self)
-        riemannian.parallel_transport(self)
+        metric(self)
+        curvature(self)
+        geodesic(self)
+        Log(self)
+        parallel_transport(self)
         
         #Metric
         self.Gamma_g = jit(lambda x: jnp.zeros((self.dim, self.dim, self.dim)))
@@ -74,6 +76,10 @@ class Euclidean(riemannian.Manifold):
         #Log
         self.Log = jit(lambda x,y: y[0]-x[0])
         self.dist = jit(lambda x,y: jnp.sqrt(jnp.sum((x[0]-y[0])**2)))
+        self.Exp = lambda x, v, T=1.0: (x[0]+v, jnp.zeros(1))
+        self.ParallelTransport = lambda x,y,v: v
+        self.Proj = lambda x,v: v
+        
         
         #Parallel Transport - ADD CLOSED FORM EXPRESSIONS
         
@@ -93,7 +99,7 @@ class Euclidean(riemannian.Manifold):
         
         return
     
-    def update_vector(self, coords:ndarray, new_coords:ndarray, new_chart:ndarray, v:ndarray)->ndarray:
+    def update_vector(self, coords:Array, new_coords:Array, new_chart:Array, v:Array)->Array:
         
         return v
 
@@ -105,12 +111,12 @@ class Euclidean(riemannian.Manifold):
         if self.dim == 2:
             plt.axis('equal')
     
-    def plot_path(self, xs:Tuple[ndarray, ndarray], 
-                  u:ndarray=None, 
+    def plot_path(self, xs:Tuple[Array, Array], 
+                  u:Array=None, 
                   color:str='b', 
                   color_intensity:float=1., 
                   linewidth:float=1., 
-                  prevx:Tuple[ndarray, ndarray]=None, 
+                  prevx:Tuple[Array, Array]=None, 
                   last:bool=True, 
                   s:int=20, 
                   arrowcolor:str='k'
@@ -131,12 +137,12 @@ class Euclidean(riemannian.Manifold):
             
         return
 
-    def plotx(self, x:Tuple[ndarray, ndarray], 
-              u:ndarray=None, 
+    def plotx(self, x:Tuple[Array, Array], 
+              u:Array=None, 
               color:str='b', 
               color_intensity:float=1., 
               linewidth:float=1., 
-              prevx:Tuple[ndarray, ndarray]=None,
+              prevx:Tuple[Array, Array]=None,
               last:bool=True, 
               s:int=20, 
               arrowcolor:str='k'
@@ -176,41 +182,41 @@ class Euclidean(riemannian.Manifold):
         
 #%% Heat Kernel
 
-def hk(M:Euclidean, x:ndarray,y:ndarray,t:ndarray)->ndarray:
+def hk(M:Euclidean, x:Array,y:Array,t:Array)->Array:
     
     const = 1/((2*jnp.pi*t)**(M.dim*0.5))
     
     return jnp.exp(-0.5*jnp.sum((x[0]-y[0])**2)/t)*const
 
-def log_hk(M:Euclidean, x:ndarray,y:ndarray,t:ndarray)->ndarray:
+def log_hk(M:Euclidean, x:Array,y:Array,t:Array)->Array:
     
     return -0.5*jnp.sum((x[0]-y[0])**2)/t-M.dim*0.5*jnp.log(2*jnp.pi*t)
 
-def gradx_log_hk(M:Euclidean, x:ndarray, y:ndarray, t:ndarray)->float:
+def gradx_log_hk(M:Euclidean, x:Array, y:Array, t:Array)->float:
     
     return ((y[0]-x[0])/t, jnp.zeros(1))
 
-def grady_log_hk(M:Euclidean, x:ndarray, y:ndarray, t:ndarray)->float:
+def grady_log_hk(M:Euclidean, x:Array, y:Array, t:Array)->float:
     
     return ((x[0]-y[0])/t, jnp.zeros(1))
 
-def gradt_log_hk(M:Euclidean, x:ndarray, y:ndarray, t:ndarray)->float:
+def gradt_log_hk(M:Euclidean, x:Array, y:Array, t:Array)->float:
     
     diff = x[0]-y[0]
     
     return 0.5*jnp.dot(diff, diff)/(t**2)-0.5*M.dim/t
 
-def mlx_hk(M:Euclidean, X_obs:ndarray, t:ndarray=None)->float:
+def mlx_hk(M:Euclidean, X_obs:Array, t:Array=None)->float:
 
     return (jnp.mean(X_obs[0], axis=0), jnp.zeros(1))
 
-def mlt_hk(M:Euclidean, X_obs:ndarray, mu:ndarray)->float:
+def mlt_hk(M:Euclidean, X_obs:Array, mu:Array)->float:
 
     diff_mu = X_obs[0]-mu[0]
     
     return jnp.mean(jnp.linalg.norm(diff_mu, axis = 1)**2)/M.dim
 
-def mlxt_hk(M:Euclidean, X_obs:ndarray)->float:
+def mlxt_hk(M:Euclidean, X_obs:Array)->float:
     
     mu = mlx_hk(M, X_obs)
     

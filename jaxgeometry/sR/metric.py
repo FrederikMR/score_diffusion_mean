@@ -25,7 +25,7 @@ from jaxgeometry.setup import *
 
 #%% metric
 
-def initialize(M:object)->None:
+def metric(M:object)->None:
     """ add SR structure to manifold """
     """ currently assumes distribution and that ambient Riemannian manifold is Euclidean """
 

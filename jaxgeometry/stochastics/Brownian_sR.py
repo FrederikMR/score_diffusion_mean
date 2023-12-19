@@ -22,15 +22,17 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrate_sde, integrator_ito
 
 #%% sub-Riemannian Brownian Motion
 
-def initialize(M):
+def Brownian_sR(M:object
+               )->None:
     """ sub-Riemannian Brownian motion """
 
-    def sde_Brownian_sR(c:Tuple[ndarray, ndarray, ndarray],
-                        y:Tuple[ndarray, ndarray]
-                        )->Tuple[ndarray, ndarray, ndarray]:
+    def sde_Brownian_sR(c:Tuple[Array, Array, Array],
+                        y:Tuple[Array, Array]
+                        )->Tuple[Array, Array, Array]:
         t,x,chart = c
         dt,dW = y
 
@@ -41,9 +43,10 @@ def initialize(M):
         
         return (det,sto,D)
     
-    def chart_update_Brownian_sR(x:ndarray,
-                                 chart:ndarray,*ys
-                                 )->Tuple[ndarray, ndarray]:
+    def chart_update_Brownian_sR(x:Array,
+                                 chart:Array,
+                                 *ys
+                                 )->Tuple[Array, Array]:
         if M.do_chart_update is None:
             return (x,chart,*ys)
 

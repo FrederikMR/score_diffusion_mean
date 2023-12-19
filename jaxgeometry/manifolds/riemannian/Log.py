@@ -22,18 +22,19 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import dts
 
 #%% Logaritmic Map
 
-def initialize(M:object,
+def Log(M:object,
                f=None,
                method='BFGS'
                )->None:
     """ numerical Riemannian Logarithm map """
 
-    def loss(x:Tuple[ndarray, ndarray],
-             v:ndarray,
-             y:Tuple[ndarray, ndarray]
+    def loss(x:Tuple[Array, Array],
+             v:Array,
+             y:Tuple[Array, Array]
              )->float:
         
         (x1,chart1) = f(x,v)
@@ -41,10 +42,10 @@ def initialize(M:object,
         
         return 1./M.dim*jnp.sum(jnp.square(x1 - y_chart1[0]))
     
-    def shoot(x:Tuple[ndarray, ndarray],
-              y:Tuple[ndarray, ndarray],
-              v0:ndarray=None
-              )->Tuple[ndarray, ndarray]:
+    def shoot(x:Tuple[Array, Array],
+              y:Tuple[Array, Array],
+              v0:Array=None
+              )->Tuple[Array, Array]:
 
         if v0 is None:
             v0 = jnp.zeros(M.dim)
@@ -53,8 +54,8 @@ def initialize(M:object,
 
         return (res.x,res.fun)
     
-    def dist(x:Tuple[ndarray, ndarray],
-             y:Tuple[ndarray, ndarray]
+    def dist(x:Tuple[Array, Array],
+             y:Tuple[Array, Array]
              )->float:
         
         v = M.Log(x,y)

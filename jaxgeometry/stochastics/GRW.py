@@ -22,69 +22,55 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrate_sde, integrator_ito
 
 #%% Geodesic Random Walk
 
-def initialize(M:object,
-               b_fun:Callable[[ndarray, ndarray], ndarray] = None,
-               sigma_fun:Callable[[ndarray, ndarray], ndarray] = None
-               )->None:
+def GRW(M:object,
+        b_fun:Callable[[float,Array, Array], Array] = None,
+        sigma_fun:Callable[[float,Array, Array], Array] = None,
+        f_fun:Callable[[Tuple[Array, Array], Array], Array] = None
+        )->None:
     
-    def GRW(x:Tuple[ndarray, ndarray],
-            dt:ndarray,
-            dW:ndarray,
-            )->Tuple[ndarray, ndarray, ndarray]:
+    def sde_grw(c:Tuple[Array, Array, Array],
+                y:Tuple[Array, Array]
+                )->Tuple[Array, Array, Array, float]:
         
-        def walk(c:Tuple[ndarray, ndarray, ndarray],
-                 y:Tuple[ndarray, ndarray]
-                 )->Tuple[ndarray, ndarray, ndarray, float]:
-            
-            x,chart = c
-            t,dt,dW = y
-            
-            v = b_fun(t,(x,chart))*dt+jnp.tensordot(sigma_fun(t,(x,chart)),dW,(1,0))
-            
-            x_new = M.Exp((x,chart), v, T=1.0)
-            
-            out = x_new
-            
-            return out, out
-            
-        t = jnp.cumsum(dt)
+        t,x,chart,s = c
+        dt,dW = y
         
-        return (t, *scan(walk, init=x, xs=(t,dt, dW))[1])
+        dW = M.proj(x,dW)
+        
+        det = b_fun(t, x, chart)
+        X = sigma_fun(t, x, chart)
+        sto = jnp.tensordot(X,dW,(1,0))
+        
+        return (det,sto,X,0.)
     
-    def product_GRW(x:Tuple[ndarray, ndarray],
-            dt:ndarray,
-            dW:ndarray,
-            )->Tuple[ndarray, ndarray, ndarray]:
+    def chart_update_grw(x:Tuple[Array, Array],
+                         chart:Array,
+                         *ys
+                         ):
         
-        def walk(c:Tuple[ndarray, ndarray, ndarray],
-                 y:Tuple[ndarray, ndarray]
-                 )->Tuple[ndarray, ndarray, ndarray, float]:
-            
-            x,chart = c
-            t,dt,dW = y
-            
-            (xs, charts) = vmap(lambda x,chart, dW: \
-                                M.Exp((x,chart), b_fun(t,(x,chart))*dt+jnp.tensordot(sigma_fun(t,(x,chart)),dW,(1,0)), T=1.0)
-                                )(x,chart,dW)
-            
-            return (xs,charts), (xs,charts)
-            
-        t = jnp.cumsum(dt)
-        
-        (xs, chartss) = scan(walk, init=(x[0], x[1]), xs=(t,dt, dW))[1]
-        
-        return (t, xs, chartss)
+        return (x, M.invF((x,x)), *ys)
     
     if b_fun is None:
-        b_fun = lambda t,x: jnp.zeros(M.dim)
+        b_fun = lambda t,x,v: jnp.zeros(M.emb_dim)
     if sigma_fun is None:
-        sigma_fun = lambda t,x: jnp.eye(M.dim)
-                    
-    M.GRW = jit(lambda x, t, dt, dW: GRW((x,chart), dt, dW))
-    M.product_GRW = jit(lambda x, dt, dW: product_GRW((x[0],x[1]), dt, dW))
-
+        sigma_fun = lambda t,x,v: jnp.eye(M.emb_dim)
+    if f_fun is None:
+        f_fun = lambda x,v: M.Exp(x,v)[0]
+    
+    if hasattr(M, "proj"):
+    
+        M.sde_grw = sde_grw
+        M.chart_update_grw = chart_update_grw
+        
+        M.random_walk = jit(lambda x,dts,dWs, stdCov=1.: integrate_sde(sde_grw,
+                                                                       lambda a,b: integrator_ito(a,b,lambda x,v: f_fun(x,v)),
+                                                                       chart_update_grw,
+                                                                       x[0],x[1],dts,dWs,stdCov)[0:3])
+    else:
+        print("The manifold does not have a 'proj' attribute")
     
     return

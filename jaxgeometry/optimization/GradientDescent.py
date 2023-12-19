@@ -14,18 +14,18 @@ from jaxgeometry.setup import *
 
 #%% Riemannian Gradient Descent
 
-def RMGradientDescent(mu_init:ndarray,
+def RMGradientDescent(mu_init:Array,
                       M:object,
-                      grad_fn:Callable[[Tuple[ndarray, ndarray]], ndarray],
+                      grad_fn:Callable[[Tuple[Array, Array]], Array],
                       step_size:float = 0.1,
                       max_iter:int=100,
-                      bnds:Tuple[ndarray, ndarray]=(None,None),
-                      max_step:ndarray=None
-                      )->Tuple[ndarray, ndarray]:
+                      bnds:Tuple[Array, Array]=(None,None),
+                      max_step:Array=None
+                      )->Tuple[Array, Array]:
     
     @jit
-    def update(carry:Tuple[ndarray, ndarray], idx:int)->Tuple[Tuple[ndarray, ndarray],
-                                                              Tuple[ndarray, ndarray]]:
+    def update(carry:Tuple[Array, Array], idx:int)->Tuple[Tuple[Array, Array],
+                                                              Tuple[Array, Array]]:
         
         mu, grad = carry
         
@@ -58,17 +58,17 @@ def RMGradientDescent(mu_init:ndarray,
 
 #%% Euclidean Gradient Descent
 
-def GradientDescent(mu_init:ndarray,
-                    grad_fn:Callable[[Tuple[ndarray, ndarray]], ndarray],
+def GradientDescent(mu_init:Array,
+                    grad_fn:Callable[[Tuple[Array, Array]], Array],
                     step_size:float = 0.1,
                     max_iter:int=100,
-                    bnds:Tuple[ndarray, ndarray]=(None,None),
-                    max_step:ndarray=0.1
-                    )->Tuple[ndarray, ndarray]:
+                    bnds:Tuple[Array, Array]=(None,None),
+                    max_step:Array=0.1
+                    )->Tuple[Array, Array]:
     
     @jit
-    def update(carry:Tuple[ndarray, ndarray], idx:int)->Tuple[Tuple[ndarray, ndarray],
-                                                              Tuple[ndarray, ndarray]]:
+    def update(carry:Tuple[Array, Array], idx:int)->Tuple[Tuple[Array, Array],
+                                                              Tuple[Array, Array]]:
         
         mu, grad = carry
         
@@ -98,23 +98,23 @@ def GradientDescent(mu_init:ndarray,
 
 #%% Joint Gradient Descent
 
-def JointGradientDescent(mu_rm:ndarray,
-                         mu_euc:ndarray,
+def JointGradientDescent(mu_rm:Array,
+                         mu_euc:Array,
                          M:object,
-                         grad_fn_rm:Callable[[Tuple[ndarray, ndarray]], ndarray],
-                         grad_fn_euc:Callable[[Tuple[ndarray, ndarray]], ndarray],
+                         grad_fn_rm:Callable[[Tuple[Array, Array]], Array],
+                         grad_fn_euc:Callable[[Tuple[Array, Array]], Array],
                          step_size_rm:float = 0.1,
                          step_size_euc:float = 0.1,
                          max_iter:int=100,
-                         bnds_rm:Tuple[ndarray, ndarray]=(None,None),
-                         bnds_euc:Tuple[ndarray, ndarray]=(None,None),
-                         max_step:ndarray=0.1
-                         )->Tuple[ndarray, ndarray, ndarray, ndarray]:
+                         bnds_rm:Tuple[Array, Array]=(None,None),
+                         bnds_euc:Tuple[Array, Array]=(None,None),
+                         max_step:Array=0.1
+                         )->Tuple[Array, Array, Array, Array]:
     
     @jit
-    def update(carry:Tuple[ndarray, ndarray, ndarray, ndarray], idx:int
-               )->Tuple[Tuple[ndarray, ndarray, ndarray, ndarray],
-                        Tuple[ndarray, ndarray, ndarray, ndarray]]:
+    def update(carry:Tuple[Array, Array, Array, Array], idx:int
+               )->Tuple[Tuple[Array, Array, Array, Array],
+                        Tuple[Array, Array, Array, Array]]:
         
         mu_rm, mu_euc, grad_rm, grad_euc = carry
         

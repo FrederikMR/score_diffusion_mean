@@ -22,20 +22,21 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrate_sde, integrator_ito, integrator_stratonovich
 
 #%% Guided Process
 
 # hit target v at time t=Tend
 def get_guided(M:object,
-               sde,
-               chart_update,
-               phi,
-               sqrtCov=None,
-               A:Callable[[ndarray], ndarray]=None,
+               sde:Callable[[Tuple[Array, Array, Array, Array], Tuple[Array, Array]], Tuple[Array, Array, Array, Array]],
+               chart_update:Callable[[Tuple[Array, Array, Array]], Tuple[Array, Array, Array]],
+               phi:Callable[[Tuple[Array, Array], Array, Array], Array],
+               sqrtCov:Callable[[Tuple[Array, Array]], Array]=None,
+               A:Callable[[Array], Array]=None,
                logdetA:Callable=None,
                method:str='DelyonHu',
                integration:str='ito'
-               ):
+               )->Tuple[Callable, Callable, Callable, Callable, Callable]:
     """ 
     guided diffusions 
     guided processes, Delyon/Hu 2006                                    
@@ -51,12 +52,12 @@ def get_guided(M:object,
         
         (det,sto,X,*dcy) = sde((t,x,chart,*cy),y)
         
-        h = cond(t<T-dt/2,
+        h = lax.cond(t<T-dt/2,
                  lambda _: phi(xchart,v,*cy)/(T-t),
                  lambda _: jnp.zeros_like(phi((x,chart),v,*cy)),
                  None)
         
-        sto = cond(t < T-3*dt/2, # for Ito as well?
+        sto = lax.cond(t < T-3*dt/2, # for Ito as well?
                    lambda _: sto,
                    lambda _: jnp.zeros_like(sto),
                    None)
@@ -89,12 +90,12 @@ def get_guided(M:object,
 
         #     add t1 term for general phi
         #     dxbdxt = theano.gradient.Rop((Gx-x[0]).flatten(),x[0],dx[0]) # use this for general phi
-        t2 = cond(t<T-3*dt/2,
+        t2 = lax.cond(t<T-3*dt/2,
                   lambda _: -Af(xchart,ytilde,det*dt,*cy)/(T-t),
                   # check det term for Stratonovich (correction likely missing)
                   lambda _: 0.,
                   None)
-        t34 = cond(tp1<T-3*dt/2,
+        t34 = lax.cond(tp1<T-3*dt/2,
                    lambda _: -(Af(xtp1chart,ytildetp1,ytildetp1,*cy)-Af(xchart,ytildetp1,ytildetp1,*cy)) / (
                        (T-tp1)),
                    lambda _: 0.,
@@ -103,12 +104,12 @@ def get_guided(M:object,
 
         return (det+jnp.dot(X,h),sto,X,log_likelihood,log_varphi,jnp.zeros_like(T),jnp.zeros_like(v),*dcy)
     
-    def chart_update_guided(x:ndarray,
-                            chart:ndarray,
-                            log_likelihood:ndarray,
-                            log_varphi:ndarray,
-                            T:ndarray,
-                            v:ndarray,
+    def chart_update_guided(x:Array,
+                            chart:Array,
+                            log_likelihood:Array,
+                            log_varphi:Array,
+                            T:Array,
+                            v:Array,
                             *ys
                             ):
         
@@ -121,14 +122,14 @@ def get_guided(M:object,
         return (x_new,chart_new,log_likelihood,log_varphi,T,v_new,*ys_new)
    
     def _log_p_T(guided:Callable,
-                 A:ndarray,
+                 A:Array,
                  phi:Callable,
-                 x:ndarray,
-                 v:ndarray,
-                 dW:ndarray,
-                 dts:ndarray,
+                 x:Array,
+                 v:Array,
+                 dW:Array,
+                 dts:Array,
                  *ys
-                 )->ndarray:
+                 )->Array:
         """ Monte Carlo approximation of log transition density from guided process """
         T = jnp.sum(dts)
         

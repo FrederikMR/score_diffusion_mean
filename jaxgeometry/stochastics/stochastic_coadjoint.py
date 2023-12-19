@@ -25,14 +25,14 @@ from jaxgeometry.setup import *
 
 #%% Stochastic Coadjoint
 
-def initialize(G,Psi=None,r=None):
+def stochastic_coadjoint(G:object,Psi:Callable[[Array], Array]=None,r:int=None)->None:
     """ stochastic coadjoint motion with left/right invariant metric
     see Noise and dissipation on coadjoint orbits arXiv:1601.02249 [math.DS]
     and EulerPoincare.py """
 
-    def sde_stochastic_coadjoint(c:Tuple[ndarray, ndarray, ndarray],
-                                 y:Tuple[ndarray, ndarray]
-                                 )->Tuple[ndarray, ndarray, ndarray]:
+    def sde_stochastic_coadjoint(c:Tuple[Array, Array, Array],
+                                 y:Tuple[Array, Array]
+                                 )->Tuple[Array, Array, Array]:
         t,mu,_ = c
         dt,dW = y
 

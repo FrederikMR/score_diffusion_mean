@@ -22,11 +22,13 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-import jaxgeometry.manifolds.riemannian as riemannian
+from .riemannian import EmbeddedManifold, metric, curvature, geodesic, Log, parallel_transport
+from jaxgeometry.plot import *
+from jaxgeometry.operators.vectors import *
 
 #%% Cylinder
 
-class Cylinder(riemannian.EmbeddedManifold):
+class Cylinder(EmbeddedManifold):
     """ 2d Cylinder """
     
     def __init__(self,params=(1.,jnp.array([0.,1.,0.]),0.)):
@@ -46,13 +48,13 @@ class Cylinder(riemannian.EmbeddedManifold):
             return jnp.stack([jnp.arctan2(rot[1],rot[0]),Rinvx[0]-x[1][1]])
         self.do_chart_update = lambda x: jnp.max(jnp.abs(x[0])) >= np.pi/4 # look for a new chart if true
 
-        riemannian.EmbeddedManifold.__init__(self,F,2,3,invF=invF)
+        EmbeddedManifold.__init__(self,F,2,3,invF=invF)
         
-        riemannian.metric(self)
-        riemannian.curvature(self)
-        riemannian.geodesic(self)
-        riemannian.Log(self)
-        riemannian.parallel_transport(self)
+        metric(self)
+        curvature(self)
+        geodesic(self)
+        Log(self)
+        parallel_transport(self)
         
         self.Log = self.StdLog
         

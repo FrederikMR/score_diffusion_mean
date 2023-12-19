@@ -22,25 +22,26 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-import jaxgeometry.manifolds.riemannian as riemannian
+from .riemannian import EmbeddedManifold, metric, curvature, geodesic, Log, parallel_transport
+from jaxgeometry.plot import *
 
 #%% Latent Manifold
 
-class Latent(riemannian.EmbeddedManifold):
+class Latent(EmbeddedManifold):
     """ Latent space manifold define from embedding function F:R^dim->R^emb_dim, f e.g. a neural network """
 
     def __init__(self,F,dim,emb_dim,invF=None):
-        riemannian.EmbeddedManifold.__init__(self,F,dim,emb_dim,invF)
+        EmbeddedManifold.__init__(self,F,dim,emb_dim,invF)
 
         # metric matrix
         self.g = lambda x: jnp.dot(self.JF(x).T,self.JF(x))
         self.update_coords = lambda x,y: x
         
-        riemannian.metric(self)
-        riemannian.curvature(self)
-        riemannian.geodesic(self)
-        riemannian.Log(self)
-        riemannian.parallel_transport(self)
+        metric(self)
+        curvature(self)
+        geodesic(self)
+        Log(self)
+        parallel_transport(self)
 
     def newfig(self):
         if self.emb_dim == 3:

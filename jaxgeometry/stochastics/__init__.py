@@ -21,17 +21,19 @@
 
 #%% Modules
 
-from .Brownian_coords import initialize as Brownian_coords
-from .Brownian_development import initialize as Brownian_development
-from .Brownian_inv import initialize as Brownian_inv
-from .Brownian_process import initialize as Brownian_process
-from .Brownian_sR import initialize as Brownian_sR
-from .diagonal_conditioning import initialize as diagonal_conditioning
-from .Eulerian import initialize as Eulerian
-from .guided_process import get_guided as get_guided
-from .Langevin import initialize as Langevin
-from .product_sde import initialize as product_sde
-from .stochastic_coadjoint import initialize as stochastic_coadjoint
-from .stochastic_development import initialize as stochastic_development
+from .Brownian_coords import Brownian_coords
+from .Brownian_development import Brownian_development
+from .Brownian_inv import Brownian_inv
+from .Brownian_process import Brownian_process
+from .Brownian_sR import Brownian_sR
+from .diagonal_conditioning import diagonal_conditioning
+from .Eulerian import Eulerian
+from .guided_process import get_guided
+from .Langevin import Langevin
+from .product_sde import product_sde, tile
+from .stochastic_coadjoint import stochastic_coadjoint
+from .stochastic_development import stochastic_development
+from .brownian_projection import brownian_projection
+from .GRW import GRW
 
 #%% Code

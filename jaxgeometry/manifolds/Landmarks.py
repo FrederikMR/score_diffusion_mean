@@ -22,11 +22,11 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-import jaxgeometry.manifolds.riemannian as riemannian
+from .riemannian import Manifold, metric, curvature, geodesic, Log, parallel_transport
 
 #%% Landmark-Space
 
-class Landmarks(riemannian.Manifold):
+class Landmarks(Manifold):
     """ LDDMM landmark manifold """
 
     def get_B(self,q):
@@ -42,7 +42,7 @@ class Landmarks(riemannian.Manifold):
         return jnp.kron(V,jnp.eye(self.m))
 
     def __init__(self,N=1,m=2,k_alpha=1.,k_sigma=None,kernel='Gaussian',order=2):
-        riemannian.Manifold.__init__(self)
+        Manifold.__init__(self)
 
         self.N = N # number of landmarks
         self.m = m # landmark space dimension (usually 2 or 3
@@ -123,11 +123,11 @@ class Landmarks(riemannian.Manifold):
 
         self.gsharp = gsharp
         
-        riemannian.metric(self)
-        riemannian.curvature(self)
-        riemannian.geodesic(self)
-        riemannian.Log(self)
-        riemannian.parallel_transport(self)
+        metric(self)
+        curvature(self)
+        geodesic(self)
+        Log(self)
+        parallel_transport(self)
 
     
     def update_coords(self,coords,new_chart):

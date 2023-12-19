@@ -22,17 +22,18 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrate_sde, integrator_stratonovich
 
 #%% Brownian process with respect to left/right invariant metric
 
-def initialize(G:object)->None:
+def Brownian_process(G:object)->None:
     """ Brownian motion with respect to left/right invariant metric """
 
     assert(G.invariance == 'left')
 
-    def sde_Brownian_process(c:Tuple[ndarray, ndarray, ndarray],
-                             y:Tuple[ndarray, ndarray]
-                             )->Tuple[ndarray, ndarray, ndarray, ndarray]:
+    def sde_Brownian_process(c:Tuple[Array, Array, Array],
+                             y:Tuple[Array, Array]
+                             )->Tuple[Array, Array, Array, Array]:
         t,g,_,sigma = c
         dt,dW = y
 

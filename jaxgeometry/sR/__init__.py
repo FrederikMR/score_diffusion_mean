@@ -21,6 +21,6 @@
 
 #%% Modules
 
-from .metric import initialize as metric 
+from .metric import metric 
 
 #%% Code

@@ -25,18 +25,18 @@ from jaxgeometry.setup import *
 
 #%% Invariant Metric
 
-def initialize(G:object,
-               _sigma:ndarray=None
+def invariant_metric(G:object,
+               _sigma:Array=None
                )->None:
     """ add left-/right-invariant metric related structures to group 
 
     parameter sigma is square root cometric / diffusion field
     """
 
-    def gV(v:ndarray=None,
-           w:ndarray=None,
-           sigma:ndarray=_sigma
-           )->ndarray:
+    def gV(v:Array=None,
+           w:Array=None,
+           sigma:Array=_sigma
+           )->Array:
         
         if v is None and w is None:
             return G.A(sigma)
@@ -51,10 +51,10 @@ def initialize(G:object,
         else:
             assert(False)
             
-    def cogV(cov:ndarray=None,
-             cow:ndarray=None,
-             sigma:ndarray=_sigma
-             )->ndarray:
+    def cogV(cov:Array=None,
+             cow:Array=None,
+             sigma:Array=_sigma
+             )->Array:
         
         if cov is None and cow is None:
             return G.W(sigma)
@@ -67,42 +67,42 @@ def initialize(G:object,
         else:
             assert(False)
             
-    def gLA(xiv:ndarray,
-            xiw:ndarray,
-            sigma:ndarray=_sigma
-            )->ndarray:
+    def gLA(xiv:Array,
+            xiw:Array,
+            sigma:Array=_sigma
+            )->Array:
         
         v = G.LAtoV(xiv)
         w = G.LAtoV(xiw)
         
         return G.gV(v,w,sigma)
     
-    def cogLA(coxiv:ndarray,
-              coxiw:ndarray,
-              sigma:ndarray=_sigma
-              )->ndarray:
+    def cogLA(coxiv:Array,
+              coxiw:Array,
+              sigma:Array=_sigma
+              )->Array:
         
         cov = G.LAtoV(coxiv)
         cow = G.LAtoV(coxiw)
         
         return G.cogV(cov,cow,sigma)
     
-    def gG(g:ndarray,
-           vg:ndarray,
-           wg:ndarray,
-           sigma:ndarray=_sigma
-           )->ndarray:
+    def gG(g:Array,
+           vg:Array,
+           wg:Array,
+           sigma:Array=_sigma
+           )->Array:
         
         xiv = G.invpb(g,vg)
         xiw = G.invpb(g,wg)
         
         return G.gLA(xiv,xiw,sigma)
     
-    def gpsi(hatxi:ndarray,
-             v:ndarray=None,
-             w:ndarray=None,
-             sigma:ndarray=_sigma
-             )->ndarray:
+    def gpsi(hatxi:Array,
+             v:Array=None,
+             w:Array=None,
+             sigma:Array=_sigma
+             )->Array:
         
         g = G.psi(hatxi)
         vg = G.dpsi(hatxi,v)
@@ -110,11 +110,11 @@ def initialize(G:object,
         
         return G.gG(g,vg,wg,sigma)
     
-    def cogpsi(hatxi:ndarray,
-               p:ndarray=None,
-               pp:ndarray=None,
-               sigma:ndarray=_sigma
-               )->ndarray:
+    def cogpsi(hatxi:Array,
+               p:Array=None,
+               pp:Array=None,
+               sigma:Array=_sigma
+               )->Array:
         
         invgpsi = G.inv(G.gpsi(hatxi,sigma=sigma))
         if p is not None and pp is not None:
@@ -124,42 +124,42 @@ def initialize(G:object,
         return invgpsi
 
     # sharp/flat mappings
-    def sharpV(mu:ndarray,
-               sigma:ndarray=_sigma
-               )->ndarray:
+    def sharpV(mu:Array,
+               sigma:Array=_sigma
+               )->Array:
         
         return jnp.dot(G.W(sigma),mu)
     
-    def flatV(v:ndarray,
-              sigma:ndarray=_sigma
-              )->ndarray:
+    def flatV(v:Array,
+              sigma:Array=_sigma
+              )->Array:
         
         return jnp.dot(G.A(sigma),v)
     
-    def sharp(g:ndarray,
-              pg,sigma:ndarray=_sigma
-              )->ndarray:
+    def sharp(g:Array,
+              pg,sigma:Array=_sigma
+              )->Array:
         
         return G.invpf(g,G.VtoLA(jnp.dot(G.W(sigma),G.LAtoV(G.invcopb(g,pg)))))
     
-    def flat(g:ndarray,
-             vg:ndarray,
-             sigma:ndarray=_sigma
-             )->ndarray:
+    def flat(g:Array,
+             vg:Array,
+             sigma:Array=_sigma
+             )->Array:
         
         return G.invcopf(g,G.VtoLA(jnp.dot(G.A(sigma),G.LAtoV(G.invpb(g,vg)))))
     
-    def sharppsi(hatxi:ndarray,
-                 p:ndarray,
-                 sigma:ndarray=_sigma
-                 )->ndarray:
+    def sharppsi(hatxi:Array,
+                 p:Array,
+                 sigma:Array=_sigma
+                 )->Array:
         
         return jnp.tensordot(G.cogpsi(hatxi,sigma=sigma),p,(1,0))
     
-    def flatpsi(hatxi:ndarray,
-                v:ndarray,
-                sigma:ndarray=_sigma
-                )->ndarray:
+    def flatpsi(hatxi:Array,
+                v:Array,
+                sigma:Array=_sigma
+                )->Array:
         
         return jnp.tensordot(G.gpsi(hatxi,sigma=sigma),v,(1,0))
     

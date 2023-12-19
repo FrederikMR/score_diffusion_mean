@@ -22,17 +22,18 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-import jaxgeometry.manifolds.riemannian as riemannian
+from .riemannian import Manifold, Log
 from jaxgeometry.dynamics import Hamiltonian
 from jaxgeometry.sR import metric
+from jaxgeometry.plot import *
 
 #%% Heisenberg Manifold
 
-class Heisenberg(riemannian.Manifold):
+class Heisenberg(Manifold):
     """ Heisenberg group """
 
     def __init__(self,):
-        riemannian.Manifold.__init__(self)
+        Manifold.__init__(self)
 
         self.dim = 3
         self.sR_dim = 2
@@ -45,7 +46,7 @@ class Heisenberg(riemannian.Manifold):
         metric(self)
         Hamiltonian(self)
         #riemannian.curvature(self)
-        riemannian.Log(self, f=self.Exp_Hamiltonian)
+        Log(self, f=self.Exp_Hamiltonian)
         #riemannian.parallel_transport(self)
 
     def __str__(self):

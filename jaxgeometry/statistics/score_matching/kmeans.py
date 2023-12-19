@@ -13,7 +13,6 @@ Created on Sun Oct 15 22:38:42 2023
 #%% Modules
 
 from jaxgeometry.setup import *
-import numpy as np
 
 #%% Code
 

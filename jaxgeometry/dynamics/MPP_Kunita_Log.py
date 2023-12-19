@@ -29,18 +29,18 @@ from jaxgeometry.setup import *
 # Most probable paths for Kunita flows - BVP                  # 
 ###############################################################
 
-def initialize(M:object,
-               N:object,
-               method:str='BFGS'
-               )->None:
+def MPP_Kunita_Log(M:object,
+                   N:object,
+                   method:str='BFGS'
+                   )->None:
 
-    def loss(x:ndarray,
-             v:ndarray,
-             y:ndarray,
-             qps:ndarray,
-             dqps:ndarray,
-             _dts:ndarray
-             )->ndarray:
+    def loss(x:Array,
+             v:Array,
+             y:Array,
+             qps:Array,
+             dqps:Array,
+             _dts:Array
+             )->Array:
         
         (_,xx1,charts) = M.MPP_AC(x,v,qps,dqps,_dts)
         (x1,chart1) = (xx1[-1,0],charts[-1])
@@ -48,13 +48,13 @@ def initialize(M:object,
         
         return 1./N.dim*jnp.sum(jnp.square(x1 - y_chart1[0]))
 
-    def shoot(x:ndarray,
-              y:ndarray,
-              qps:ndarray,
-              dqps:ndarray,
-              _dts:ndarray,
-              v0:ndarray=None
-              )->Tuple[ndarray, ndarray]:        
+    def shoot(x:Array,
+              y:Array,
+              qps:Array,
+              dqps:Array,
+              _dts:Array,
+              v0:Array=None
+              )->Tuple[Array, Array]:        
 
         if v0 is None:
             v0 = jnp.zeros(N.dim)

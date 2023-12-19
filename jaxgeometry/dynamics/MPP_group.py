@@ -22,22 +22,23 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrate
 
 #%% MPP Group
 
 ###############################################################
 # Most probable paths for Lie groups via development          #
 ###############################################################
-def initialize(G:object,
-               Sigma:ndarray=None,
-               a:Callable[[ndarray], ndarray]=None
+def MPP_group(G:object,
+               Sigma:Array=None,
+               a:Callable[[Array], Array]=None
                )->None:
     """ Most probable paths and development """
 
-    def ode_mpp(sigma:ndarray,
-                c:Tuple[ndarray, ndarray, ndarray],
-                y:ndarray
-                )->ndarray:
+    def ode_mpp(sigma:Array,
+                c:Tuple[Array, Array, Array],
+                y:Array
+                )->Array:
         t,alpha,_ = c
         
         at = a(t) if a is not None else jnp.zeros_like(alpha)
@@ -47,10 +48,10 @@ def initialize(G:object,
         return dalpha
 
     # reconstruction
-    def ode_mpprec(sigma:ndarray,
-                   c:Tuple[ndarray, ndarray, ndarray],
-                   y:ndarray
-                   )->ndarray:
+    def ode_mpprec(sigma:Array,
+                   c:Tuple[Array, Array, Array],
+                   y:Array
+                   )->Array:
         t,g,_ = c
         
         alpha, = y
@@ -64,10 +65,10 @@ def initialize(G:object,
     G.mpprec = lambda g,alpha,dts,sigma=jnp.eye(G.dim): integrate(partial(ode_mpprec,sigma),None,g,None,dts,alpha)
 
     # tracking point (not reduced to Lie algebra) to allow point-depending drift
-    def ode_mpp_drift(sigma:ndarray,
-                      c:Tuple[ndarray, ndarray, ndarray],
-                      y:ndarray
-                      )->ndarray:
+    def ode_mpp_drift(sigma:Array,
+                      c:Tuple[Array, Array, Array],
+                      y:Array
+                      )->Array:
         t,x,_ = c
         alpha = x[0:G.dim]
         g = x[G.dim:].reshape((G.dim,G.dim))
@@ -80,12 +81,12 @@ def initialize(G:object,
         
         return jnp.hstack((dalpha,dgt.flatten()))
 
-    def MPP_forwardt(g:ndarray,
-                     alpha:ndarray,
-                     sigma:ndarray,
+    def MPP_forwardt(g:Array,
+                     alpha:Array,
+                     sigma:Array,
                      T:float=T,
                      n_steps:int=n_steps
-                     )->Tuple[ndarray, ndarray]:
+                     )->Tuple[Array, Array]:
         _dts = dts(T=T,n_steps=n_steps)
         (ts,alphas) = G.mpp(alpha,_dts,sigma)
         (ts,gs) = G.mpprec(g,alphas,_dts,sigma)
@@ -93,34 +94,34 @@ def initialize(G:object,
         return(gs,alphas)
     
     # optimization to satisfy end-point conditions
-    def MPP_f(g:ndarray,
-              alpha:ndarray,
-              y:ndarray,
-              sigma:ndarray
-              )->ndarray:
+    def MPP_f(g:Array,
+              alpha:Array,
+              y:Array,
+              sigma:Array
+              )->Array:
         
         gs,alphas = G.MPP_forwardt(g,alpha,sigma)
         gT = gs[-1]
         
         return (1./G.emb_dim)*jnp.sum(jnp.square(gT-y))
     
-    def MPP(g:ndarray,
-            y:ndarray,
-            sigma:ndarray=jnp.eye(G.dim)
-            )->ndarray:
+    def MPP(g:Array,
+            y:Array,
+            sigma:Array=jnp.eye(G.dim)
+            )->Array:
         
         res = jax.scipy.optimize.minimize(lambda alpha: MPP_f(g,alpha,y,sigma),jnp.zeros(G.dim),method='BFGS')
         alpha = res.x
         
         return alpha
 
-    def MPP_drift_f(g:ndarray,
-                    alpha:ndarray,
-                    y:ndarray,
-                    sigma:ndarray,
-                    proj:ndarray,
-                    M,_dts:ndarray
-                    )->ndarray:
+    def MPP_drift_f(g:Array,
+                    alpha:Array,
+                    y:Array,
+                    sigma:Array,
+                    proj:Array,
+                    M,_dts:Array
+                    )->Array:
         
         _,_,_,_,horz = horz_vert_split(g,proj,jnp.eye(G.dim),G,M)
         (ts,alphags) = G.mpp_drift(jnp.dot(horz,alpha),g,_dts,sigma)
@@ -128,12 +129,12 @@ def initialize(G:object,
         
         return (1./M.emb_dim)*jnp.sum(jnp.square(proj(gT)-M.F(y)))
     
-    def MPP_drift(g:ndarray,
-                  y:ndarray,
-                  proj:ndarray,
+    def MPP_drift(g:Array,
+                  y:Array,
+                  proj:Array,
                   M:object,
-                  sigma:ndarray=jnp.eye(G.dim)
-                  )->ndarray:
+                  sigma:Array=jnp.eye(G.dim)
+                  )->Array:
         
         _dts = dts()
         res = jax.scipy.optimize.minimize(lambda alpha: MPP_drift_f(g,alpha,y,sigma,proj,M,_dts),jnp.zeros(M.dim),method='BFGS')

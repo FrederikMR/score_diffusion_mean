@@ -25,7 +25,7 @@ from jaxgeometry.setup import *
 
 #%% MPP
 
-def initialize(M:object)->None:
+def MPP(M:object)->None:
     
     """
     frame bundle most probable paths. System by Erlend Grong
@@ -33,9 +33,9 @@ def initialize(M:object)->None:
     Erlend Grong and Stefan Sommer, 2021
     """
 
-    def ode_mpp(c:Tuple[ndarray, ndarray, ndarray],
-                y:Tuple[ndarray, ndarray]
-                )->Tuple[ndarray, ndarray]:
+    def ode_mpp(c:Tuple[Array, Array, Array],
+                y:Tuple[Array, Array]
+                )->Tuple[Array, Array]:
         
         t,gammafvchi,chart = c
         lamb, = y
@@ -64,10 +64,10 @@ def initialize(M:object)->None:
     
         return jnp.hstack((dgammaf.flatten(),dv,dchi[jnp.triu_indices(M.dim,1)]))
     
-    def chart_update_mpp(gammafvchi:ndarray,
-                         chart:ndarray,
+    def chart_update_mpp(gammafvchi:Array,
+                         chart:Array,
                          *args
-                         )->Tuple[ndarray, ndarray]:
+                         )->Tuple[Array, Array]:
         
         if M.do_chart_update is None:
             return (gammafvchi,chart)
@@ -89,13 +89,13 @@ def initialize(M:object)->None:
                                 chart))
     
     @jit
-    def MPP_forwardt(u:Tuple[ndarray, ndarray],
-                     lamb:ndarray,
-                     v:ndarray,
-                     chi:ndarray,
+    def MPP_forwardt(u:Tuple[Array, Array],
+                     lamb:Array,
+                     v:Array,
+                     chi:Array,
                      T:float=T,
                      n_steps:int=n_steps
-                     )->Tuple[ndarray, ndarray, ndarray]:
+                     )->Tuple[Array, Array, Array]:
         
         curve = M.mpp((jnp.hstack((u[0],v,chi)),u[1]),jnp.broadcast_to(lamb[None,...],(n_steps,)+lamb.shape),dts(T,n_steps))
         us = curve[1][:,0:M.dim+M.dim**2]
@@ -107,20 +107,20 @@ def initialize(M:object)->None:
 
     # optimization to satisfy end-point conditions
     # objective
-    def MPP_f(vchi:ndarray,
-              lamb:ndarray
-              )->ndarray:
+    def MPP_f(vchi:Array,
+              lamb:Array
+              )->Array:
         
         v = vchi[0:M.dim]
         invlambv = v/lamb
         
         return jnp.dot(invlambv,invlambv)
     # constraint
-    def MPP_c(vchi:ndarray,
-              u:Tuple[ndarray, ndarray],
-              lamb:ndarray,
-              y:ndarray
-              )->ndarray:
+    def MPP_c(vchi:Array,
+              u:Tuple[Array, Array],
+              lamb:Array,
+              y:Array
+              )->Array:
         
         v = vchi[0:M.dim]
         chi = vchi[M.dim:]
@@ -131,10 +131,10 @@ def initialize(M:object)->None:
         
         return jnp.hstack((xT-y_chartT[0],chiT))
     
-    def MPP(u:Tuple[ndarray, ndarray],
-            lamb:ndarray,
-            y:ndarray
-            )->Tuple[ndarray, ndarray]:
+    def MPP(u:Tuple[Array, Array],
+            lamb:Array,
+            y:Array
+            )->Tuple[Array, Array]:
         
         res = scipy.optimize.minimize(MPP_f,
                         jnp.zeros(M.dim+M.dim*(M.dim-1)//2),
@@ -154,7 +154,7 @@ def initialize(M:object)->None:
         
     # objective
     #     @jit
-    def f(chart:ndarray,x:ndarray,lamb:ndarray,v:ndarray,chi:ndarray)->ndarray:
+    def f(chart:Array,x:Array,lamb:Array,v:Array,chi:Array)->Array:
     #     lamb /= np.prod(lamb)**(1/M.dim) # only determinant 1 relevant here
         invlambv = v/lamb
         
@@ -162,14 +162,14 @@ def initialize(M:object)->None:
         
     # constraint
     #     @jit
-    def _c(chart:ndarray,
-           x:ndarray,
-           lamb:ndarray,
-           v:ndarray,
-           chi:ndarray,
-           y:ndarray,
-           ychart:ndarray
-           )->ndarray:
+    def _c(chart:Array,
+           x:Array,
+           lamb:Array,
+           v:Array,
+           chi:Array,
+           y:Array,
+           ychart:Array
+           )->Array:
         
         nu = jnp.linalg.cholesky(M.gsharp((x,chart)))
         u = (jnp.hstack((x,nu.flatten())),chart)
@@ -179,26 +179,26 @@ def initialize(M:object)->None:
         
         return jnp.hstack((jnp.sqrt(M.dim)*(xT-y_chartT[0]),jnp.sqrt(2/(M.dim*(M.dim-1)))*chiT))
     
-    def c(chart:ndarray,
-          x:ndarray,
-          lamb:ndarray,
-          v:ndarray,
-          chi:ndarray,
-          y:ndarray,
-          ychart:ndarray
-          )->ndarray:
+    def c(chart:Array,
+          x:Array,
+          lamb:Array,
+          v:Array,
+          chi:Array,
+          y:Array,
+          ychart:Array
+          )->Array:
         
         return jnp.sum(jnp.square(_c(chart,x,lamb,v,chi,y,ychart)))
     
     @jit
-    def vg23_f(chart:ndarray,
-               x:ndarray,
-               lamb:ndarray,
-               v:ndarray,
-               chi:ndarray,
-               y:ndarray,
-               ychart:ndarray
-               )->Tuple[ndarray, ndarray]:
+    def vg23_f(chart:Array,
+               x:Array,
+               lamb:Array,
+               v:Array,
+               chi:Array,
+               y:Array,
+               ychart:Array
+               )->Tuple[Array, Array]:
         
         _jac2345_c = jac2345_c(chart,x,lamb,v,chi,y,ychart)
         invjac45_c = jnp.linalg.inv(jnp.hstack(_jac2345_c[2:4]))
@@ -210,14 +210,14 @@ def initialize(M:object)->None:
     
         return v_f, g_f
 
-    def MPP_mean(x:ndarray,
-                 chart:ndarray,
-                 ys:ndarray,
+    def MPP_mean(x:Array,
+                 chart:Array,
+                 ys:Array,
                  step_size45:float=1e-1,
                  step_size23:float=1e-3,
                  num_steps:int=6000,
                  opt23_update_mod:int=25
-                 )->Tuple[ndarray, ndarray, ndarray, ndarray]:
+                 )->Tuple[Array, Array, Array, Array]:
         
         opt_init45, opt_update45, get_params45 = optimizers.adam(step_size45)
         opt_init23, opt_update23, get_params23 = optimizers.adam(step_size23)

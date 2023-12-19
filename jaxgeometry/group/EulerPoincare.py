@@ -25,12 +25,14 @@ from jaxgeometry.setup import *
 
 #%% Euler Poincare
 
-def initialize(G:object)->None:
+def EulerPoincare(G:object)->None:
     """ Euler-Poincare geodesic integration """
+    
+    assert(G.invariance == 'left')
 
-    def ode_EP(c:Tuple[ndarray, ndarray, ndarray],
-               y:ndarray
-               )->ndarray:
+    def ode_EP(c:Tuple[Array, Array, Array],
+               y:Array
+               )->Array:
         t,mu,_ = c
         xi = G.invFl(mu)
         dmut = -G.coad(xi,mu)
@@ -38,17 +40,15 @@ def initialize(G:object)->None:
         return dmut
 
     # reconstruction
-    def ode_EPrec(c:Tuple[ndarray, ndarray, ndarray],
-                  y:Tuple[ndarray, ndarray]
-                  )->ndarray:
+    def ode_EPrec(c:Tuple[Array, Array, Array],
+                  y:Tuple[Array, Array]
+                  )->Array:
         t,g,_ = c
         mu, = y
         xi = G.invFl(mu)
         dgt = G.dL(g,G.e,G.VtoLA(xi))
         
         return dgt
-    
-    assert(G.invariance == 'left')
     
     G.EP = lambda mu,_dts=None: integrate(ode_EP,None,mu,None,dts() if _dts is None else _dts)
     

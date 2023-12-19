@@ -22,15 +22,16 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrate
 
 #%% Parallel Transport
 
-def initialize(M:object)->None:
+def parallel_transport(M:object)->None:
     """ Riemannian parallel transport """
 
-    def ode_parallel_transport(c:Tuple[ndarray, ndarray, ndarray],
-                               y:Tuple[ndarray, ndarray, ndarray]
-                               )->ndarray:
+    def ode_parallel_transport(c:Tuple[Array, Array, Array],
+                               y:Tuple[Array, Array, Array]
+                               )->Array:
         t,xv,prevchart = c
         x,chart,dx = y
         prevx = xv[0]
@@ -45,9 +46,9 @@ def initialize(M:object)->None:
         
         return jnp.stack((jnp.zeros_like(x),dv))
     
-    def chart_update_parallel_transport(xv:ndarray,prevchart:ndarray,
-                                        y:Tuple[ndarray, ndarray, ndarray]
-                                        )->Tuple[ndarray, ndarray]:
+    def chart_update_parallel_transport(xv:Array,prevchart:Array,
+                                        y:Tuple[Array, Array, Array]
+                                        )->Tuple[Array, Array]:
         x,chart,dx = y
         if M.do_chart_update is None:
             return (xv,chart)
@@ -61,3 +62,5 @@ def initialize(M:object)->None:
 
     parallel_transport = lambda v,dts,xs,charts,dxs: integrate(ode_parallel_transport,chart_update_parallel_transport,jnp.stack((xs[0],v)),charts[0],dts,xs,charts,dxs)
     M.parallel_transport = jit(lambda v,dts,xs,charts,dxs: parallel_transport(v,dts,xs,charts,dxs)[1][:,1])
+    
+    return

@@ -22,11 +22,12 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-import jaxgeometry.manifolds.riemannian as riemannian
+from .riemannian import EmbeddedManifold, metric, curvature, geodesic, Log, parallel_transport
+from jaxgeometry.plot import *
 
 #%% H2
 
-class H2(riemannian.EmbeddedManifold):
+class H2(EmbeddedManifold):
     """ hyperbolic plane """
     #Source: http://www.antoinebourget.org/maths/2018/08/08/embedding-hyperbolic-plane.html
 
@@ -35,13 +36,13 @@ class H2(riemannian.EmbeddedManifold):
         invF = lambda x: jnp.stack([jnp.arccosh(x[0][0]),jnp.arctan2(x[0][2],x[0][1])])
         self.do_chart_update = lambda x: False
 
-        riemannian.EmbeddedManifold.__init__(self,F,2,3,invF=invF)
+        EmbeddedManifold.__init__(self,F,2,3,invF=invF)
         
-        riemannian.metric(self)
-        riemannian.curvature(self)
-        riemannian.geodesic(self)
-        riemannian.Log(self)
-        riemannian.parallel_transport(self)
+        metric(self)
+        curvature(self)
+        geodesic(self)
+        Log(self)
+        parallel_transport(self)
 
         # metric matrix from embedding into Minkowski space
         self.g = lambda x: jnp.einsum('ji,j,jl',self.JF(x),jnp.array([-1.,1.,1.]),self.JF(x))

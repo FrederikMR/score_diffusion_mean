@@ -21,7 +21,7 @@
 
 #%% Modules
 
-from .FM import initialize as FM
-from .MPP import initialize as MPP
+from .FM import FM
+from .MPP import MPP
 
 #%% Code

@@ -14,20 +14,20 @@ from jaxgeometry.setup import *
 
 #%% Riemannian Jax Optimization
 
-def RMJaxOpt(mu_init:ndarray,
+def RMJaxOpt(mu_init:Array,
              M:object,
-             grad_fn:Callable[[Tuple[ndarray, ndarray]], ndarray],
+             grad_fn:Callable[[Tuple[Array, Array]], Array],
              max_iter:int=100,
              optimizer:Callable=None,
              opt_params:Tuple=(0.1, 0.9, 0.999, 1e-8),
-             bnds:Tuple[ndarray, ndarray]=(None, None),
-             max_step:ndarray=None
-             )->Tuple[ndarray, ndarray]:
+             bnds:Tuple[Array, Array]=(None, None),
+             max_step:Array=None
+             )->Tuple[Array, Array]:
     
     @jit
-    def update(carry:Tuple[ndarray, ndarray, object], idx:int
-               )->Tuple[Tuple[ndarray, ndarray, object],
-                        Tuple[ndarray, ndarray]]:
+    def update(carry:Tuple[Array, Array, object], idx:int
+               )->Tuple[Tuple[Array, Array, object],
+                        Tuple[Array, Array]]:
         
         mu, grad, opt_state = carry
         
@@ -67,20 +67,20 @@ def RMJaxOpt(mu_init:ndarray,
 
 #%% Euclidean Jax Optimization
 
-def JaxOpt(mu_init:ndarray,
+def JaxOpt(mu_init:Array,
            M:object,
-           grad_fn:Callable[[ndarray], ndarray],
+           grad_fn:Callable[[Array], Array],
            max_iter:int=100,
            optimizer:Callable=None,
            opt_params:Tuple=(0.1, 0.9, 0.999, 1e-8),
-           bnds:Tuple[ndarray, ndarray]=(None,None),
+           bnds:Tuple[Array, Array]=(None,None),
            max_step=None
-           )->Tuple[ndarray, ndarray]:
+           )->Tuple[Array, Array]:
     
     @jit
-    def update(carry:Tuples[ndarray, ndarray, object], idx:int
-               )->Tuple[Tuple[ndarray, ndarray, object],
-                        Tuple[ndarray, ndarray]]:
+    def update(carry:Tuples[Array, Array, object], idx:int
+               )->Tuple[Tuple[Array, Array, object],
+                        Tuple[Array, Array]]:
         
         mu, grad, opt_state = carry
         
@@ -118,24 +118,24 @@ def JaxOpt(mu_init:ndarray,
 
 #%% Joint Jax Optimization
 
-def JointJaxOpt(mu_rm:ndarray,
-                mu_euc:ndarray,
+def JointJaxOpt(mu_rm:Array,
+                mu_euc:Array,
                 M:object,
-                grad_fn_rm:Callable[[Tuple[ndarray, ndarray]], ndarray],
-                grad_fn_euc:Callable[[ndarray], ndarray],
+                grad_fn_rm:Callable[[Tuple[Array, Array]], Array],
+                grad_fn_euc:Callable[[Array], Array],
                 max_iter:int=100,
                 optimizer:Callable=None,
                 opt_params:Tuple=(0.1, 0.9, 0.999, 1e-8),
-                bnds_rm:Tuple[ndarray, ndarray]=(None,None),
-                bnds_euc:Tuple[ndarray, ndarray]=(None,None),
-                max_step:jnp.ndarray=None
-                )->Tuple[ndarray, ndarray, ndarray, ndarray]:
+                bnds_rm:Tuple[Array, Array]=(None,None),
+                bnds_euc:Tuple[Array, Array]=(None,None),
+                max_step:Array=None
+                )->Tuple[Array, Array, Array, Array]:
     
     @jit
-    def update(carry:Tuple[ndarray, ndarray, ndarray, ndarray, object], 
+    def update(carry:Tuple[Array, Array, Array, Array, object], 
                idx:int
-               )->Tuple[Tuple[ndarray, ndarray, ndarray, ndarray, object],
-                        Tuple[ndarray, ndarray, ndarray, ndarray]]:
+               )->Tuple[Tuple[Array, Array, Array, Array, object],
+                        Tuple[Array, Array, Array, Array]]:
         
         mu_rm, mu_euc, grad_rm, grad_euc, opt_state = carry
         

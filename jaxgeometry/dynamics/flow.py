@@ -22,22 +22,23 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import integrate
 
 #%% Code
 
-def initialize(M:object)->None:
+def flow(M:object)->None:
     """ flow along a vector field X """
-    def flow(X:Callable[[ndarray], ndarray]):
+    def flow(X:Callable[[Array], Array]):
 
-        def ode_flow(c:Tuple[ndarray, ndarray, ndarray],
-                     y:ndarray
-                     )->ndarray:
+        def ode_flow(c:Tuple[Array, Array, Array],
+                     y:Array
+                     )->Array:
             
             t,x,chart = c
             
             return X((x,chart))
         
-        def chart_update_flow(x:ndarray,chart:ndarray,*ys)->ndarray:
+        def chart_update_flow(x:Array,chart:Array,*ys)->Array:
             if M.do_chart_update is None:
                 return (x,chart)
 

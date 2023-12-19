@@ -25,12 +25,12 @@ from jaxgeometry.setup import *
 
 #%% Lie Poisson
 
-def initialize(G:object)->None:
+def LiePoisson(G:object)->None:
     """ Lie-Poisson geodesic integration """
 
-    def ode_LP(c:Tuple[ndarray, ndarray, ndarray],
-               y:Tuple[ndarray, ndarray]
-               )->ndarray:
+    def ode_LP(c:Tuple[Array, Array, Array],
+               y:Tuple[Array, Array]
+               )->Array:
         
         t,mu,_ = c
         dmut = G.coad(G.dHminusdmu(mu),mu)
@@ -38,9 +38,9 @@ def initialize(G:object)->None:
         return dmut
 
     # reconstruction
-    def ode_LPrec(c:Tuple[ndarray, ndarray, ndarray],
-                  y:Tuple[ndarray, ndarray]
-                  )->ndarray:
+    def ode_LPrec(c:Tuple[Array, Array, Array],
+                  y:Tuple[Array, Array]
+                  )->Array:
         t,g,_ = c
         mu, = y
         dgt = G.dL(g,G.e,G.VtoLA(G.dHminusdmu(mu)))

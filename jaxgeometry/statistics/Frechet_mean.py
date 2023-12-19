@@ -25,32 +25,32 @@ from jaxgeometry.setup import *
 
 #%% Fréchet mean
 
-def initialize(M:object,
-               Exp:Callable[[Tuple[ndarray, ndarray]], Tuple[ndarray, ndarray]]=None
-               )->None:
+def Frechet_mean(M:object,
+                 Exp:Callable[[Tuple[Array, Array]], Tuple[Array, Array]]=None
+                 )->None:
 
     # objective
-    def f(chart:ndarray,x:ndarray,v:ndarray)->ndarray:
+    def f(chart:Array,x:Array,v:Array)->Array:
         
         return jnp.dot(v,jnp.dot(M.g((x,chart)),v))
     
     # constraint
-    def _c(chart:ndarray,x:ndarray,v:ndarray,y:ndarray,ychart:ndarray)->ndarray:
+    def _c(chart:Array,x:Array,v:Array,y:Array,ychart:Array)->Array:
         
         xT,chartT = M.Exp((x,chart),v)
         y_chartT = M.update_coords((y,ychart),chartT)
         
         return jnp.sqrt(M.dim)*(xT-y_chartT[0])
     
-    def c(chart:ndarray,x:ndarray,v:ndarray,y:ndarray,ychart:ndarray)->ndarray:
+    def c(chart:Array,x:Array,v:Array,y:Array,ychart:Array)->Array:
         
         return jnp.sum(jnp.square(_c(chart,x,v,y,ychart)))
     
-    def vgx_f(chart:ndarray,
-              x:ndarray,
-              v:ndarray,
-              y:ndarray,
-              ychart:ndarray)->Tuple[ndarray, ndarray]:
+    def vgx_f(chart:Array,
+              x:Array,
+              v:Array,
+              y:Array,
+              ychart:Array)->Tuple[Array, Array]:
         
         _jacxv_c = M.Frechet_mean_jacxv_c(chart,x,v,y,ychart)
         jacv = -jnp.linalg.solve(_jacxv_c[1],_jacxv_c[0]) # implicit function theorem
@@ -60,11 +60,11 @@ def initialize(M:object,
     
         return v_f, g_f
 
-    def Frechet_mean(ys,
-                     x0:Tuple[ndarray, ndarray],
-                     Log:Callable=None,
+    def Frechet_mean(ys:Tuple[Array, Array],
+                     x0:Tuple[Array, Array],
+                     Log:Callable[[Tuple[Array, Array], Array], Tuple[Array, Array]]=None,
                      options:dict={}
-                     )->Tuple[Tuple[ndarray, ndarray], ndarray, int]:
+                     )->Tuple[Tuple[Array, Array], Array, int]:
         # data
         ys = list(ys) # make sure y is subscriptable
         N = len(ys)
