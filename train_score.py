@@ -38,19 +38,19 @@ from jaxgeometry.statistics.score_matching.model_loader import load_model
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="RN",
+    parser.add_argument('--manifold', default="SN",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
-    parser.add_argument('--generator_dim', default=2,
+    parser.add_argument('--generator_dim', default=3,
                         type=int)
     parser.add_argument('--loss_type', default="dsm",
                         type=str)
-    parser.add_argument('--sampling_method', default='LocalSampling',
+    parser.add_argument('--sampling_method', default='ProjectionSampling',
                         type=str)
     parser.add_argument('--load_model', default=False,
                         type=bool)
-    parser.add_argument('--T_sample', default=True,
+    parser.add_argument('--T_sample', default=False,
                         type=bool)
     parser.add_argument('--t', default=0.1,
                         type=float)
