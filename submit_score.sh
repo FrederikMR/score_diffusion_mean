@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J S2
+#BSUB -J S2_s1
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
@@ -22,7 +22,7 @@ python3 train_score.py \
     --dim 2 \
     --generator_dim 3 \
     --loss_type dsm \
-    --sampling_method ProjectionSampling \
+    --sampling_method TMSampling \
     --load_model False \
     --T_sample False \
     --t 0.1 \
