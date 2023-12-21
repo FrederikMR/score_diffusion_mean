@@ -24,6 +24,7 @@
 from jaxgeometry.setup import *
 from .riemannian import EmbeddedManifold, metric, curvature, geodesic, Log, parallel_transport
 from jaxgeometry.operators.vectors import *
+from jaxgeometry.integration import dWs, StdNormal
 
 #%% Ellipsoid
 
@@ -222,10 +223,14 @@ class nEllipsoid(EmbeddedManifold):
     
     def StdProj(self, Fx:Array, v:Array):
                 
-        Fx /= self.params
+        Fx = Fx/self.params
         v /= self.params
         
         return (v-jnp.dot(v,Fx)*Fx)*self.params
     
+    def ProjdW(self, x:Tuple[Array, Array], dW:Array)->Array:
+        
+        return self.StdProj(x[1],dW)
+        
     
     

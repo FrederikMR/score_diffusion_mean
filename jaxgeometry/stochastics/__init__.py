@@ -30,7 +30,7 @@ from .diagonal_conditioning import diagonal_conditioning
 from .Eulerian import Eulerian
 from .guided_process import get_guided
 from .Langevin import Langevin
-from .product_sde import product_sde, tile
+from .product_sde import product_sde, product_grw, tile
 from .stochastic_coadjoint import stochastic_coadjoint
 from .stochastic_development import stochastic_development
 from .brownian_projection import brownian_projection

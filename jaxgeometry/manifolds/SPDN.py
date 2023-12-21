@@ -40,17 +40,17 @@ class SPDN(EmbeddedManifold):
         dim = N*(N+1)//2
         emb_dim = N*N
         EmbeddedManifold.__init__(self,
-                                  F=lambda x: F(self, x),
+                                  F=self.F,
                                   dim=dim,
                                   emb_dim=emb_dim, 
-                                  invF=lambda x: invF(self, x))
+                                  invF=self.invF)
 
         self.act = lambda g,q: jnp.tensordot(g,jnp.tensordot(q.reshape((N,N)),g,(1,1)),(1,0)).flatten()
         self.acts = vmap(self.act,(0,None))
         
-        self.Dn = DupMat(N)
-        self.Dp = invDupMat(N)
-        self.g = lambda x: g(self, x)
+        self.Dn = self.DupMat(N)
+        self.Dp = self.invDupMat(N)
+        #self.g = self.Stdg
         self.do_chart_update = lambda x: False
         
         metric(self)
@@ -59,26 +59,222 @@ class SPDN(EmbeddedManifold):
         Log(self)
         parallel_transport(self)
         
-        self.gsharp = lambda x: gsharp(self,x)
-        self.det = lambda x,A=None: det(self, x, A)
-        self.Gamma_g = lambda x: Gamma(self, x)
-        self.Expt = lambda x,v,T: Expt(self, x, v, T)
-        self.Exp = lambda x,v: self.Expt(x,v,T=1.0)
-        self.Log = lambda x,y: Log(self, x, y)
-        self.dist = lambda x,y: dist(self, x,y)
-        self.dot = lambda x,v,w: dot(self, x, v, w)
-        self.ProjTM = lambda x,v: ProjTM(self, x, v)
-        self.ParallelTransport = lambda x,y,v: ParallelTransport(self, x, y, v)
-        self.DupMat = DupMat
-        self.invDupMat = invDupMat
+        #self.gsharp = self.Stdgsharp
+        #self.det = self.Stddet
+        #self.Gamma_g = self.StdGamma
+        self.Expt = self.StdExpt
+        self.Exp = lambda x,v: self.Expt(x,v,t=1.0)
+        self.ExpEmbedded = self.ExpEmbedded
+        self.Log = self.StdLog
+        self.dist = self.StdDist
+        self.dot = self.StdDot
+        self.proj = self.StdProj
+        self.ParallelTransport = self.StdParallelTransport
 
     def __str__(self):
         return "SPDN(%d), dim %d" % (self.N,self.dim)
     
+    def F(self, x:Tuple[Array, Array])->Array:
+        
+        l = jnp.zeros((self.N, self.N))
+        l = l.at[jnp.triu_indices(self.N, k=0)].set(x[0])
+        
+        return l.T.dot(l).reshape(-1)
+    
+    def invF(self, x:Tuple[Array, Array])->Array:
+        
+        P = x[0].reshape(self.N, self.N)
+        l = jnp.linalg.cholesky(P).T
+        
+        l = l[jnp.triu_indices(self.N, k=0)]  
+        
+        return l.reshape(-1)
+    
+    def Stdg(self, x:Tuple[Array,Array])->Array:
+        
+        P = self.F(x).reshape(self.N, self.N)
+        D = self.Dp
+        
+        return jnp.matmul(D,jnp.linalg.solve(jnp.kron(P,P), D.T))
+    
+    def Stdgsharp(self, x:Tuple[Array,Array])->Array:
+        
+        P = self.F(x).reshape(M.N, M.N)
+        D = self.Dp
+        
+        return jnp.matmul(D,jnp.matmul(jnp.kron(P,P), D.T))
+    
+    def Stddet(self, x:Tuple[Array, Array],A:Array=None)->Array: 
+        
+        P = self.F(x).reshape(self.N, self.N)
+        
+        return 2**((self.N*(self.N-1)//2))*jnp.linalg.det(P.reshape(self.N,self.N))**(self.N+1) if A is None \
+            else jnp.linalg.det(jnp.tensordot(self.Stdg(x),A,(1,0)))
+            
+    def StdGamma(self, x:Tuple[Array, Array])->Array: 
+        
+        p = self.N*(self.N+1)//2
+        E = jnp.eye(self.N*self.N)[:p]
+        D = self.Dn
+        P = self.F(x).reshape(self.N,self.N)
+            
+        return -vmap(lambda e: jnp.matmul(D.T,jnp.matmul(jnp.kron(jnp.linalg.inv(P), e.reshape(self.N,self.N)), D)))(E)
+    
+    def StdExpt(self, x:Tuple[Array, Array], v:Array, t:float=1.0)->Array:
+        
+        P = self.F(x).reshape(self.N,self.N)
+        v = jnp.dot(self.JF(x),v)
+        
+        P_phalf = jnp.array(jscipy.linalg.sqrtm(P))
+        P_nhalf = jnp.array(jscipy.linalg.sqrtm(jnp.linalg.inv(P)))
+        
+        P_exp = jnp.matmul(jnp.matmul(P_phalf, \
+                                     jscipy.linalg.expm(t*jnp.matmul(jnp.matmul(P_nhalf, v), P_nhalf))),
+                          P_phalf)
+        
+        return (self.invF((P_exp, P_exp)), P_exp.reshape(-1))
+    
+    def ExpEmbedded(self, Fx:Array, v:Array, t:float=1.0)->Array:
+        
+        P = Fx.reshape(self.N,self.N)
+        v = v.reshape(self.N,self.N)
+        
+        P_phalf = jnp.real(jscipy.linalg.sqrtm(P))
+        P_nhalf = jnp.real(jscipy.linalg.sqrtm(jnp.linalg.inv(P)))
+        
+        P_exp = jnp.matmul(jnp.matmul(P_phalf, \
+                                     jscipy.linalg.expm(t*jnp.matmul(jnp.matmul(P_nhalf, v), P_nhalf))),
+                          P_phalf)
+        
+        return P_exp.reshape(-1)
+    
+    def StdLog(self, x:Tuple[Array, Array], y:Array)->Array:
+        
+        P = self.F(x).reshape(self.N,self.N)
+        S = y.reshape(self.N,self.N)
+        
+        P_phalf = jnp.real(jscipy.linalg.sqrtm(P))
+        P_nhalf = jnp.real(jscipy.linalg.sqrtm(jnp.linalg.inv(P)))
+        
+        w = jnp.matmul(jnp.matmul(P_phalf, \
+                                     logm(jnp.matmul(jnp.matmul(P_nhalf, S), P_nhalf))),
+                          P_phalf)
+            
+        return jnp.dot(self.invJF((x[1],x[1])),w)
+    
+    def StdLogEmbedded(self, x:Tuple[Array, Array], y:Array)->Array:
+        
+        P = self.F(x).reshape(self.N,self.N)
+        S = y.reshape(self.N,self.N)
+        
+        P_phalf = jnp.real(jscipy.linalg.sqrtm(P))
+        P_nhalf = jnp.real(jscipy.linalg.sqrtm(jnp.linalg.inv(P)))
+        
+        w = jnp.matmul(jnp.matmul(P_phalf, \
+                                     logm(jnp.matmul(jnp.matmul(P_nhalf, S), P_nhalf))),
+                          P_phalf)
+            
+        return w
+    
+    def StdParallelTransport(self, x:Tuple[Array, Array], y:Tuple[Array, Array], v:Array)->Array:
+        
+        P1 = self.F(x).reshape(self.N,self.N)
+        P2 = self.F(y).reshape(self.N,self.N)
+        v = v.reshape(self.N,self.N)
+        
+        P_phalf = jnp.real(jscipy.linalg.sqrtm(P))
+        P_nhalf = jnp.real(jscipy.linalg.sqrtm(jnp.linalg.inv(P)))
+        
+        logxy = self.StdLogEmbedded(x,P2)
+        expxy = jscipy.linalg.expm(0.5*jnp.matmul(jnp.matmul(P1_nhalf, logxy), P1_nhalf))
+        
+        psi = jnp.matmul(jnp.matmul(P1_nhalf, v), P1_nhalf)
+        term1 = jnp.matmul(P1_phalf, expxy)
+        term2 = jnp.matmul(expxy, P1_phalf)
+        
+        return jnp.matmul(jnp.matmul(term1, psi), term2)
+    
+    def StdDist(self, x:Tuple[Array, Array], y:Tuple[Array,Array])->Array:
+        
+        P1 = self.F(x).reshape(self.N,self.N)
+        P2 = self.F(y).reshape(self.N,self.N)
+        
+        U, S, Vh = jnp.linalg.svd(jnp.linalg.solve(P1, P2))
+        
+        return jnp.sqrt(jnp.sum(jnp.log(S)**2))
+
+    def StdDot(self, x:Tuple[Array, Array], v:Array, w:Array)->Array:
+        
+        P = self.F(x).reshape(self.N,self.N)
+        
+        v1 = jnp.linalg.solve(P, v)
+        v2 = jnp.linalg.solve(p, w)
+        
+        return jnp.trace(jnp.matmul(v1,v2))
+
+    def StdProj(self, x:Array, v:Array) -> Array:
+        
+        P = x.reshape(self.N,self.N)
+        v = v.reshape(self.N, self.N)
+        
+        P1_phalf = jnp.real(jscipy.linalg.sqrtm(P))
+        v_symmetric = 0.5*(v+v.T)
+        
+        return jnp.matmul(jnp.matmul(P1_phalf, v_symmetric), P1_phalf).reshape(-1)
+    
+    def DupMat(self, N:int):
+        
+        def step_col(carry, i, j):
+            
+            D, A, u, i = carry
+            A,u = 0.*A, 0.*u
+            idx = j*N+i-((j+1)*j)//2
+            
+            A = A.at[i,i-j].set(1)
+            A = A.at[i-j,i].set(1)
+            u = u.at[idx].set(1)
+            D += u.dot(A.reshape((1, -1), order="F"))
+            i += 1
+            
+            return (D,A,u,i), None
+            
+        p = N*(N+1)//2
+        A,D,u = jnp.zeros((N,N)), jnp.zeros((p,N*N)), jnp.zeros((p,1))    
+        
+        for j in range(N):
+            D, _, _, _ = lax.scan(lambda carry, i: step_col(carry, i, j), init=(D,A,u,j), xs=jnp.arange(0,N-j,1))[0]
+        
+        return D.T
+
+    def invDupMat(self, N:int):
+        
+        def step_col(carry, i, j, val):
+            
+            D, A, u, i = carry
+            A,u = 0.*A, 0.*u
+            idx = j*N+i-((j+1)*j)//2
+            
+            A = A.at[i,i-j].set(val)
+            A = A.at[i-j,i].set(val)
+            u = u.at[idx].set(1)
+            D += u.dot(A.reshape((1, -1), order="F"))
+            i += 1
+            
+            return (D,A,u,i), None
+            
+        p = N*(N+1)//2
+        A,D,u = jnp.zeros((N,N)), jnp.zeros((p,N*N)), jnp.zeros((p,1))    
+        
+        D, _, _, _ = lax.scan(lambda carry, i: step_col(carry, i, 0, 1.0), init=(D,A,u,0), xs=jnp.arange(0,N,1))[0]
+        for j in range(1,N):
+            D, _, _, _ = lax.scan(lambda carry, i: step_col(carry, i, j, 0.5), init=(D,A,u,j), xs=jnp.arange(0,N-j,1))[0]
+        
+        return D
+    
     def centered_chart(self,x):
         """ return centered coordinate chart """
         if type(x) == type(()): # coordinate tuple
-            return stop_gradient(self.F(x))
+            return lax.stop_gradient(self.F(x))
         else:
             return x#self.F((x,jnp.zeros(self.N*self.N))) # already in embedding space
     
@@ -148,291 +344,3 @@ class SPDN(EmbeddedManifold):
             for i in range(s.shape[1]):
                 plt.quiver(0,0,0,s[0,i],s[1,i],s[2,i],pivot='tail',linewidth=linewidth,color=colors[i] if color is None else color,arrow_length_ratio=.15,length=1)
             plt.axis('off')
-            
-#%% Symmetric Positive Definite Space in Embedded Space
-            
-class SPDN_Ambient(EmbeddedManifold):
-    """ manifold of symmetric positive definite matrices """
-
-    def __init__(self,N=3):
-        self.N = N
-        dim = N*(N+1)//2
-        emb_dim = N*N
-        EmbeddedManifold.__init__(self,F=lambda x: F(self, x),
-                                      dim=dim,
-                                      emb_dim=emb_dim, 
-                                      invF=lambda x: invF(self, x))
-
-        self.act = lambda g,q: jnp.tensordot(g,jnp.tensordot(q.reshape((N,N)),g,(1,1)),(1,0)).flatten()
-        self.acts = vmap(self.act,(0,None))
-        
-        self.Dn = DupMat(N)
-        self.Dp = invDupMat(N)
-        self.g = lambda x: g(self, x)
-        self.do_chart_update = lambda x: False
-        
-        riemannian.metric(self)
-        riemannian.curvature(self)
-        riemannian.geodesic(self)
-        riemannian.Log(self)
-        riemannian.parallel_transport(self)
-        
-        self.gsharp = lambda x: gsharp(self,x)
-        self.det = lambda x,A=None: det(self, x, A)
-        self.Gamma_g = lambda x: Gamma(self, x)
-        self.Expt = lambda x,v,T: Expt(self, x, v, T)
-        self.Exp = lambda x,v: self.Expt(x,v,T=1.0)
-        self.Log = lambda x,y: Log(self, x, y)
-        self.dist = lambda x,y: dist(self, x,y)
-        self.dot = lambda x,v,w: dot(self, x, v, w)
-        self.ProjTM = lambda x,v: ProjTM(self, x, v)
-        self.ParallelTransport = lambda x,y,v: ParallelTransport(self, x, y, v)
-        self.DupMat = DupMat
-        self.invDupMat = invDupMat
-
-    def __str__(self):
-        return "SPDN(%d), dim %d" % (self.N,self.dim)
-    
-    def centered_chart(self,x):
-        """ return centered coordinate chart """
-        if type(x) == type(()): # coordinate tuple
-            return stop_gradient(self.F(x))
-        else:
-            return x#self.F((x,jnp.zeros(self.N*self.N))) # already in embedding space
-    
-    def chart(self):
-        """ return default coordinate chart """
-        return jnp.eye(self.N).reshape(-1)
-
-    def plot(self, rotate=None, alpha = None):
-        ax = plt.gca()
-        #ax.set_aspect("equal")
-        if rotate != None:
-            ax.view_init(rotate[0],rotate[1])
-    #     else:
-    #         ax.view_init(35,225)
-        plt.xlabel('x')
-        plt.ylabel('y')
-
-
-    def plot_path(self, x,color_intensity=1.,color=None,linewidth=3.,prevx=None,ellipsoid=None,i=None,maxi=None):
-        assert(len(x.shape)>1)
-        for i in range(x.shape[0]):
-            self.plotx(x[i],
-                  linewidth=linewidth if i==0 or i==x.shape[0]-1 else .3,
-                  color_intensity=color_intensity if i==0 or i==x.shape[0]-1 else .7,
-                  prevx=x[i-1] if i>0 else None,ellipsoid=ellipsoid,i=i,maxi=x.shape[0])
-        return
-
-    def plotx(self, x,color_intensity=1.,color=None,linewidth=3.,prevx=None,ellipsoid=None,i=None,maxi=None):
-        x = x.reshape((self.N,self.N))
-        (w,V) = np.linalg.eigh(x)
-        s = np.sqrt(w[np.newaxis,:])*V # scaled eigenvectors
-        if prevx is not None:
-            prevx = prevx.reshape((self.N,self.N))
-            (prevw,prevV) = np.linalg.eigh(prevx)
-            prevs = np.sqrt(prevw[np.newaxis,:])*prevV # scaled eigenvectors
-            ss = np.stack((prevs,s))
-
-        colors = color_intensity*np.array([[1,0,0],[0,1,0],[0,0,1]])
-        if ellipsoid is None:
-            for i in range(s.shape[1]):
-                plt.quiver(0,0,0,s[0,i],s[1,i],s[2,i],pivot='tail',linewidth=linewidth,color=colors[i] if color is None else color,arrow_length_ratio=.15,length=1)
-                if prevx is not None:
-                    plt.plot(ss[:,0,i],ss[:,1,i],ss[:,2,i],linewidth=.3,color=colors[i])
-        else:
-            try:
-                if i % int(ellipsoid['step']) != 0 and i != maxi-1:
-                    return
-            except:
-                pass
-            try:
-                if ellipsoid['subplot']:
-                    (fig,ax) = newfig3d(1,maxi//int(ellipsoid['step'])+1,i//int(ellipsoid['step'])+1,new_figure=i==0)
-            except:
-                (fig,ax) = newfig3d()
-            #draw ellipsoid, from https://stackoverflow.com/questions/7819498/plotting-ellipsoid-with-matplotlib
-            U, ss, rotation = np.linalg.svd(x)  
-            radii = np.sqrt(ss)
-            u = np.linspace(0., 2.*np.pi, 20)
-            v = np.linspace(0., np.pi, 10)
-            x = radii[0] * np.outer(np.cos(u), np.sin(v))
-            y = radii[1] * np.outer(np.sin(u), np.sin(v))
-            z = radii[2] * np.outer(np.ones_like(u), np.cos(v))
-            for l in range(x.shape[0]):
-                for k in range(x.shape[1]):
-                    [x[l,k],y[l,k],z[l,k]] = np.dot([x[l,k],y[l,k],z[l,k]], rotation)
-            ax.plot_surface(x, y, z, facecolors=cm.winter(y/np.amax(y)), linewidth=0, alpha=ellipsoid['alpha'])
-            for i in range(s.shape[1]):
-                plt.quiver(0,0,0,s[0,i],s[1,i],s[2,i],pivot='tail',linewidth=linewidth,color=colors[i] if color is None else color,arrow_length_ratio=.15,length=1)
-            plt.axis('off')
-            
-#%% Embedding
-
-def F(M:object, x:Tuple[Array, Array])->Array:
-    
-    l = jnp.zeros((M.N, M.N))
-    l = l.at[jnp.triu_indices(M.N, k=0)].set(x[0])
-    
-    return l.T.dot(l).reshape(-1)
-
-def invF(M:object, x:Tuple[Array, Array])->Array:
-    
-    P = x[0].reshape(M.N, M.N)
-    l = jnp.linalg.cholesky(P).T
-    
-    l = l[jnp.triu_indices(M.N, k=0)]  
-    
-    return l.reshape(-1)
-            
-#%% Metric
-
-def g(N, x:Tuple[Array,Array])->Array:
-    
-    P = F(N,x).reshape(N, N)
-    D = duplication_inv_fun(N)
-    
-    return jnp.matmul(D,jnp.linalg.solve(jnp.kron(P,P), D.T))
-
-def gsharp(M:object, x:Tuple[Array,Array])->Array:
-    
-    P = M.F(x).reshape(M.N, M.N)
-    D = M.dupmat_inv
-    
-    return jnp.matmul(D,jnp.matmul(jnp.kron(P,P), D.T))
-
-def det(M:object, x:Tuple[Array, Array],A:Array=None)->Array: 
-    
-    P = M.F(x).reshape(M.N, M.N)
-    
-    return 2**((M.N*(M.N-1)//2))*jnp.linalg.det(P.reshape(M.N,M.N))**(M.N+1) if A is None \
-        else jnp.linalg.det(jnp.tensordot(M.g(x),A,(1,0)))
-        
-def Gamma(M:object, x:Tuple[Array, Array])->Array: 
-    
-    p = M.N*(M.N+1)//2
-    E = jnp.eye(M.N*M.N)[:p]
-    D = M.dupmat
-    P = M.F(x).reshape(M.N,M.N)
-        
-    return -vmap(lambda e: jnp.matmul(D.T,jnp.matmul(jnp.kron(jnp.linalg.inv(P), e.reshape(M.N,M.N)), D)))(E)
-
-def Expt(M:object, x:Tuple[Array, Array], v:Array, t:float)->Array:
-    
-    P = M.F(x).reshape(M.N,M.N)
-    v = M.ProjTM(x, v.reshape(M.N,M.N))
-    
-    P_phalf = jnp.array(jscipy.linalg.sqrtm(P), dtype=jnp.float32)
-    P_nhalf = jnp.array(jscipy.linalg.sqrtm(jnp.linalg.inv(P)), dtype=jnp.float32)
-    
-    P_exp = jnp.matmul(jnp.matmul(P_phalf, \
-                                 jscipy.linalg.expm(t*jnp.matmul(jnp.matmul(P_nhalf, v), P_nhalf))),
-                      P_phalf)
-    
-    return (M.invF((x[1], P_exp)), P_exp.reshape(-1))
-
-def ParallelTransport(M:object, x:Tuple[Array, Array], y:Tuple[Array, Array], v:Array)->Array:
-    
-    P1 = M.F(x).reshape(M.N,M.N)
-    P2 = M.F(y).reshape(M.N,M.N)
-    v = M.ProjTM(x, v.reshape(M.N,M.N))
-    
-    P1_phalf = fractional_matrix_power(P1,0.5)
-    P1_nahlf = fractional_matrix_power(P1,-0.5)
-    logxy = M.Log(x,y)
-    expxy = jscipy.linalg.expm(0.5*jnp.matmul(jnp.matmul(P1_nhalf, logxy), P1_nhalf))
-    
-    psi = jnp.matmul(jnp.matmul(P1_phalf, v), P1_phalf)
-    term1 = jnp.matmul(P1_phalf, expxy)
-    term2 = jnp.matmul(expxy, P1_phalf)
-    
-    return jnp.matmul(jnp.matmul(term1, psi), term2)
-        
-def Log(M:object, x:Tuple[Array, Array], y:Tuple[Array,Array])->Array:
-    
-    P = M.F(x).reshape(M.N,M.N)
-    S = M.F(y).reshape(M.N,M.N)
-    
-    P_phalf = fractional_matrix_power(P,0.5)
-    P_nhalf = fractional_matrix_power(P,-0.5)
-    
-    return jnp.matmul(jnp.matmul(P_phalf, \
-                                 logm(jnp.matmul(jnp.matmul(P_nhalf, S), P_nhalf))),
-                      P_phalf)
-
-def dist(M:object, x:Tuple[Array, Array], y:Tuple[Array,Array])->Array:
-    
-    P1 = M.F(x)
-    P2 = M.F(y)
-    
-    U, S, Vh = jnp.linalg.svd(jnp.linalg.solve(P1, P2))
-    
-    return jnp.sqrt(jnp.sum(jnp.log(S)**2))
-
-def dot(M:object, x:Tuple[Array, Array], v:Array, w:Array)->Array:
-    
-    P = M.F(x)
-    
-    v1 = jnp.linalg.solve(P, v)
-    v2 = jnp.linalg.solve(p, w)
-    
-    return jnp.trace(jnp.matmul(v1,v2))
-
-def ProjTM(M:object, x:Tuple[Array, Array], v:Array) -> Array:
-    
-    P1_phalf = fractional_matrix_power(P, 0.5)
-    v_symmetric = 0.5*(v+v.T)
-    
-    return jnp.matmul(jnp.matmul(P1_phalf, v_symmetric), P1_phalf)
-
-#%% Duplication Matrix
-
-def DupMat(N:int):
-    
-    def step_col(carry, i, j):
-        
-        D, A, u, i = carry
-        A,u = 0.*A, 0.*u
-        idx = j*N+i-((j+1)*j)//2
-        
-        A = A.at[i,i-j].set(1)
-        A = A.at[i-j,i].set(1)
-        u = u.at[idx].set(1)
-        D += u.dot(A.reshape((1, -1), order="F"))
-        i += 1
-        
-        return (D,A,u,i), None
-        
-    p = N*(N+1)//2
-    A,D,u = jnp.zeros((N,N)), jnp.zeros((p,N*N)), jnp.zeros((p,1))    
-    
-    for j in range(N):
-        D, _, _, _ = scan(lambda carry, i: step_col(carry, i, j), init=(D,A,u,j), xs=jnp.arange(0,N-j,1))[0]
-    
-    return D.T
-
-def invDupMat(N:int):
-    
-    def step_col(carry, i, j, val):
-        
-        D, A, u, i = carry
-        A,u = 0.*A, 0.*u
-        idx = j*N+i-((j+1)*j)//2
-        
-        A = A.at[i,i-j].set(val)
-        A = A.at[i-j,i].set(val)
-        u = u.at[idx].set(1)
-        D += u.dot(A.reshape((1, -1), order="F"))
-        i += 1
-        
-        return (D,A,u,i), None
-        
-    p = N*(N+1)//2
-    A,D,u = jnp.zeros((N,N)), jnp.zeros((p,N*N)), jnp.zeros((p,1))    
-    
-    D, _, _, _ = scan(lambda carry, i: step_col(carry, i, 0, 1.0), init=(D,A,u,0), xs=jnp.arange(0,N,1))[0]
-    for j in range(1,N):
-        D, _, _, _ = scan(lambda carry, i: step_col(carry, i, j, 0.5), init=(D,A,u,j), xs=jnp.arange(0,N-j,1))[0]
-    
-    return D
-

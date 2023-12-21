@@ -68,7 +68,7 @@ class Cylinder(EmbeddedManifold):
     def centered_chart(self,x):
         """ return centered coordinate chart """
         if type(x) == type(()): # coordinate tuple
-            Fx = stop_gradient(self.F(x))
+            Fx = lax.stop_gradient(self.F(x))
         else:
             Fx = x # already in embedding space
         return self.invF((Fx,self.chart()))  # chart centered at coords

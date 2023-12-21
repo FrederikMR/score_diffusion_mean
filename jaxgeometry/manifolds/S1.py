@@ -35,35 +35,22 @@ class S1(EmbeddedManifold):
         return "Circle S1"
     
     def __init__(self, 
-                 angle_shift:float = jnp.pi,
-                 use_spherical_coords = False):
+                 angle_shift:float = 2*jnp.pi):
         
-        self.use_spherical_coords = use_spherical_coords
+        self.dim = 1
+        
         self.angle_shift = angle_shift
         
-        self.F_spherical = lambda x: jnp.array([jnp.cos(x[0]), jnp.sin(x[0])]).reshape(2)
-        self.F_spherical_inv = lambda x: (jnp.arctan2(x[1][1],x[1][0]) % self.angle_shift).reshape(1)
+        self.F = lambda x: jnp.array([jnp.cos(x[0]), jnp.sin(x[0])]).reshape(2)
+        self.invF = lambda x: (jnp.arctan2(x[1][1],x[1][0]) % self.angle_shift).reshape(1)
+        self.chart = lambda : jnp.zeros(1)
+        self.do_chart_update = lambda x: False
+        self.update_coords = lambda coords, _: (coords[0] % self.angle_shift, coords[1] % self.angle_shift)
         
-        self.F_steographic_inv = lambda x: (x[1][0]/(1-x[1][1])).reshape(1)
-        self.F_steographic = lambda x: (jnp.array([2*x[0], x[0]**2-1])/(x[0]**2+1)).reshape(2)
+        EmbeddedManifold.__init__(self,self.F,1,1,invF=self.invF)
         
-        do_chart_update_spherical = lambda x: x[0] > self.angle_shift-.1 
-        do_chart_update_steographic = lambda x: x[0] > .1 # look for a new chart if true
-        
-        if use_spherical_coords:
-            F = self.F_spherical
-            invF = self.F_spherical_inv
-            self.do_chart_update = do_chart_update_spherical
-            self.centered_chart = self.centered_chart_spherical
-            self.chart = lambda : jnp.array([1.0, 0.0])
-        else:
-            F = self.F_steographic
-            invF = self.F_steographic_inv
-            self.do_chart_update = do_chart_update_steographic
-            self.centered_chart = self.centered_chart_steographic
-            self.chart = lambda : jnp.array([0.0, -1.0])
-
-        EmbeddedManifold.__init__(self,F,1,2,invF=invF)
+        ##### Metric:
+        self.g = lambda x: jnp.ones(1).reshape(1,1)
 
         # action of matrix group on elements
         self.act = lambda g,x: jnp.tensordot(g,x,(1,0))
@@ -74,13 +61,16 @@ class S1(EmbeddedManifold):
         geodesic(self)
         Log(self)
         parallel_transport(self)
-        
-        if use_spherical_coords:
-            self.Log = self.StdLog
-        else:
-            self.Log = self.StdLogSteographic
+
+        # action of matrix group on elements
+        self.act = lambda g,x: jnp.tensordot(g,x,(1,0))
+        self.acts = lambda g,x: jnp.tensordot(g,x,(2,0))
             
         self.Exp = lambda x,v: (x[0]+v) % self.angle_shift
+        self.ExpEmbedded = lambda x,v: (x[1]+v) % self.angle_shift
+        self.Log = lambda x,y: (y-x[0]) % self.angle_shift
+        self.dist = lambda x,y: jnp.abs(y[0]-x[0]) % self.angle_shift
+        self.proj = lambda x,v: v % self.angle_shift
         
 
         #Heat kernels
@@ -90,20 +80,6 @@ class S1(EmbeddedManifold):
         self.grady_log_hk = jit(lambda x,y,t: grady_log_hk(self, x, y, t))
         #self.ggrady_log_hk = jit(lambda x,y,t: -jnp.eye(self.dim)/t)
         self.gradt_log_hk = lambda x,y,t: gradt_log_hk(self, x, y, t)
-    
-    def centered_chart_spherical(self,x):
-        """ return centered coordinate chart """
-        if type(x) == type(()): # coordinate tuple
-            return stop_gradient(self.F(x))
-        else:
-            return x % self.angle_shift # already in embedding space
-
-    def centered_chart_steographic(self,x):
-        """ return centered coordinate chart """
-        if type(x) == type(()): # coordinate tuple
-            return stop_gradient(self.F(x))
-        else:
-            return x # already in embedding space
     
     def StdLog(self, x:Tuple[Array, Array], y:Tuple[Array, Array])->Array:
         
@@ -150,7 +126,7 @@ def hk(M:object, x:Array,y:Array,t:float,N_terms=20)->float:
     
     const = 1/jnp.sqrt(2*jnp.pi*t)
    
-    val, _ = scan(step, init=jnp.zeros(1), xs=jnp.arange(-N_terms+1,N_terms,1)) 
+    val, _ = lax.scan(step, init=jnp.zeros(1), xs=jnp.arange(-N_terms+1,N_terms,1)) 
    
     return val*const
 
@@ -160,24 +136,6 @@ def log_hk(M:object, x:Array,y:Array,t:float)->float:
 
 def gradx_log_hk(M:object, x:Array,y:Array,t:float, N_terms=20)->Tuple[Array, Array]:
     
-    def get_coords(Fx:Array) -> Tuple[Array, Array]:
-
-        chart = M.centered_chart(Fx)
-        return (M.invF((Fx,chart)),chart)
-
-    def to_TMchart(Fx:Array,v:Array) -> Array:
-        
-        x = invF_spherical(Fx)
-        invJFx = JinvF_spherical((x,Fx))
-        
-        return jnp.dot(invJFx.reshape(-1,1),v)
-
-    def to_TMx(Fx:Array,v:Array) -> Array:
-
-        x = get_coords(Fx)
-
-        return jnp.dot(M.invJF((Fx,x[1])),v)
-    
     def step(carry:float, k:int)->Tuple[float, None]:
         
         term1 = 2*jnp.pi*k+x1-y1
@@ -185,10 +143,6 @@ def gradx_log_hk(M:object, x:Array,y:Array,t:float, N_terms=20)->Tuple[Array, Ar
         carry -= jnp.exp(-0.5*(term1**2)*tinv)*term1*tinv
         
         return carry, None
-    
-    F_spherical = lambda x: jnp.array([jnp.cos(x[0]), jnp.sin(x[0])])
-    invF_spherical = lambda x: jnp.arctan2(x[1][1]/x[1][0]) % (2*jnp.pi)
-    Jf_spherical = jacfwdx(F_spherical)
 
     const = 1/jnp.sqrt(2*jnp.pi*t)
         
@@ -196,33 +150,12 @@ def gradx_log_hk(M:object, x:Array,y:Array,t:float, N_terms=20)->Tuple[Array, Ar
     y1 = y[0]#jnp.arctan2(y[1][1]/y[1][0]) % (2*jnp.pi)
     tinv = 1/t
    
-    val, _ = scan(step, init=jnp.zeros(1), xs=jnp.arange(0,N_terms,1)) 
+    val, _ = lax.scan(step, init=jnp.zeros(1), xs=jnp.arange(0,N_terms,1)) 
     grad = val*const/hk(M,x,y,t)
-    
-    grad_chart = to_TMchart(x, grad)
-    grad_x = to_TMx(x[1], grad_chart)
    
     return grad#grad_x, grad_chart
 
 def grady_log_hk(M:object, x:Array, y:Array, t:float, N_terms=20) -> Tuple[Array, Array]:
-    
-    def get_coords(Fx:Array) -> Tuple[Array, Array]:
-
-        chart = M.centered_chart(Fx)
-        return (M.invF((Fx,chart)),chart)
-
-    def to_TMchart(Fx:Array,v:Array) -> Array:
-        
-        x = invF_spherical(Fx)
-        invJFx = JinvF_spherical((x,Fx))
-        
-        return jnp.dot(invJFx.reshape(-1,1),v)
-
-    def to_TMx(Fx:Array,v:Array) -> Array:
-
-        x = get_coords(Fx)
-
-        return jnp.dot(M.invJF((Fx,x[1])),v)
     
     def step(carry:float, k:int)->Tuple[float,None]:
         
@@ -231,11 +164,6 @@ def grady_log_hk(M:object, x:Array, y:Array, t:float, N_terms=20) -> Tuple[Array
         carry += jnp.exp(-0.5*(term1**2)*tinv)*term1*tinv
         
         return carry, None
-    
-    F_spherical = lambda x: jnp.array([jnp.cos(x[0]), jnp.sin(x[0])])
-    invF_spherical = lambda x: jnp.arctan2(x[1][1],x[1][0]) % (2*jnp.pi)
-    Jf_spherical = jacfwdx(F_spherical)
-    JinvF_spherical = jacfwdx(invF_spherical)
 
     const = 1/jnp.sqrt(2*jnp.pi*t)
     
@@ -243,13 +171,10 @@ def grady_log_hk(M:object, x:Array, y:Array, t:float, N_terms=20) -> Tuple[Array
     y1 = y[0]#jnp.arctan2(y[1][1],y[1][0]) % jnp.pi
     tinv = 1/t
     
-    val, _ = scan(step, init=jnp.zeros(1), xs=jnp.arange(-N_terms+1,N_terms,1)) 
+    val, _ = lax.scan(step, init=jnp.zeros(1), xs=jnp.arange(-N_terms+1,N_terms,1)) 
     grad = val*const/hk(M,x,y,t)
    
-    grad_chart = to_TMchart(y, grad)
-    grad_x = to_TMx(y[1], grad_chart)
-   
-    return grad#grad_x, grad_chart
+    return grad
 
 def gradt_log_hk(M:object, x:Array, y:Array, t:float, N_terms=20)->float:
     
@@ -273,10 +198,10 @@ def gradt_log_hk(M:object, x:Array, y:Array, t:float, N_terms=20)->float:
     const1 = 1/jnp.sqrt(2*jnp.pi*t)
     const2 = -1/(2*jnp.sqrt(jnp.pi)*(t)**(3/2))
    
-    val1, _ = scan(step1, init=jnp.zeros(1), xs=jnp.arange(-N_terms+1,N_terms,1)) 
+    val1, _ = lax.scan(step1, init=jnp.zeros(1), xs=jnp.arange(-N_terms+1,N_terms,1)) 
     val1 *= const1
     
-    val2, _ = scan(step2, init=jnp.zeros(1), xs=jnp.arange(-N_terms+1,N_terms,1)) 
+    val2, _ = lax.scan(step2, init=jnp.zeros(1), xs=jnp.arange(-N_terms+1,N_terms,1)) 
     val2 *= const2
    
     return (val1+val2)/hk(M,x,y,t)

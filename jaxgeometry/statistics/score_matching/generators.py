@@ -15,7 +15,8 @@ from jaxgeometry.setup import *
 
 #jaxgeometry
 from jaxgeometry.integration import dts, dWs, integrator_stratonovich, integrator_ito
-from jaxgeometry.stochastics import tile, product_sde, Brownian_coords, brownian_projection, GRW
+from jaxgeometry.stochastics import tile, product_sde, Brownian_coords, brownian_projection, GRW, \
+    product_grw
 
 #%% Local Coordinates
 

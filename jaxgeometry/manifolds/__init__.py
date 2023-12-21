@@ -35,5 +35,6 @@ from .Heisenberg import Heisenberg
 from .SPDN import SPDN
 from .HypParaboloid import HypParaboloid
 from .Latent import Latent
+from .Sym import Sym
 
 #%% Code

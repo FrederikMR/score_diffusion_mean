@@ -22,6 +22,7 @@
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.integration import dWs
 
 #%% Iterative Maximum Likelihood Estimation
 

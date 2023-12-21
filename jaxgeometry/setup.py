@@ -36,7 +36,7 @@ import jax.random as jrandom
 from jax.example_libraries import optimizers
 
 #Scipy
-from scipy.linalg import fractional_matrix_power, logm
+from scipy.linalg import logm
 
 #random
 import random

@@ -82,7 +82,7 @@ def get_guided(M:object,
             xtp1 = x+dt*det+.5*(sto+sde((tp1,tx,chart,*cy),y)[1])
         xtp1chart = (xtp1,chart)
         Xtp1 = sde((tp1,xtp1,chart,*cy),y)[2]
-        ytildetp1 = stop_gradient(jnp.tensordot(Xtp1,phi(xtp1chart,v,*cy),1)) # to avoid NaNs in gradient
+        ytildetp1 = lax.stop_gradient(jnp.tensordot(Xtp1,phi(xtp1chart,v,*cy),1)) # to avoid NaNs in gradient
 
         # set default A if not specified
         Af = A if A != None else \

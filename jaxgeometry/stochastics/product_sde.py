@@ -22,7 +22,7 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-from jaxgeometry.integration import integrator_ito, integrate_sde
+from jaxgeometry.integration import integrator_ito, integrate_sde, integrator_ito_tm, integrate_sde_tm
 
 #%% Product Diffusion Process
 
@@ -45,6 +45,31 @@ def product_sde(M:object,
     chart_update_product = vmap(chart_update)
 
     product = jit(lambda x,dts,dWs,*cy: integrate_sde(sde_product,integrator,chart_update_product,x[0],x[1],dts,dWs,*cy))
+
+    return (product,sde_product,chart_update_product)
+
+def product_grw(M:object,
+                sde:Callable[[Tuple[Array, Array, Array, Array], Tuple[Array, Array]], Tuple[Array, Array, Array, Array]],
+                chart_update:Callable[[Tuple[Array, Array, Array]], Tuple[Array, Array, Array]],
+                step_fun = lambda x,v: x[0]+v
+                ):
+    """ product diffusions """
+
+    def sde_product(c,
+                    y
+                    ):
+        t,x,chart,*cy = c
+        dt,dW = y
+        
+        (det,sto,X,*dcy) = vmap(lambda x,chart,dW,*_cy: sde((t,x,chart,*_cy),(dt,dW)),0)(x,chart,dW,*cy)
+
+        return (det,sto,X,*dcy)
+
+    chart_update_product = vmap(chart_update)
+
+    product = jit(lambda x,dts,dWs,*cy: integrate_sde_tm(sde_product,
+                                                         lambda a,b: integrator_ito_tm(a,b,step_fun),
+                                                         chart_update_product,x[0],x[1],dts,dWs,*cy))
 
     return (product,sde_product,chart_update_product)
 

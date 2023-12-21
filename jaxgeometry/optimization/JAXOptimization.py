@@ -59,7 +59,7 @@ def RMJaxOpt(mu_init:Array,
         
     opt_state = opt_init(mu_init[0])
     grad = grad_fn(mu_init)
-    _, out = scan(update, init = (mu_init, grad, opt_state), xs = jnp.arange(0,max_iter,1))
+    _, out = lax.scan(update, init = (mu_init, grad, opt_state), xs = jnp.arange(0,max_iter,1))
     mu = out[0]
     grad = out[1]
     
@@ -110,7 +110,7 @@ def JaxOpt(mu_init:Array,
         
     opt_state = opt_init(mu_init)
     grad = grad_fn(mu_init)
-    _, out = scan(update, init = (mu_init, grad, opt_state), xs = jnp.arange(0,max_iter,1))
+    _, out = lax.scan(update, init = (mu_init, grad, opt_state), xs = jnp.arange(0,max_iter,1))
     mu = out[0]
     grad = out[1]
     
@@ -180,7 +180,7 @@ def JointJaxOpt(mu_rm:Array,
     grad_rm = grad_fn_rm(mu_rm, mu_euc)
     grad_euc = grad_fn_euc(mu_rm, mu_euc)
     N_rm = len(grad_rm)
-    _, out = scan(update, init = (mu_rm, mu_euc, 
+    _, out = lax.scan(update, init = (mu_rm, mu_euc, 
                                       grad_rm, grad_euc, 
                                       opt_state), xs = jnp.arange(0,max_iter,1))
     mu_rm = out[0]

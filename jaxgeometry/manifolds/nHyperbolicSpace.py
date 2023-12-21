@@ -22,11 +22,11 @@
 #%% Modules
 
 from jaxgeometry.setup import *
-from .riemannian import Manifold
+from .riemannian import EmbeddedManifold
 
 #%% Euclidean Geometry (R^n)
 
-class nHyperbolicSpace(Manifold):
+class nHyperbolicSpace(EmbeddedManifold):
     """ Hyperbolic Space """
     
     def __str__(self)->str:
@@ -34,7 +34,7 @@ class nHyperbolicSpace(Manifold):
         return f"{self.dim}-dimensioanl Hyperbolic Space with curvate {self.K} embedded into R^{self.dim+1}"
 
     def __init__(self,N:int=3, inner_product:str='Lorentzian', K:float=-1.)->None:
-        riemannian.Manifold.__init__(self)
+        EmbeddedManifold.__init__(self,F=self.F,dim=N,emb_dim=N,invF=self.invF)
         self.dim = N
         self.K = K
 
@@ -65,10 +65,13 @@ class nHyperbolicSpace(Manifold):
         
         return
     
-    def update_vector(self, coords:Array, new_coords:Array, new_chart:Array, v:Array)->Array:
+    def F(self, x:Tuple[Array, Array])->Array:
         
-        return v
-
+        return x[0]
+    
+    def invF(self, x:Tuple[Array, Array])->Array:
+        
+        return x[1]
 
 
 

@@ -20,9 +20,7 @@ module swap python3/3.10.12
 python3 train_score.py \
     --manifold SN \
     --dim 2 \
-    --generator_dim 3 \
     --loss_type dsm \
-    --sampling_method TMSampling \
     --load_model False \
     --T_sample False \
     --t 0.1 \

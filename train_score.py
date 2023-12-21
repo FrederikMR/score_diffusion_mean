@@ -28,7 +28,7 @@ import os
 
 #jaxgeometry
 from jaxgeometry.manifolds import Euclidean, nSphere, nEllipsoid, Cylinder, S1, Torus, \
-    H2, Landmarks, Heisenberg, SPDN, Latent, HypParaboloid
+    H2, Landmarks, Heisenberg, SPDN, Latent, HypParaboloid, Sym
 from jaxgeometry.statistics.score_matching import train_s1, train_s2, TMSampling, LocalSampling, \
     EmbeddedSampling, ProjectionSampling
 from jaxgeometry.statistics.score_matching.model_loader import load_model
@@ -42,11 +42,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
-    parser.add_argument('--generator_dim', default=3,
-                        type=int)
     parser.add_argument('--loss_type', default="dsm",
-                        type=str)
-    parser.add_argument('--sampling_method', default='ProjectionSampling',
                         type=str)
     parser.add_argument('--load_model', default=False,
                         type=bool)
@@ -88,12 +84,9 @@ def train_score()->None:
     
     N_sim = args.x_samples*args.repeats
     
-    if args.generator_dim is None:
-        generator_dim = args.dim
-    else:
-        generator_dim = args.generator_dim
-    
     if args.manifold == "RN":
+        sampling_method = 'LocalSampling'
+        generator_dim = args.dim
         if not args.T_sample:
             s1_path = ''.join(('scores/R',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/R',str(args.dim),'/s2/'))
@@ -117,6 +110,8 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
     
     elif args.manifold == "Circle":
+        sampling_method = 'LocalSampling'
+        generator_dim=1
         if not args.T_sample:
             s1_path = ''.join(('scores/S1/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S1/s2/'))
@@ -124,7 +119,7 @@ def train_score()->None:
             s1_path = ''.join(('scores/S1/s1_T_/',args.loss_type,'/'))
             s2_path = ''.join(('scores/S1/s2_T'))
         
-        M = S1(use_spherical_coords=True)
+        M = S1()
         x0 = M.coords([0.])
         
         layers = [50,100,50]
@@ -135,6 +130,8 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "SN":
+        sampling_method = 'TMSampling'
+        generator_dim = 3
         if not args.T_sample:
             s1_path = ''.join(('scores/S',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S',str(args.dim),'/s2/'))
@@ -158,6 +155,8 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "Ellipsoid":
+        sampling_method = 'TMSampling'
+        generator_dim = 3
         if not args.T_sample:
             s1_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s2/'))
@@ -182,6 +181,8 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "Cylinder":
+        sampling_method = 'EmbeddedSampling'
+        generator_dim = 3
         if not args.T_sample:
             s1_path = ''.join(('scores/Cylinder/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Cylinder/s2/'))
@@ -201,6 +202,8 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "Torus":
+        sampling_method = 'EmbeddedSampling'
+        generator_dim = 3
         if not args.T_sample:
             s1_path = ''.join(('scores/Torus/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Torus/s2/'))
@@ -219,6 +222,8 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "Landmarks":
+        sampling_method = 'LocalSampling'
+        generator_dim = 2*args.dim
         if not args.T_sample:
             s1_path = ''.join(('scores/Landmarks',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Landmarks',str(args.dim),'/s2/'))
@@ -253,6 +258,8 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "SPDN":
+        sampling_method = 'LocalSampling'
+        generator_dim = (args.dim*(args.dim+1))//2
         if not args.T_sample:
             s1_path = ''.join(('scores/SPDN',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/SPDN',str(args.dim),'/s2/'))
@@ -275,7 +282,34 @@ def train_score()->None:
                                                         dim=generator_dim, 
                                                         r = max(generator_dim//2,1))(x))
         
+    elif args.manifold == "Sym":
+        sampling_method = 'LocalSampling'
+        generator_dim = (args.dim*(args.dim+1))//2
+        if not args.T_sample:
+            s1_path = ''.join(('scores/Sym',str(args.dim),'/s1_',args.loss_type,'/'))
+            s2_path = ''.join(('scores/Sym',str(args.dim),'/s2/'))
+        else:
+            s1_path = ''.join(('scores/Sym',str(args.dim),'/s1_T_/',args.loss_type,'/'))
+            s2_path = ''.join(('scores/Sym',str(args.dim),'/s2_T'))
+
+        M = Sym(N=args.dim)
+        x0 = M.coords([10.]*(args.dim*(args.dim+1)//2))
+        
+        if args.dim<3:
+            layers = [50,100,100,50]
+        elif args.dim<8:
+            layers = [50,100,200,200,100,50]
+        else:
+            layers = [50,100,200,400,400,200,100,50]
+
+        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
+        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                        dim=generator_dim, 
+                                                        r = max(generator_dim//2,1))(x))
+        
     elif args.manifold == "HypParaboloid":
+        sampling_method = 'LocalSampling'
+        generator_dim = 2
         if not args.T_sample:
             s1_path = ''.join(('scores/HypParaboloid/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/HypParaboloid/s2/'))
@@ -295,7 +329,7 @@ def train_score()->None:
     else:
         return
         
-    if args.sampling_method == 'LocalSampling':
+    if sampling_method == 'LocalSampling':
         dW_dim = M.dim
         data_generator = LocalSampling(M=M,
                                        x0=x0,
@@ -308,7 +342,7 @@ def train_score()->None:
                                        T_sample=args.T_sample,
                                        t=args.t
                                        )
-    elif args.sampling_method == "EmbeddedSampling":
+    elif sampling_method == "EmbeddedSampling":
         dW_dim = M.dim
         data_generator = EmbeddedSampling(M=M,
                                           x0=x0,
@@ -321,7 +355,7 @@ def train_score()->None:
                                           T_sample=args.T_sample,
                                           t=args.t
                                           )
-    elif args.sampling_method == "ProjectionSampling":
+    elif sampling_method == "ProjectionSampling":
         dW_dim = M.emb_dim
         data_generator = ProjectionSampling(M=M,
                                             x0=(x0[1],x0[0]),
@@ -335,12 +369,12 @@ def train_score()->None:
                                             T_sample=args.T_sample,
                                             t=args.t
                                             )
-    elif args.sampling_method == "TMSampling":
+    elif sampling_method == "TMSampling":
         dW_dim = M.emb_dim
         data_generator = TMSampling(M=M,
                                     x0=(x0[1],x0[0]),
                                     dim=generator_dim,
-                                    Exp_map=lambda x, v: M.ExpEmbedded(x[1],v),
+                                    Exp_map=lambda x, v: M.ExpEmbedded(x[0],v),
                                     repeats=args.repeats,
                                     x_samples=args.x_samples,
                                     t_samples=args.t_samples,
@@ -393,7 +427,7 @@ def train_score()->None:
             state = load_model(s1_path)
         else:
             state = None
-            
+
         if not os.path.exists(s1_path):
             os.makedirs(s1_path)
             

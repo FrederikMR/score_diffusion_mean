@@ -43,7 +43,18 @@ def dWs(d:int,_dts:Array=None,num:int=1)->Array:
     if num == 1:
         return jnp.sqrt(_dts)[:,None]*jrandom.normal(subkeys[0],(_dts.shape[0],d))
     else:
-        return vmap(lambda subkey: jnp.sqrt(_dts)[:,None]*jrandom.normal(subkey,(_dts.shape[0],d)))(subkeys)    
+        return vmap(lambda subkey: jnp.sqrt(_dts)[:,None]*jrandom.normal(subkey,(_dts.shape[0],d)))(subkeys) 
+    
+def StdNormal(d:int,num:int=1)->Array:
+    """
+    standard noise realisations
+    time increments, stochastic
+    """
+    global key
+    keys = jrandom.split(key,num=num+1)
+    key = keys[0]
+    subkeys = keys[1:]
+    return jrandom.normal(subkeys[0],(d,num)).squeeze()
 
 def integrator(ode_f:Callable[[Tuple[Array, Array, Array], Array], Array],
                chart_update:Callable[[Array, Array, Array], Tuple[Array, Array]]=None,
@@ -148,3 +159,43 @@ def integrator_ito(sde_f:Callable[[Tuple[Array, Array, Array, Array], Tuple[Arra
         return ((t+dt,*chart_update(step_fun((x,chart), dt*detx + stox), chart, *cy_new)),)*2
 
     return euler
+
+def integrator_ito_tm(sde_f:Callable[[Tuple[Array, Array, Array, Array], Tuple[Array, Array]], Tuple[Array, Array, Array, Array]],
+                      chart_update:Callable[[Array, Array, Array], Tuple[Array, Array]]=None,
+                      step_fun:Callable[[Array, Array], Array]=lambda x,v: x[0]+v
+                      )->Callable:
+    
+    """Ito integration for SDE"""
+    
+    if chart_update == None: # no chart update
+        chart_update = lambda xp,chart,*cy: (xp,chart,*cy)
+
+    def euler(c,y):
+        t,x,chart,*cy = c
+        dt,dW = y
+
+        (detx, stox, X,*dcy) = sde_f(c,y)
+        cy_new = tuple([y+dt*dy for (y,dy) in zip(cy,dcy)])
+        return ((t+dt,*chart_update(x, step_fun((x,chart), dt*detx + stox), *cy_new)),)*2
+
+    return euler
+
+def integrate_sde_tm(sde:Callable[[Tuple[Array, Array, Array, Array], Tuple[Array, Array]], Tuple[Array, Array, Array, Array]],
+                  integrator:Callable,
+                  chart_update:Callable[[Array, Array, Array], Tuple[Array, Array]],
+                  x:Array,
+                  chart:Array,
+                  dts:Array,
+                  dWs:Array,
+                  *cy
+                  )->Array:
+    """
+    sde functions should return (det,sto,Sigma) where
+    det is determinisitc part, sto is stochastic part,
+    and Sigma stochastic generator (i.e. often sto=dot(Sigma,dW)
+    """
+
+    _,xs = lax.scan(integrator(sde,chart_update),
+                    (0.,x,chart,*cy),
+                    (dts,dWs))
+    return xs
