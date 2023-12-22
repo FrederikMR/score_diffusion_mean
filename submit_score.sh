@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J S2_s1
+#BSUB -J Ellipsoid50_s1
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
@@ -18,8 +18,8 @@ module swap cudnn/v8.9.1.23-prod-cuda-12.X
 module swap python3/3.10.12
 
 python3 train_score.py \
-    --manifold SN \
-    --dim 2 \
+    --manifold Ellipsoid \
+    --dim 50 \
     --loss_type dsm \
     --load_model False \
     --T_sample False \
