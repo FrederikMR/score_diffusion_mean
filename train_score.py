@@ -154,9 +154,34 @@ def train_score()->None:
                                                         dim=generator_dim, 
                                                         r = max(generator_dim//2,1))(x))
         
+    elif args.manifold == "Hyperbolic":
+        sampling_method = 'TMSampling'
+        generator_dim = args.dim+1
+        if not args.T_sample:
+            s1_path = ''.join(('scores/S',str(args.dim),'/s1_',args.loss_type,'/'))
+            s2_path = ''.join(('scores/S',str(args.dim),'/s2/'))
+        else:
+            s1_path = ''.join(('scores/S',str(args.dim),'/s1_T_/',args.loss_type,'/'))
+            s2_path = ''.join(('scores/S',str(args.dim),'/s2_T'))
+            
+        M = nSphere(N=args.dim)
+        x0 = M.coords([0.]*args.dim)
+        
+        if args.dim<10:
+            layers = [50,100,100,50]
+        elif args.dim<50:
+            layers = [50,100,200,200,100,50]
+        else:
+            layers = [50,100,200,400,400,200,100,50]
+        
+        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
+        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                        dim=generator_dim, 
+                                                        r = max(generator_dim//2,1))(x))
+        
     elif args.manifold == "Ellipsoid":
         sampling_method = 'TMSampling'
-        generator_dim = 3
+        generator_dim = args.dim+1
         if not args.T_sample:
             s1_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s2/'))

@@ -56,12 +56,14 @@ class nHyperbolicSpace(EmbeddedManifold):
         
         self.dot = lambda x,v,w: jnp.tensordot(jnp.tensordot(M.g(x),w,(1,0)),v,(0,0))
         self.norm = lambda x,v: jnp.sqrt(self.dot(x,v,v))
-        self.dist = lambda x,y: 1/jnp.sqrt(jnp.abs(self.K))*jnp.arccosh(self.K*self.dot(x[0],y[0]))
+        self.dist = lambda x,y: 1/jnp.sqrt(jnp.abs(self.K))*jnp.arccosh(self.K*self.dot(x[1],y[1]))
         self.Exp = lambda x,v,T=1.0: jnp.cosh(self.norm(x,v)*jnp.sqrt(jnp.abs(self.K)))+\
             v*jnp.sinh(self.norm(x,v)*jnp.sqrt(jnp.abs(self.K)))/(jnp.sqrt(jnp.abs(self.K))*self.norm(x,v))
-        self.Log = lambda x,y: (y[0]-K*jnp.dot(x[0],y[0])*x[0])*jnp.arcosh(self.K*jnp.dot(x[0],y[0]))/ \
-            jnp.sinh(jnp.arccosh(self.K*jnp.dot(x[0],y[0])))
-        self.ParallelTransport = lambda x,y,v: v-self.K*self.dot(y[0],v)*(x[0]+y[0])/(1+self.K*self.dot(x[0],y[0]))
+        self.ExpEmbedded = lambda x,v,T=1.0: jnp.cosh(self.norm(x,v)*jnp.sqrt(jnp.abs(self.K)))+\
+            v*jnp.sinh(self.norm(x,v)*jnp.sqrt(jnp.abs(self.K)))/(jnp.sqrt(jnp.abs(self.K))*self.norm(x,v))
+        self.Log = lambda x,y: (y[1]-K*jnp.dot(x[1],y[1])*x[1])*jnp.arcosh(self.K*jnp.dot(x[1],y[1]))/ \
+            jnp.sinh(jnp.arccosh(self.K*jnp.dot(x[1],y[1])))
+        self.ParallelTransport = lambda x,y,v: v-self.K*self.dot(y[1],v)*(x[1]+y[1])/(1+self.K*self.dot(x[1],y[1]))
         
         return
     
@@ -72,6 +74,10 @@ class nHyperbolicSpace(EmbeddedManifold):
     def invF(self, x:Tuple[Array, Array])->Array:
         
         return x[1]
+    
+    def StdProj(self, x:Tuple[Array, Array], v:Array)->Array:
+        
+        return v+self.dot(x,x[1],v)*v
 
 
 
