@@ -38,9 +38,9 @@ from jaxgeometry.statistics.score_matching.model_loader import load_model
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SN",
+    parser.add_argument('--manifold', default="SPDN",
                         type=str)
-    parser.add_argument('--dim', default=2,
+    parser.add_argument('--dim', default=10,
                         type=int)
     parser.add_argument('--loss_type', default="dsm",
                         type=str)
