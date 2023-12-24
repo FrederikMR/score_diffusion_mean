@@ -131,7 +131,7 @@ def train_score()->None:
         
     elif args.manifold == "SN":
         sampling_method = 'TMSampling'
-        generator_dim = 3
+        generator_dim = args.dim+1
         if not args.T_sample:
             s1_path = ''.join(('scores/S',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S',str(args.dim),'/s2/'))
