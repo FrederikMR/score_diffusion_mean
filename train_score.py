@@ -264,7 +264,7 @@ def train_score()->None:
         #x0 = M.coords(jnp.vstack((jnp.linspace(-5.0,5.0,M.N),jnp.zeros(M.N))).T.flatten())
         
         if args.dim >=10:
-            with open('../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt', 'r') as the_file:
+            with open('../../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt', 'r') as the_file:
                 all_data = [line.strip() for line in the_file.readlines()]
                 
                 x1 = jnp.array([float(x) for x in all_data[0].split()[2:]])

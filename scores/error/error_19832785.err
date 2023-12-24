@@ -1,0 +1,14 @@
+Loaded dependency [python3/3.10.12]: gcc/11.4.0-binutils-2.40
+Loaded dependency [python3/3.10.12]: sqlite3/3.42.0
+
+Switching from python3/3.8.2 to python3/3.10.12
+  Loading requirement: gcc/11.4.0-binutils-2.40 sqlite3/3.42.0
+2023-12-24 12:20:43.921727: E tensorflow/compiler/xla/stream_executor/cuda/cuda_dnn.cc:9342] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2023-12-24 12:20:43.921954: E tensorflow/compiler/xla/stream_executor/cuda/cuda_fft.cc:609] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2023-12-24 12:20:43.921978: E tensorflow/compiler/xla/stream_executor/cuda/cuda_blas.cc:1518] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 483, in <module>
+    train_score()
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 267, in train_score
+    with open('../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt', 'r') as the_file:
+FileNotFoundError: [Errno 2] No such file or directory: '../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt'
