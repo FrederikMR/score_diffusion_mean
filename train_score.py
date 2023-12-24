@@ -44,10 +44,10 @@ def parse_args():
                         type=int)
     parser.add_argument('--loss_type', default="dsm",
                         type=str)
-    parser.add_argument('--load_model', default=False,
-                        type=bool)
-    parser.add_argument('--T_sample', default=False,
-                        type=bool)
+    parser.add_argument('--load_model', default=0,
+                        type=int)
+    parser.add_argument('--T_sample', default=0,
+                        type=int)
     parser.add_argument('--t', default=0.1,
                         type=float)
     parser.add_argument('--train_net', default="s1",
@@ -91,7 +91,7 @@ def train_score()->None:
             s1_path = ''.join(('scores/R',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/R',str(args.dim),'/s2/'))
         else:
-            s1_path = ''.join(('scores/R',str(args.dim),'/s1_T_/',args.loss_type,'/'))
+            s1_path = ''.join(('scores/R',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/R',str(args.dim),'/s2_T'))
             
         M = Euclidean(N=args.dim)
@@ -116,7 +116,7 @@ def train_score()->None:
             s1_path = ''.join(('scores/S1/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S1/s2/'))
         else:
-            s1_path = ''.join(('scores/S1/s1_T_/',args.loss_type,'/'))
+            s1_path = ''.join(('scores/S1/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S1/s2_T'))
         
         M = S1()
@@ -136,7 +136,7 @@ def train_score()->None:
             s1_path = ''.join(('scores/S',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S',str(args.dim),'/s2/'))
         else:
-            s1_path = ''.join(('scores/S',str(args.dim),'/s1_T_/',args.loss_type,'/'))
+            s1_path = ''.join(('scores/S',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S',str(args.dim),'/s2_T'))
             
         M = nSphere(N=args.dim)
@@ -161,7 +161,7 @@ def train_score()->None:
             s1_path = ''.join(('scores/S',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S',str(args.dim),'/s2/'))
         else:
-            s1_path = ''.join(('scores/S',str(args.dim),'/s1_T_/',args.loss_type,'/'))
+            s1_path = ''.join(('scores/S',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S',str(args.dim),'/s2_T'))
             
         M = nSphere(N=args.dim)
@@ -182,13 +182,15 @@ def train_score()->None:
     elif args.manifold == "Ellipsoid":
         sampling_method = 'TMSampling'
         generator_dim = args.dim+1
+        print("Hallo")
+        print(args.T_sample)
         if not args.T_sample:
             s1_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s2/'))
         else:
-            s1_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1_T_/',args.loss_type,'/'))
+            s1_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s2_T'))
-        
+        print(s1_path)
 
         M = nEllipsoid(N=args.dim, params = jnp.linspace(0.5,1.0,args.dim+1))
         x0 = M.coords([0.]*args.dim)
@@ -212,7 +214,7 @@ def train_score()->None:
             s1_path = ''.join(('scores/Cylinder/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Cylinder/s2/'))
         else:
-            s1_path = ''.join(('scores/Cylinder/s1_T_/',args.loss_type,'/'))
+            s1_path = ''.join(('scores/Cylinder/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Cylinder/s2_T'))
         
 
@@ -233,7 +235,7 @@ def train_score()->None:
             s1_path = ''.join(('scores/Torus/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Torus/s2/'))
         else:
-            s1_path = ''.join(('scores/Torus/s1_T_/',args.loss_type,'/'))
+            s1_path = ''.join(('scores/Torus/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Torus/s2_T'))
 
         M = Torus()        
@@ -289,7 +291,7 @@ def train_score()->None:
             s1_path = ''.join(('scores/SPDN',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/SPDN',str(args.dim),'/s2/'))
         else:
-            s1_path = ''.join(('scores/SPDN',str(args.dim),'/s1_T_/',args.loss_type,'/'))
+            s1_path = ''.join(('scores/SPDN',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/SPDN',str(args.dim),'/s2_T'))
 
         M = SPDN(N=args.dim)
@@ -339,7 +341,7 @@ def train_score()->None:
             s1_path = ''.join(('scores/HypParaboloid/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/HypParaboloid/s2/'))
         else:
-            s1_path = ''.join(('scores/HypParaboloid/s1_T_/',args.loss_type,'/'))
+            s1_path = ''.join(('scores/HypParaboloid/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/HypParaboloid/s2_T'))
 
         M = HypParaboloid()
