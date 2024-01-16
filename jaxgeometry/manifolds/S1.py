@@ -66,7 +66,7 @@ class S1(EmbeddedManifold):
         self.act = lambda g,x: jnp.tensordot(g,x,(1,0))
         self.acts = lambda g,x: jnp.tensordot(g,x,(2,0))
             
-        self.Exp = lambda x,v: (x[0]+v) % self.angle_shift
+        self.Exp = lambda x,v: ((x[0]+v) % self.angle_shift,)*2
         self.ExpEmbedded = lambda x,v: (x[1]+v) % self.angle_shift
         self.Log = lambda x,y: (y-x[0]) % self.angle_shift
         self.dist = lambda x,y: jnp.abs(y[0]-x[0]) % self.angle_shift

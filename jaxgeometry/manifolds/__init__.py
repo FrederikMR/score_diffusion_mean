@@ -36,5 +36,7 @@ from .SPDN import SPDN
 from .HypParaboloid import HypParaboloid
 from .Latent import Latent
 from .Sym import Sym
+from .nHyperbolicSpace import nHyperbolicSpace
+from .Grassmanian import Grassmanian
 
 #%% Code

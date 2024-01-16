@@ -28,14 +28,14 @@ class KMeans:
         self.frechet_fun = frechet_fun
         self.n_clusters = n_clusters
         self.max_iter = max_iter
-        self.key = random.PRNGKey(2712)
+        self.key = jrandom.PRNGKey(2712)
     def fit(self, X_train):
         # Initialize the centroids, using the "k-means++" method, where a random datapoint is selected as the first,
         # then the rest are initialized w/ probabilities proportional to their distances to the first
         # Pick a random point from train data for first centroid
-        key, subkey = random.split(self.key)
+        key, subkey = jrandom.split(self.key)
         self.key = subkey
-        centroid_idx = [random.choice(subkey, jnp.arange(0,len(X_train[0]), 1))]
+        centroid_idx = [jrandom.choice(subkey, jnp.arange(0,len(X_train[0]), 1))]
         self.centroids = (X_train[0][jnp.array(centroid_idx)].reshape(1,-1), 
                           X_train[1][jnp.array(centroid_idx)].reshape(1,-1))
         for _ in range(self.n_clusters-1):
@@ -49,9 +49,9 @@ class KMeans:
             # Normalize the distances
             dists /= jnp.sum(dists)
             # Choose remaining points based on their distances
-            key, subkey = random.split(self.key)
+            key, subkey = jrandom.split(self.key)
             self.key = subkey
-            new_centroid_idx = [random.choice(key, jnp.arange(0,len(X_train[0])), p=dists)]
+            new_centroid_idx = [jrandom.choice(key, jnp.arange(0,len(X_train[0])), p=dists)]
             centroid_idx += new_centroid_idx
             self.centroids = (X_train[0][jnp.array(centroid_idx)], 
                               X_train[1][jnp.array(centroid_idx)])

@@ -28,7 +28,7 @@ import os
 
 #jaxgeometry
 from jaxgeometry.manifolds import Euclidean, nSphere, nEllipsoid, Cylinder, S1, Torus, \
-    H2, Landmarks, Heisenberg, SPDN, Latent, HypParaboloid, Sym
+    H2, Landmarks, Heisenberg, SPDN, Latent, HypParaboloid, Sym, nHyperbolicSpace, Grassmanian
 from jaxgeometry.statistics.score_matching import train_s1, train_s2, TMSampling, LocalSampling, \
     EmbeddedSampling, ProjectionSampling
 from jaxgeometry.statistics.score_matching.model_loader import load_model
@@ -38,9 +38,9 @@ from jaxgeometry.statistics.score_matching.model_loader import load_model
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SPDN",
+    parser.add_argument('--manifold', default="RN",
                         type=str)
-    parser.add_argument('--dim', default=10,
+    parser.add_argument('--dim', default=2,
                         type=int)
     parser.add_argument('--loss_type', default="dsm",
                         type=str)
@@ -50,7 +50,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--t', default=0.1,
                         type=float)
-    parser.add_argument('--train_net', default="s1",
+    parser.add_argument('--train_net', default="s2",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
@@ -58,13 +58,13 @@ def parse_args():
                         type=float)
     parser.add_argument('--epochs', default=50000,
                         type=int)
-    parser.add_argument('--x_samples', default=32,
+    parser.add_argument('--x_samples', default=32*2,
                         type=int)
-    parser.add_argument('--t_samples', default=128,
+    parser.add_argument('--t_samples', default=128*2,
                         type=int)
-    parser.add_argument('--repeats', default=8,
+    parser.add_argument('--repeats', default=8*2,
                         type=int)
-    parser.add_argument('--samples_per_batch', default=16,
+    parser.add_argument('--samples_per_batch', default=16*2,
                         type=int)
     parser.add_argument('--dt_steps', default=1000,
                         type=int)
@@ -154,18 +154,43 @@ def train_score()->None:
                                                         dim=generator_dim, 
                                                         r = max(generator_dim//2,1))(x))
         
-    elif args.manifold == "Hyperbolic":
+    elif args.manifold == "HyperbolicSpace":
         sampling_method = 'TMSampling'
-        generator_dim = args.dim+1
+        generator_dim = args.dim
         if not args.T_sample:
-            s1_path = ''.join(('scores/S',str(args.dim),'/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/S',str(args.dim),'/s2/'))
+            s1_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s1_',args.loss_type,'/'))
+            s2_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s2/'))
         else:
-            s1_path = ''.join(('scores/S',str(args.dim),'/s1_T_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/S',str(args.dim),'/s2_T'))
+            s1_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s1_T_',args.loss_type,'/'))
+            s2_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s2_T'))
             
-        M = nSphere(N=args.dim)
-        x0 = M.coords([0.]*args.dim)
+        M = nHyperbolicSpace(N=args.dim)
+        x0 = (jnp.concatenate((jnp.zeros(args.dim-1), -1.*jnp.ones(1))),)*2
+        
+        if args.dim<10:
+            layers = [50,100,100,50]
+        elif args.dim<50:
+            layers = [50,100,200,200,100,50]
+        else:
+            layers = [50,100,200,400,400,200,100,50]
+        
+        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
+        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                        dim=generator_dim, 
+                                                        r = max(generator_dim//2,1))(x))
+        
+    elif args.manifold == "Grassmanian":
+        sampling_method = 'TMSampling'
+        generator_dim = 2*args.dim*args.dim
+        if not args.T_sample:
+            s1_path = ''.join(('scores/Grassmanian',str(args.dim),'/s1_',args.loss_type,'/'))
+            s2_path = ''.join(('scores/Grassmanian',str(args.dim),'/s2/'))
+        else:
+            s1_path = ''.join(('scores/Grassmanian',str(args.dim),'/s1_T_',args.loss_type,'/'))
+            s2_path = ''.join(('scores/Grassmanian',str(args.dim),'/s2_T'))
+            
+        M = Grassmanian(N=2*args.dim,K=args.dim)
+        x0 = (jnp.eye(2*args.dim)[:,:args.dim].reshape(-1),)*2
         
         if args.dim<10:
             layers = [50,100,100,50]
@@ -182,15 +207,12 @@ def train_score()->None:
     elif args.manifold == "Ellipsoid":
         sampling_method = 'TMSampling'
         generator_dim = args.dim+1
-        print("Hallo")
-        print(args.T_sample)
         if not args.T_sample:
             s1_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s2/'))
         else:
             s1_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s2_T'))
-        print(s1_path)
 
         M = nEllipsoid(N=args.dim, params = jnp.linspace(0.5,1.0,args.dim+1))
         x0 = M.coords([0.]*args.dim)
@@ -270,6 +292,7 @@ def train_score()->None:
                 x1 = jnp.array([float(x) for x in all_data[0].split()[2:]])
                 x2 = jnp.array([float(x) for x in all_data[1].split()[2:]])
                 
+                #idx = jnp.round(jnp.linspace(0, len(x1) - 1, args.dim)).astype(int)
                 x0 = M.coords(jnp.vstack((x1[::len(x1)//args.dim],x2[::len(x2)//args.dim])).T.flatten())
         
         if args.dim<5:

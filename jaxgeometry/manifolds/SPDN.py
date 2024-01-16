@@ -123,7 +123,7 @@ class SPDN(EmbeddedManifold):
     def StdExpt(self, x:Tuple[Array, Array], v:Array, t:float=1.0)->Array:
         
         P = self.F(x).reshape(self.N,self.N)
-        v = jnp.dot(self.JF(x),v)
+        v = jnp.dot(self.JF(x),v).reshape(self.N,self.N)
         
         P_phalf = jnp.array(jscipy.linalg.sqrtm(P))
         P_nhalf = jnp.array(jscipy.linalg.sqrtm(jnp.linalg.inv(P)))

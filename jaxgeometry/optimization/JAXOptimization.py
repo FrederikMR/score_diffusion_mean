@@ -78,7 +78,7 @@ def JaxOpt(mu_init:Array,
            )->Tuple[Array, Array]:
     
     @jit
-    def update(carry:Tuples[Array, Array, object], idx:int
+    def update(carry:Tuple[Array, Array, object], idx:int
                )->Tuple[Tuple[Array, Array, object],
                         Tuple[Array, Array]]:
         
