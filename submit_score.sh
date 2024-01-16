@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J Landmarks100_s1
+#BSUB -J Landmarks10_s2
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
@@ -19,19 +19,19 @@ module swap python3/3.10.12
 
 python3 train_score.py \
     --manifold Landmarks \
-    --dim 100 \
+    --dim 10 \
     --loss_type dsm \
     --load_model 0 \
     --T_sample 0 \
     --t 0.1 \
-    --train_net s1 \
+    --train_net s2 \
     --max_T 1.0 \
     --lr_rate 0.001 \
     --epochs 50000 \
-    --x_samples 32 \
-    --t_samples 128 \
-    --repeats 8 \
-    --samples_per_batch 16 \
+    --x_samples 64 \
+    --t_samples 256 \
+    --repeats 16 \
+    --samples_per_batch 32 \
     --dt_steps 1000 \
     --save_step 10 \
     --seed 2712
