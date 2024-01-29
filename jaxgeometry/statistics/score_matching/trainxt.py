@@ -173,7 +173,7 @@ def train_s2(M:object,
                  data:Array
                  )->float:
         
-        def f(x0,xt,t,dW,dt):
+        def f1(x0,xt,t,dW,dt):
             
             xp = xt+generator.dW_embedded(xt,dW)#dW
             xm = xt-generator.dW_embedded(xt,dW)#dW
@@ -196,20 +196,53 @@ def train_s2(M:object,
             psim = s2m+jnp.einsum('i,j->ij', s1m, s1m)
             
             loss_s2 = psim**2+psim**2\
-                +2*(jnp.eye(N_dim)-jnp.eye(N_dim)-jnp.einsum('i,j->ij', dW, dW)/dt)*\
+                +2*(jnp.eye(N_dim)-jnp.einsum('i,j->ij', dW, dW)/dt)*\
                     (psip+psim-2*psi)
                                 
             return loss_s2
         
-            #s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
+        def f2(x0,xt,t,dW,dt):
             
+            dW = generator.dW_TM(xt,dW)
+        
+            s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
+            
+            s1 = generator.grad_TM(s1_model, x0, xt, t)
+            s2 = generator.proj_hess(s1_model, s2_model, x0, xt, t)
             #s1 = proj_grad(s1_model, x0, (xt,chart), t)
             #s2 = proj_hess(s1_model, s2_model, x0, (xt,chart), t)
             
-            #loss_s2 = s2+jnp.einsum('i,j->ij', s1, s1)+\
-            #    (jnp.eye(N_dim)-jnp.einsum('i,j->ij', noise, noise)/dt)/dt
+            loss_s2 = jnp.diag(s2)+s1*s1+(jnp.ones(N_dim)-dW*dW/dt)/dt
                             
-            #return jnp.sum(loss_s2*loss_s2)
+            return jnp.sum(loss_s2*loss_s2)
+        
+        def f(x0,xt,t,dW,dt):
+            
+            xp = xt+generator.dW_embedded(xt,dW)#dW
+            xm = xt-generator.dW_embedded(xt,dW)#dW
+            
+            dW = generator.dW_TM(xt,dW)
+            
+            s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
+            
+            s1 = generator.grad_TM(s1_model, x0, xt, t)
+            s2 = generator.proj_hess(s1_model, s2_model, x0, xt, t)
+
+            s1p = generator.grad_TM(s1_model, x0, xp, t)
+            s2p = generator.proj_hess(s1_model, s2_model, x0, xp, t)
+            
+            s1m = generator.grad_TM(s1_model, x0, xm, t)
+            s2m = generator.proj_hess(s1_model, s2_model, x0, xm, t)
+            
+            psi = jnp.diag(s2)+s1*s2
+            psip = jnp.diag(s2p)+s1p*s1p
+            psim = jnp.diag(s2m)+s1m*s1m
+            
+            loss_s2 = psim**2+psim**2\
+                +2*(jnp.ones(N_dim)-jnp.einsum('i,j->ij', dW, dW)/dt)*\
+                    (psip+psim-2*psi)
+                                
+            return loss_s2
         
         x0 = data[:,:N_dim]
         xt = data[:,N_dim:(2*N_dim)]

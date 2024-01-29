@@ -297,6 +297,7 @@ def train_score()->None:
         
         if args.dim<5:
             layers = [50,100,100,50]
+            #layers = [50,100,200,200,100,50]
         elif args.dim<25:
             layers = [50,100,200,200,100,50]
         else:

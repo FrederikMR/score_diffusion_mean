@@ -124,6 +124,7 @@ def JointGradientDescent(mu_rm:Array,
         mu_rm = M.Exp(mu_rm, -step_size_rm*grad_rm)
         #mu_rm[0] = jnp.clip(mu_rm[0], lb_rm, ub_rm)
         
+        grad_euc = grad_euc/jnp.linalg.norm(grad_euc)
         mu_euc -= step_size_euc*grad_euc
         mu_euc = jnp.clip(mu_euc, lb_euc, ub_euc)
     

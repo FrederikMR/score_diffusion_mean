@@ -264,13 +264,19 @@ class EmbeddedSampling(object):
                   t:Array
                   )->Array:
         
-        x = self.update_coords(x)
+        #x = self.update_coords(x)
+        
+        #Fx = self.M.F(x)
+        #JFx = self.M.JF(x)
+        #Q, _ = jnp.linalg.qr(JFx)
+        
+        
+        #return jnp.dot(jnp.dot(Q,Q.T), s2_model(x0,Fx,t))
         
         Fx = self.M.F(x)
-        JFx = self.M.JF(x)
-        Q, _ = jnp.linalg.qr(JFx)
+        invJFx = self.M.invJF((x[1],x[1]))
         
-        return jnp.dot(jnp.dot(Q,Q.T), s2_model(x0,Fx,t))
+        return jnp.tensordot(invJFx,s2_model(x0,Fx,t),(1,0))
     
     def dW_TM(self,
               x:Array,

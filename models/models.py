@@ -97,4 +97,4 @@ class MLP_s2(hk.Module):
         hess_rn = -jnp.einsum('ij,...i->...ij', jnp.eye(self.dim), 1/t)
         #diag = vmap(lambda x,t: jnp.diag(x/t))(alpha, t)
         
-        return (diag+hess_rn).squeeze()#+jnp.einsum('...ik,...jk->...ij', beta, beta)#+\
+        return (diag+hess_rn).squeeze()#+jnp.einsum('...ik,...jk->...ij', beta, beta).squeeze()#+\
