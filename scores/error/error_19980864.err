@@ -1,0 +1,108 @@
+Loaded dependency [python3/3.10.12]: gcc/11.4.0-binutils-2.40
+Loaded dependency [python3/3.10.12]: sqlite3/3.42.0
+
+Switching from python3/3.8.2 to python3/3.10.12
+  Loading requirement: gcc/11.4.0-binutils-2.40 sqlite3/3.42.0
+2024-01-30 04:10:37.655486: E tensorflow/compiler/xla/stream_executor/cuda/cuda_dnn.cc:9342] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2024-01-30 04:10:37.655519: E tensorflow/compiler/xla/stream_executor/cuda/cuda_fft.cc:609] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2024-01-30 04:10:37.660978: E tensorflow/compiler/xla/stream_executor/cuda/cuda_blas.cc:1518] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+/zhome/77/8/118225/.local/lib/python3.10/site-packages/numpy/core/getlimits.py:518: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
+  setattr(self, word, getattr(machar, word).flat[0])
+/zhome/77/8/118225/.local/lib/python3.10/site-packages/numpy/core/getlimits.py:89: UserWarning: The value of the smallest subnormal for <class 'numpy.float32'> type is zero.
+  return self._float_to_str(self.smallest_subnormal)
+2024-01-30 04:10:50.773651: W tensorflow/core/framework/op_kernel.cc:1827] UNKNOWN: NameError: name 'stop_gradient' is not defined
+jax.errors.SimplifiedTraceback: For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+
+
+The above exception was the direct cause of the following exception:
+
+
+Traceback (most recent call last):
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/ops/script_ops.py", line 270, in __call__
+    ret = func(*args)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/autograph/impl/api.py", line 643, in wrapper
+    return func(*args, **kwargs)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/from_generator_op.py", line 198, in generator_py_func
+    values = next(generator_state.get_iterator(iterator_id))
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/generators.py", line 196, in __call__
+    (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/stochastics/product_sde.py", line 47, in <lambda>
+    product = jit(lambda x,dts,dWs,*cy: integrate_sde(sde_product,integrator,chart_update_product,x[0],x[1],dts,dWs,*cy))
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/integration/integration.py", line 120, in integrate_sde
+    _,xs = lax.scan(integrator(sde,chart_update),
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/integration/integration.py", line 159, in euler
+    return ((t+dt,*chart_update(step_fun((x,chart), dt*detx + stox), chart, *cy_new)),)*2
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/stochastics/Brownian_coords.py", line 55, in chart_update_Brownian_coords
+    new_chart = M.centered_chart((x,chart))
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/manifolds/Torus.py", line 92, in centered_chart
+    Fx = stop_gradient(self.F(x))
+
+NameError: name 'stop_gradient' is not defined
+
+
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 507, in <module>
+    train_score()
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 485, in train_score
+    train_s1(M=M,
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/trainxt.py", line 116, in train_s1
+    initial_params = model.init(jrandom.PRNGKey(seed), next(train_dataset)[:,:(2*N_dim+1)])
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow_datasets/core/dataset_utils.py", line 82, in _eager_dataset_iterator
+    for elem in ds:
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/iterator_ops.py", line 809, in __next__
+    return self._next_internal()
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/iterator_ops.py", line 772, in _next_internal
+    ret = gen_dataset_ops.iterator_get_next(
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/ops/gen_dataset_ops.py", line 3028, in iterator_get_next
+    _ops.raise_from_not_ok_status(e, name)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/framework/ops.py", line 5888, in raise_from_not_ok_status
+    raise core._status_to_exception(e) from None  # pylint: disable=protected-access
+tensorflow.python.framework.errors_impl.UnknownError: {{function_node __wrapped__IteratorGetNext_output_types_1_device_/job:localhost/replica:0/task:0/device:CPU:0}} NameError: name 'stop_gradient' is not defined
+jax.errors.SimplifiedTraceback: For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+
+
+The above exception was the direct cause of the following exception:
+
+
+Traceback (most recent call last):
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/ops/script_ops.py", line 270, in __call__
+    ret = func(*args)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/autograph/impl/api.py", line 643, in wrapper
+    return func(*args, **kwargs)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/from_generator_op.py", line 198, in generator_py_func
+    values = next(generator_state.get_iterator(iterator_id))
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/generators.py", line 196, in __call__
+    (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/stochastics/product_sde.py", line 47, in <lambda>
+    product = jit(lambda x,dts,dWs,*cy: integrate_sde(sde_product,integrator,chart_update_product,x[0],x[1],dts,dWs,*cy))
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/integration/integration.py", line 120, in integrate_sde
+    _,xs = lax.scan(integrator(sde,chart_update),
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/integration/integration.py", line 159, in euler
+    return ((t+dt,*chart_update(step_fun((x,chart), dt*detx + stox), chart, *cy_new)),)*2
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/stochastics/Brownian_coords.py", line 55, in chart_update_Brownian_coords
+    new_chart = M.centered_chart((x,chart))
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/manifolds/Torus.py", line 92, in centered_chart
+    Fx = stop_gradient(self.F(x))
+
+NameError: name 'stop_gradient' is not defined
+
+
+	 [[{{node PyFunc}}]] [Op:IteratorGetNext] name: 

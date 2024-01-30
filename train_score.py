@@ -218,11 +218,11 @@ def train_score()->None:
         x0 = M.coords([0.]*args.dim)
         
         if args.dim<10:
-            layers = [50,100,100,50]
-        elif args.dim<50:
             layers = [50,100,200,200,100,50]
-        else:
+        elif args.dim<50:
             layers = [50,100,200,400,400,200,100,50]
+        else:
+            layers = [50,100,200,400,800,800,400,200,100,50]
         
         s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
         s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
@@ -299,9 +299,9 @@ def train_score()->None:
             layers = [50,100,100,50]
             #layers = [50,100,200,200,100,50]
         elif args.dim<25:
-            layers = [50,100,200,200,100,50]
-        else:
             layers = [50,100,200,400,400,200,100,50]
+        else:
+            layers = [50,100,200,400,800,800,400,200,100,50]
         
         s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
         s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
