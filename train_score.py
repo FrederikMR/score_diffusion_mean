@@ -29,7 +29,7 @@ import os
 #jaxgeometry
 from jaxgeometry.manifolds import Euclidean, nSphere, nEllipsoid, Cylinder, S1, Torus, \
     H2, Landmarks, Heisenberg, SPDN, Latent, HypParaboloid, Sym, nHyperbolicSpace, Grassmanian
-from jaxgeometry.statistics.score_matching import train_s1, train_s2, TMSampling, LocalSampling, \
+from jaxgeometry.statistics.score_matching import train_s1, train_s2, train_s1s2, TMSampling, LocalSampling, \
     EmbeddedSampling, ProjectionSampling
 from jaxgeometry.statistics.score_matching.model_loader import load_model
 
@@ -50,7 +50,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--t', default=0.1,
                         type=float)
-    parser.add_argument('--train_net', default="s2",
+    parser.add_argument('--train_net', default="s1",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
@@ -93,6 +93,7 @@ def train_score()->None:
         else:
             s1_path = ''.join(('scores/R',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/R',str(args.dim),'/s2_T'))
+        s1s2_path = ''.join(('scores/R',str(args.dim),'/s1s2/'))
             
         M = Euclidean(N=args.dim)
         x0 = M.coords([0.]*args.dim)
@@ -108,6 +109,17 @@ def train_score()->None:
         s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
                                                         dim=generator_dim, 
                                                         r = max(generator_dim//2,1))(x))
+
+        @hk.transform
+        def s1s2_model(x):
+            
+            s1s2 =  models.MLP_s1s2(
+                models.MLP_s1(dim=generator_dim, layers=layers), 
+                models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                                dim=generator_dim, 
+                                                                r = max(generator_dim//2,1)))
+            
+            return s1s2(x)
     
     elif args.manifold == "Circle":
         sampling_method = 'LocalSampling'
@@ -450,12 +462,13 @@ def train_score()->None:
         state = load_model(s1_path)
         rng_key = jran.PRNGKey(2712)
         s1 = lambda x,y,t: s1_model.apply(state.params,rng_key, jnp.hstack((x, y, t)))
+        #s1 = lambda x,y,t: M.grady_log_hk(x,y,t)
         
         if args.load_model:
             state_s2 = load_model(s1_path)
         else:
-            state_s2 = None
-            
+            state_s2 = None            
+
         if not os.path.exists(s2_path):
             os.makedirs(s2_path)
         
@@ -471,6 +484,31 @@ def train_score()->None:
                  epochs=args.epochs,
                  save_step=args.save_step,
                  save_path=s2_path,
+                 seed=args.seed
+                 )
+    elif args.train_net == "s1s2":
+        state = load_model(s1_path)
+        rng_key = jran.PRNGKey(2712)
+            
+        if not os.path.exists(s1s2_path):
+            os.makedirs(s1s2_path)
+            
+        if args.load_model:
+            state_s1s2 = load_model(s1s2_path)
+        else:
+            state_s1s2 = None
+        
+        train_s1s2(M=M,
+                 s1s2_model=s1s2_model,
+                 generator=data_generator,
+                 N_dim=generator_dim,
+                 dW_dim=dW_dim,
+                 batch_size=batch_size,
+                 state=state_s1s2,
+                 lr_rate=args.lr_rate,
+                 epochs=args.epochs,
+                 save_step=args.save_step,
+                 save_path=s1s2_path,
                  seed=args.seed
                  )
     else:

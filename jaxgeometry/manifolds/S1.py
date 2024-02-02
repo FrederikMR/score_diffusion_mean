@@ -41,11 +41,11 @@ class S1(EmbeddedManifold):
         
         self.angle_shift = angle_shift
         
-        self.F = lambda x: jnp.array([jnp.cos(x[0]), jnp.sin(x[0])]).reshape(2)
-        self.invF = lambda x: (jnp.arctan2(x[1][1],x[1][0]) % self.angle_shift).reshape(1)
+        self.F = lambda x: x[0] % 2*jnp.pi
+        self.invF = lambda x: x[1]
         self.chart = lambda : jnp.zeros(1)
         self.do_chart_update = lambda x: False
-        self.update_coords = lambda coords, _: (coords[0] % self.angle_shift, coords[1] % self.angle_shift)
+        self.update_coords = lambda coords, _: coords#(coords[0] % self.angle_shift, coords[1] % self.angle_shift)
         
         EmbeddedManifold.__init__(self,self.F,1,1,invF=self.invF)
         
