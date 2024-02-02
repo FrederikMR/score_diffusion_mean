@@ -58,7 +58,7 @@ class Torus(EmbeddedManifold):
             #rcosphi = jnp.where(jnp.cos(phi) >= 1e-4,
             #                          rot0[0]/jnp.cos(phi)-self.Radius,
             #                          rot0[1]/jnp.sin(phi)-self.Radius)
-            rcosphi = cond(jnp.cos(phi) >= 1e-4,
+            rcosphi = lax.cond(jnp.cos(phi) >= 1e-4,
                     lambda _: rot0[0]/jnp.cos(phi)-self.Radius,
                     lambda _: rot0[1]/jnp.sin(phi)-self.Radius,operand=None)
             rot1 = jnp.dot(jnp.stack(
@@ -89,7 +89,7 @@ class Torus(EmbeddedManifold):
     def centered_chart(self,x):
         """ return centered coordinate chart """
         if type(x) == type(()): # coordinate tuple
-            Fx = stop_gradient(self.F(x))
+            Fx = lax.stop_gradient(self.F(x))
         else:
             Fx = x # already in embedding space
         return self.invF((Fx,self.chart()))  # chart centered at coords

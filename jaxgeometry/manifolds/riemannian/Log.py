@@ -49,7 +49,8 @@ def Log(M:object,
 
         if v0 is None:
             v0 = jnp.zeros(M.dim)
-
+            
+        #res = jopt.minimize(lambda w: loss(x,w,y), v0, method=method, options={'maxiter': 100})
         res = minimize(lambda w: (loss(x,w,y),dloss(x,w,y)), v0, method=method, jac=True, options={'disp': False, 'maxiter': 100})
 
         return (res.x,res.fun)

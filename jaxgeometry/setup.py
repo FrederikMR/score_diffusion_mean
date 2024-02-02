@@ -30,6 +30,7 @@ from jax import vmap, grad, jacfwd, jacrev, jit, value_and_grad, Array, device_g
     tree_leaves, tree_map, tree_flatten, tree_unflatten, lax, Array
 import jax.numpy as jnp
 import jax.scipy as jscipy
+import jax.scipy.optimize as jopt
 import jax.random as jrandom
 
 #JAX Optimization
