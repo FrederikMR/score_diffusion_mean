@@ -38,7 +38,7 @@ from jaxgeometry.statistics.score_matching.model_loader import load_model
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Ellipsoid",
+    parser.add_argument('--manifold', default="SN",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
