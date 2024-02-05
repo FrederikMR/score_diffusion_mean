@@ -84,7 +84,7 @@ class Sym(EmbeddedManifold):
     
     def StdExpt(self, x:Tuple[Array, Array], v:Array, t:float=1.0)->Array:
         
-        Fx = self.F(x).reshape(self.N,self.N)
+        Fx = self.F(x)#.reshape(self.N,self.N)
         Fv = jnp.dot(self.JF(x),v)
         
         w = Fx+Fv

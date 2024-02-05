@@ -64,28 +64,28 @@ def train_s1(M:object,
         
         def f(x0,xt,t,dW,dt):
             
-            s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
-            s1 = generator.grad_TM(s1_model, x0, xt, t)
-            s1_x0 = generator.grad_TM(s1_model, x0, x0, t)
-            dW = generator.dW_TM(xt,dW)
-            
-            l1_loss = -dW-dt*s1
-            l1_loss = jnp.sum(l1_loss*l1_loss)
-            
-            eps = dt
-            z = -dW/jnp.sqrt(dt)
-            
-            var_loss = eps*jnp.dot(z,z)-2*eps**(1.5)*jnp.dot(z, s1_x0)
-            
-            return (l1_loss-var_loss)/(eps**2)
-            
-            #s1 = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
-            #s1 = generator.grad_TM(s1, x0, xt, t)
+            #s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
+            #s1 = generator.grad_TM(s1_model, x0, xt, t)
+            #s1_x0 = generator.grad_TM(s1_model, x0, x0, t)
             #dW = generator.dW_TM(xt,dW)
-
-            #loss = dW/dt+s1
             
-            #return jnp.sum(loss*loss)
+            #l1_loss = -dW-dt*s1
+            #l1_loss = jnp.sum(l1_loss*l1_loss)
+            
+            #eps = dt
+            #z = -dW/jnp.sqrt(dt)
+            
+            #var_loss = eps*jnp.dot(z,z)-2*eps**(1.5)*jnp.dot(z, s1_x0)
+            
+            #return (l1_loss-var_loss)/(eps**2)
+            
+            s1 = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
+            s1 = generator.grad_TM(s1, x0, xt, t)
+            dW = generator.dW_TM(xt,dW)
+
+            loss = dW/dt+s1
+            
+            return jnp.sum(loss*loss)
 
         x0 = data[:,:N_dim]
         xt = data[:,N_dim:(2*N_dim)]
@@ -357,63 +357,27 @@ def train_s1s2(M:object,
         
         def s1_loss(x0,xt,t,dW,dt):
             
-            s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[0]
-            s1 = generator.grad_TM(s1_model, x0, xt, t)
-            s1_x0 = generator.grad_TM(s1_model, x0, x0, t)
+            s1 = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
+            s1 = generator.grad_TM(s1, x0, xt, t)
             dW = generator.dW_TM(xt,dW)
+
+            loss = dW/dt+s1
             
-            l1_loss = -dW-dt*s1
-            l1_loss = jnp.sum(l1_loss*l1_loss)
-            
-            eps = dt
-            z = -dW/jnp.sqrt(dt)
-            
-            var_loss = eps*jnp.dot(z,z)-2*eps**(1.5)*jnp.dot(z, s1_x0)
-            
-            return (l1_loss-var_loss)/(eps**2)
-            
-            #s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[0]
-            #s1 = generator.grad_TM(s1_model, x0, xt, t)
-            #s1_x0 = generator.grad_TM(s1_model, x0, x0, t)
-            #dW = generator.dW_TM(xt,dW)
-            
-            #l1_loss = dW+dt*s1
-            #l1_loss = jnp.sum(l1_loss*l1_loss)
-            
-            #eps = jnp.sqrt(dt)
-            #z = dW/eps
-            
-            #var_loss = eps*jnp.dot(z,z)-2*eps**(1.5)*jnp.dot(z, s1_x0)
-            
-            #return (l1_loss+var_loss)/dt
+            return jnp.sum(loss*loss)
         
         def s2_loss(x0,xt,t,dW,dt):
             
-            xp = xt+generator.dW_embedded(xt,dW)#dW
-            xm = xt-generator.dW_embedded(xt,dW)#dW
-            
             dW = generator.dW_TM(xt,dW)
-            
-            s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[0]
-            s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[1]
+        
+            s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
             
             s1 = generator.grad_TM(s1_model, x0, xt, t)
             s2 = generator.proj_hess(s1_model, s2_model, x0, xt, t)
-
-            s1p = generator.grad_TM(s1_model, x0, xp, t)
-            s2p = generator.proj_hess(s1_model, s2_model, x0, xp, t)
+            #s1 = proj_grad(s1_model, x0, (xt,chart), t)
+            #s2 = proj_hess(s1_model, s2_model, x0, (xt,chart), t)
             
-            s1m = generator.grad_TM(s1_model, x0, xm, t)
-            s2m = generator.proj_hess(s1_model, s2_model, x0, xm, t)
-            
-            psi = jnp.diag(s2)+s1*s2
-            psip = jnp.diag(s2p)+s1p*s1p
-            psim = jnp.diag(s2m)+s1m*s1m
-            
-            loss_s2 = psim**2+psim**2\
-                +2*(jnp.ones(N_dim)-jnp.einsum('i,j->ij', dW, dW)/dt)*\
-                    (psip+psim-2*psi)
-                                
+            loss_s2 = jnp.diag(s2)+s1*s1+(1-dW*dW/dt)/dt
+                            
             return jnp.sum(loss_s2*loss_s2)
         
         x0 = data[:,:N_dim]

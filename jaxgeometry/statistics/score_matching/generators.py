@@ -14,6 +14,7 @@ Created on Mon Dec 18 20:33:37 2023
 from jaxgeometry.setup import *
 
 #jaxgeometry
+from jaxgeometry.autodiff import jacfwdx
 from jaxgeometry.integration import dts, dWs, integrator_stratonovich, integrator_ito
 from jaxgeometry.stochastics import tile, product_sde, Brownian_coords, brownian_projection, GRW, \
     product_grw
