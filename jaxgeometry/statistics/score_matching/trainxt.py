@@ -85,7 +85,7 @@ def train_s1(M:object,
 
             loss = dW/dt+s1
             
-            return jnp.sum(loss*loss)
+            return jnp.mean(loss*loss)
 
         x0 = data[:,:N_dim]
         xt = data[:,N_dim:(2*N_dim)]
@@ -229,7 +229,7 @@ def train_s2(M:object,
             
             loss_s2 = jnp.diag(s2)+s1*s1+(1-dW*dW/dt)/dt
                             
-            return jnp.sum(loss_s2*loss_s2)
+            return jnp.mean(loss_s2*loss_s2)
         
         def f2(x0,xt,t,dW,dt):
             
