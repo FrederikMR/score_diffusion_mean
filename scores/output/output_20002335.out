@@ -1,0 +1,11 @@
+using M.Exp for Logarithm
+Epoch: 10 	 loss = -169.7578
+Epoch: 20 	 loss = -173.4280
+Epoch: 30 	 loss = -182.0198
+Epoch: 40 	 loss = -194.9355
+Epoch: 50 	 loss = -182.5373
+Epoch: 60 	 loss = -180.5572
+Epoch: 70 	 loss = -180.0183
+Epoch: 80 	 loss = -182.4849
+Epoch: 90 	 loss = -178.4959
+Epoch: 50000 	 loss = -18.6564
