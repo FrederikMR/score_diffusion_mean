@@ -227,8 +227,9 @@ def train_s2(M:object,
             #s1 = proj_grad(s1_model, x0, (xt,chart), t)
             #s2 = proj_hess(s1_model, s2_model, x0, (xt,chart), t)
             
-            loss_s2 = jnp.diag(s2)+s1*s1+(1-dW*dW/dt)/dt
-                            
+            #loss_s2 = jnp.diag(s2)+s1*s1+(1-dW*dW/dt)/dt
+            loss_s2 = s2+jnp.einsum('i,j->ij', s1, s1)+(jnp.eye(len(dW))-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
+            
             return jnp.mean(loss_s2*loss_s2)
         
         def f2(x0,xt,t,dW,dt):

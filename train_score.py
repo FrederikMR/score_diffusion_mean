@@ -38,7 +38,7 @@ from jaxgeometry.statistics.score_matching.model_loader import load_model
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SN",
+    parser.add_argument('--manifold', default="HypParaboloid",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
@@ -50,7 +50,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--t', default=0.1,
                         type=float)
-    parser.add_argument('--train_net', default="s2",
+    parser.add_argument('--train_net', default="s1",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
@@ -322,7 +322,7 @@ def train_score()->None:
         
     elif args.manifold == "SPDN":
         sampling_method = 'LocalSampling'
-        generator_dim = (args.dim*(args.dim+1))//2
+        generator_dim = args.dim*(args.dim+1)//2
         if not args.T_sample:
             s1_path = ''.join(('scores/SPDN',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/SPDN',str(args.dim),'/s2/'))

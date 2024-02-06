@@ -287,7 +287,15 @@ class EmbeddedSampling(object):
         JFx = self.M.JF(x)
         Q, _ = jnp.linalg.qr(JFx)
         
-        return jnp.dot(jnp.dot(Q,Q.T), s2_model(x0,Fx,t))
+        
+        val1 = M.proj(x0, s2_model(x0,Fx,t))
+        val2 = s1_model(x0,Fx,t)-M.proj(x0, s1_model(x0,Fx,t))
+        val3 = jacfwd(lambda x: M.proj(x, val2))(x0)
+        
+        
+        return val1+val3#jnp.einsum('i,j->ij', M.proj(x0, s1_model(x0,Fx,t)), x)
+        
+        #return jnp.dot(jnp.dot(Q,Q.T), s2_model(x0,Fx,t))
     
     def dW_TM(self,
               x:Array,
