@@ -1,0 +1,22 @@
+using M.Exp for Logarithm
+Epoch: 10 	 loss = 996.2030
+Epoch: 20 	 loss = 996.7344
+Epoch: 30 	 loss = 989.8063
+Epoch: 40 	 loss = 995.2921
+Epoch: 50 	 loss = 987.7011
+Epoch: 60 	 loss = 990.2096
+Epoch: 70 	 loss = 989.6006
+Epoch: 80 	 loss = 987.2413
+Epoch: 90 	 loss = 991.3400
+Epoch: 100 	 loss = 992.9500
+Epoch: 110 	 loss = 995.9408
+Epoch: 120 	 loss = 990.9773
+Epoch: 130 	 loss = 991.2543
+Epoch: 140 	 loss = 994.5896
+Epoch: 150 	 loss = 991.6580
+Epoch: 160 	 loss = 989.8614
+Epoch: 170 	 loss = 995.6235
+Epoch: 180 	 loss = 993.6556
+Epoch: 190 	 loss = 994.7806
+Epoch: 200 	 loss = 990.4860
+Epoch: 50000 	 loss = 996.8330
