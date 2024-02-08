@@ -62,6 +62,7 @@ class Sym(EmbeddedManifold):
         Log(self)
         parallel_transport(self)
         
+        self.proj = self.StdProj
         self.Expt = self.StdExpt
         self.Exp = lambda x,v: self.Expt(x,v,t=1.0)
         self.ExpEmbedded = self.ExpEmbedded
@@ -74,13 +75,25 @@ class Sym(EmbeddedManifold):
     
     def F(self, x:Tuple[Array, Array])->Array:
         
-        l = self.tri.at[self.idx,self.col].set(x[0].reshape(-1))
+        l = self.tri
+        l = l.at[self.idx,self.col].set(x[0].reshape(-1))
         
-        return (l+l.T-jnp.diag(l)).reshape(-1)
+        return (l+l.T-jnp.diag(jnp.diag(l))).reshape(-1)
     
     def invF(self, x:Tuple[Array, Array])->Array:
         
         return (x[0].reshape(self.N,self.N)[self.idx,self.col]).reshape(-1)
+    
+    def centered_chart(self,x):
+        """ return centered coordinate chart """
+        if type(x) == type(()): # coordinate tuple
+            return lax.stop_gradient(self.F(x))
+        else:
+            return x#self.F((x,jnp.zeros(self.N*self.N))) # already in embedding space
+        
+    def chart(self):
+        """ return default coordinate chart """
+        return jnp.eye(self.N).reshape(-1)
     
     def StdExpt(self, x:Tuple[Array, Array], v:Array, t:float=1.0)->Array:
         
@@ -91,7 +104,15 @@ class Sym(EmbeddedManifold):
         
         return (self.invF((w, w)), w.reshape(-1))
     
+    def StdProj(self, x:Array, v:Array) -> Array:
+        
+        v = v.reshape(self.N, self.N)
+        
+        return 0.5*(v+v.T).reshape(-1)
+    
     def ExpEmbedded(self, Fx:Array, v:Array, t:float=1.0)->Array:
+        
+        v = self.StdProj(Fx, v)
         
         return Fx+v
     

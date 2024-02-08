@@ -69,7 +69,7 @@ def train_s1(M:object,
             #s1_x0 = generator.grad_TM(s1_model, x0, x0, t)
             #dW = generator.dW_TM(xt,dW)
             
-            #l1_loss = -dW-dt*s1
+            #l1_loss = dW+dt*s1
             #l1_loss = jnp.sum(l1_loss*l1_loss)
             
             #eps = dt
@@ -188,12 +188,13 @@ def train_s2(M:object,
                  data:Array
                  )->float:
         
+        #https://github.com/chenlin9/high_order_dsm/blob/main/functions/loss.py
         def f1(x0,xt,t,dW,dt):
             
-            xp = x0+generator.dW_embedded(x0,dW)#dW
-            xm = x0-generator.dW_embedded(x0,dW)#dW
-            
             dW = generator.dW_TM(x0,dW)
+            
+            xp = x0+dW#dW
+            xm = x0-dW#dW
             
             s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
             
@@ -209,12 +210,15 @@ def train_s2(M:object,
             psi = s2+jnp.einsum('i,j->ij', s1, s1)
             psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
             psim = s2m+jnp.einsum('i,j->ij', s1m, s1m)
+            diff = (jnp.eye(N_dim)-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
             
-            loss_s2 = psip**2+psim**2 \
-                +2*((jnp.eye(N_dim)-jnp.einsum('i,j->ij', dW, dW)/dt)/jnp.sqrt(dt))*\
-                    (psip+psim-2*psi)
-                                
-            return jnp.mean(loss_s2)
+            loss1 = psip**2
+            loss2 = psim**2
+            loss3 = 2*diff*((psip-psi)+(psim-psi))
+            
+            loss_s2 = loss1+loss2+loss3
+    
+            return 0.5*jnp.sum(loss_s2)#jnp.mean(loss_s2)
         
         def f(x0,xt,t,dW,dt):
             
@@ -230,7 +234,7 @@ def train_s2(M:object,
             #loss_s2 = jnp.diag(s2)+s1*s1+(1-dW*dW/dt)/dt
             loss_s2 = s2+jnp.einsum('i,j->ij', s1, s1)+(jnp.eye(len(dW))-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
             
-            return jnp.mean(loss_s2*loss_s2)
+            return jnp.sum(loss_s2*loss_s2)
         
         def f2(x0,xt,t,dW,dt):
             

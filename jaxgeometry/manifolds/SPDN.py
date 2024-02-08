@@ -99,7 +99,7 @@ class SPDN(EmbeddedManifold):
     
     def Stdgsharp(self, x:Tuple[Array,Array])->Array:
         
-        P = self.F(x).reshape(M.N, M.N)
+        P = self.F(x).reshape(self.N, self.N)
         D = self.Dp
         
         return jnp.matmul(D,jnp.matmul(jnp.kron(P,P), D.T))
@@ -126,7 +126,7 @@ class SPDN(EmbeddedManifold):
         v = jnp.dot(self.JF(x),v).reshape(self.N,self.N)
         
         P_phalf = jnp.array(jscipy.linalg.sqrtm(P))
-        P_nhalf = jnp.array(jscipy.linalg.sqrtm(jnp.linalg.inv(P)))
+        P_nhalf = jnp.linalg.inv(P_phalf)
         
         P_exp = jnp.matmul(jnp.matmul(P_phalf, \
                                      jscipy.linalg.expm(t*jnp.matmul(jnp.matmul(P_nhalf, v), P_nhalf))),
@@ -140,7 +140,7 @@ class SPDN(EmbeddedManifold):
         v = v.reshape(self.N,self.N)
         
         P_phalf = jnp.real(jscipy.linalg.sqrtm(P))
-        P_nhalf = jnp.real(jscipy.linalg.sqrtm(jnp.linalg.inv(P)))
+        P_nhalf = jnp.linalg.inv(P_phalf)
         
         P_exp = jnp.matmul(jnp.matmul(P_phalf, \
                                      jscipy.linalg.expm(t*jnp.matmul(jnp.matmul(P_nhalf, v), P_nhalf))),
@@ -220,7 +220,7 @@ class SPDN(EmbeddedManifold):
         P1_phalf = jnp.real(jscipy.linalg.sqrtm(P))
         v_symmetric = 0.5*(v+v.T)
         
-        return jnp.matmul(jnp.matmul(P1_phalf, v_symmetric), P1_phalf).reshape(-1)
+        return v_symmetric.reshape(-1)#jnp.matmul(jnp.matmul(P1_phalf, v_symmetric), P1_phalf).reshape(-1)
     
     def DupMat(self, N:int):
         

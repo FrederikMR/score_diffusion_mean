@@ -46,7 +46,7 @@ class LocalSampling(object):
         self.t = t
         self.repeats = repeats
         self.x0s = tile(x0, repeats)
-        
+        self.x0s_default = tile(x0, repeats)
         self._dts = dts(T=self.max_T, n_steps=self.dt_steps)
         
         Brownian_coords(M)
@@ -71,6 +71,8 @@ class LocalSampling(object):
             Fx0s = self.x0s[0]
             self.x0s = (xss[-1,::self.x_samples],chartss[-1,::self.x_samples])
             
+            if jnp.isnan(jnp.sum(xss)):
+                self.x0s = self.x0s_default
             
             if not self.T_sample:
                 inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
@@ -176,7 +178,7 @@ class EmbeddedSampling(object):
         self.t = t
         self.repeats = repeats
         self.x0s = tile(x0, repeats)
-        
+        self.x0s_default = tile(x0, repeats)
         self._dts = dts(T=self.max_T, n_steps=self.dt_steps)
         
         Brownian_coords(M)
@@ -200,6 +202,9 @@ class EmbeddedSampling(object):
 
             Fx0s = vmap(lambda x,chart: self.M.F((x,chart)))(*self.x0s) #x0s[1]
             self.x0s = (xss[-1,::self.x_samples],chartss[-1,::self.x_samples])
+            
+            if jnp.isnan(jnp.sum(xss)):
+                self.x0s = self.x0s_default
            
             if not self.T_sample:
                 inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
@@ -356,6 +361,7 @@ class TMSampling(object):
         self.t = t
         self.repeats = repeats
         self.x0s = tile(x0, repeats)
+        self.x0s_default = tile(x0, repeats)
         self.dim = dim
         
         self._dts = dts(T=self.max_T, n_steps=self.dt_steps)
@@ -390,6 +396,8 @@ class TMSampling(object):
             Fx0s = self.x0s[0]
             self.x0s = (xss[-1,::self.x_samples],chartss[-1,::self.x_samples])
             
+            if jnp.isnan(jnp.sum(xss)):
+                self.x0s = self.x0s_default
             
             if not self.T_sample:
                 inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
@@ -502,6 +510,7 @@ class ProjectionSampling(object):
         self.t = t
         self.repeats = repeats
         self.x0s = tile(x0, repeats)
+        self.x0s_default = tile(x0, repeats)
         self.dim = dim
         self.reverse=reverse
         
@@ -533,6 +542,9 @@ class ProjectionSampling(object):
             else:
                 Fx0s = vmap(lambda x,chart: self.M.F((x,chart)))(*self.x0s) #x0s[1]
                 self.x0s = (xss[-1,::self.x_samples],chartss[-1,::self.x_samples])
+                
+            if jnp.isnan(jnp.sum(xss)):
+                self.x0s = self.x0s_default
            
             if not self.T_sample:
                 inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))

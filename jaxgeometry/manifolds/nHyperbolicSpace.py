@@ -50,6 +50,12 @@ class nHyperbolicSpace(EmbeddedManifold):
             metric = metric.at[-1,-1].set(-1)
             
         self.g = lambda x: metric
+        
+        metric(self)
+        curvature(self)
+        geodesic(self)
+        Log(self)
+        parallel_transport(self)
 
         # action of matrix group on elements
         self.act = lambda g,x: jnp.tensordot(g,x,(1,0))

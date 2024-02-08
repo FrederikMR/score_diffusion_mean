@@ -41,6 +41,7 @@ class Grassmanian(EmbeddedManifold):
         self.K = K
 
         self.do_chart_update = lambda x: False
+        
         self.update_coords = lambda coords,_: coords
 
         ##### Metric:

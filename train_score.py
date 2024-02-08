@@ -38,7 +38,7 @@ from jaxgeometry.statistics.score_matching.model_loader import load_model
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="HypParaboloid",
+    parser.add_argument('--manifold', default="HyperbolicSpace",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
@@ -58,9 +58,9 @@ def parse_args():
                         type=float)
     parser.add_argument('--epochs', default=50000,
                         type=int)
-    parser.add_argument('--x_samples', default=32*2,
+    parser.add_argument('--x_samples', default=32,
                         type=int)
-    parser.add_argument('--t_samples', default=128*2,
+    parser.add_argument('--t_samples', default=128,
                         type=int)
     parser.add_argument('--repeats', default=8*2,
                         type=int)
@@ -167,7 +167,7 @@ def train_score()->None:
                                                         r = max(generator_dim//2,1))(x))
         
     elif args.manifold == "HyperbolicSpace":
-        sampling_method = 'TMSampling'
+        sampling_method = 'LocalSampling'
         generator_dim = args.dim
         if not args.T_sample:
             s1_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s1_',args.loss_type,'/'))
@@ -356,8 +356,8 @@ def train_score()->None:
             s2_path = ''.join(('scores/Sym',str(args.dim),'/s2_T'))
 
         M = Sym(N=args.dim)
-        x0 = M.coords([10.]*(args.dim*(args.dim+1)//2))
-        
+        x0 = M.coords([1.]*(args.dim*(args.dim+1)//2))
+
         if args.dim<3:
             layers = [50,100,100,50]
         elif args.dim<8:
