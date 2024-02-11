@@ -14,5 +14,6 @@ from .trainxt import train_s1, train_s2, train_s1s2
 from .generators import LocalSampling, EmbeddedSampling, TMSampling, ProjectionSampling
 from .diffusion_mean import diffusion_mean
 from .model_loader import save_model, load_model
+from .score_evaluation import ScoreEvaluation
 
 #%% Code

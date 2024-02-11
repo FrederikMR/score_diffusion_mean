@@ -304,8 +304,8 @@ def train_score()->None:
                 x1 = jnp.array([float(x) for x in all_data[0].split()[2:]])
                 x2 = jnp.array([float(x) for x in all_data[1].split()[2:]])
                 
-                #idx = jnp.round(jnp.linspace(0, len(x1) - 1, args.dim)).astype(int)
-                x0 = M.coords(jnp.vstack((x1[::len(x1)//args.dim],x2[::len(x2)//args.dim])).T.flatten())
+                idx = jnp.round(jnp.linspace(0, len(x1) - 1, args.dim)).astype(int)
+                x0 = M.coords(jnp.vstack((x1[idx],x2[idx])).T.flatten())
         
         if args.dim<5:
             layers = [50,100,100,50]
