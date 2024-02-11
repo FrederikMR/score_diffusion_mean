@@ -6,3 +6,232 @@ Switching from python3/3.8.2 to python3/3.10.12
 2024-02-11 11:44:48.004491: E tensorflow/compiler/xla/stream_executor/cuda/cuda_dnn.cc:9342] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
 2024-02-11 11:44:48.004567: E tensorflow/compiler/xla/stream_executor/cuda/cuda_fft.cc:609] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
 2024-02-11 11:44:48.010315: E tensorflow/compiler/xla/stream_executor/cuda/cuda_blas.cc:1518] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2024-02-11 11:55:41.251682: W external/tsl/tsl/framework/bfc_allocator.cc:485] Allocator (GPU_0_bfc) ran out of memory trying to allocate 4.01GiB (rounded to 4310701056)requested by op 
+2024-02-11 11:55:41.252491: W external/tsl/tsl/framework/bfc_allocator.cc:497] *********************************************************************************___________________
+2024-02-11 11:55:41.253297: E external/xla/xla/pjrt/pjrt_stream_executor_client.cc:2593] Execution of replica 0 failed: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 4310700976 bytes.
+BufferAssignment OOM Debugging.
+BufferAssignment stats:
+             parameter allocation:  259.23MiB
+              constant allocation:         8B
+        maybe_live_out allocation:   17.23MiB
+     preallocated temp allocation:    4.01GiB
+  preallocated temp fragmentation:       124B (0.00%)
+                 total allocation:    4.28GiB
+              total fragmentation:    9.29MiB (0.21%)
+Peak buffers:
+	Buffer 1:
+		Size: 800.00MiB
+		Operator: op_name="jit(update)/jit(main)/transpose(jvp(jit(loss_dsm)))/vmap(mlp_s1)/sequential/linear_5/reduce_sum[axes=(0,)]" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=185 deduplicated_name="fusion.38"
+		XLA Label: fusion
+		Shape: f32[262144,800]
+		==========================
+
+	Buffer 2:
+		Size: 800.00MiB
+		Operator: op_name="jit(update)/jit(main)/transpose(jvp(jit(loss_dsm)))/vmap(mlp_s1)/sequential/linear_6/dot_general[dimension_numbers=(((1,), (1,)), ((), ())) precision=None preferred_element_type=float32]" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=180
+		XLA Label: custom-call
+		Shape: f32[262144,800]
+		==========================
+
+	Buffer 3:
+		Size: 800.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/vmap(mlp_s1)/sequential/tanh" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=127 deduplicated_name="fusion.100"
+		XLA Label: fusion
+		Shape: f32[262144,800]
+		==========================
+
+	Buffer 4:
+		Size: 800.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/vmap(mlp_s1)/sequential/tanh" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=127 deduplicated_name="fusion.100"
+		XLA Label: fusion
+		Shape: f32[262144,800]
+		==========================
+
+	Buffer 5:
+		Size: 400.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/vmap(mlp_s1)/sequential/tanh" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=127 deduplicated_name="fusion.99"
+		XLA Label: fusion
+		Shape: f32[262144,400]
+		==========================
+
+	Buffer 6:
+		Size: 242.00MiB
+		Entry Parameter Subshape: f32[262144,242]
+		==========================
+
+	Buffer 7:
+		Size: 200.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/vmap(mlp_s1)/sequential/tanh" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=127 deduplicated_name="fusion.98"
+		XLA Label: fusion
+		Shape: f32[262144,200]
+		==========================
+
+	Buffer 8:
+		Size: 161.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/slice[start_indices=(0, 0) limit_indices=(262144, 80) strides=None]" source_file="/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/trainxt.py" source_line=90
+		XLA Label: slice
+		Shape: f32[262144,161]
+		==========================
+
+	Buffer 9:
+		Size: 100.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/vmap(mlp_s1)/sequential/tanh" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=127 deduplicated_name="fusion.97"
+		XLA Label: fusion
+		Shape: f32[262144,100]
+		==========================
+
+	Buffer 10:
+		Size: 50.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/vmap(mlp_s1)/sequential/tanh" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=127 deduplicated_name="fusion.96"
+		XLA Label: fusion
+		Shape: f32[262144,50]
+		==========================
+
+	Buffer 11:
+		Size: 2.44MiB
+		Entry Parameter Subshape: f32[800,800]
+		==========================
+
+	Buffer 12:
+		Size: 2.44MiB
+		Entry Parameter Subshape: f32[800,800]
+		==========================
+
+	Buffer 13:
+		Size: 2.44MiB
+		Entry Parameter Subshape: f32[800,800]
+		==========================
+
+	Buffer 14:
+		Size: 2.44MiB
+		Operator: op_name="jit(update)/jit(main)/add" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/optax/_src/update.py" source_line=43
+		XLA Label: fusion
+		Shape: f32[800,800]
+		==========================
+
+	Buffer 15:
+		Size: 2.44MiB
+		Operator: op_name="jit(update)/jit(main)/add" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/optax/_src/update.py" source_line=43
+		XLA Label: fusion
+		Shape: f32[800,800]
+		==========================
+
+
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 545, in <module>
+    train_score()
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 523, in train_score
+    train_s1(M=M,
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/trainxt.py", line 147, in train_s1
+    state, loss_val = update(state, data)
+ValueError: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 4310700976 bytes.
+BufferAssignment OOM Debugging.
+BufferAssignment stats:
+             parameter allocation:  259.23MiB
+              constant allocation:         8B
+        maybe_live_out allocation:   17.23MiB
+     preallocated temp allocation:    4.01GiB
+  preallocated temp fragmentation:       124B (0.00%)
+                 total allocation:    4.28GiB
+              total fragmentation:    9.29MiB (0.21%)
+Peak buffers:
+	Buffer 1:
+		Size: 800.00MiB
+		Operator: op_name="jit(update)/jit(main)/transpose(jvp(jit(loss_dsm)))/vmap(mlp_s1)/sequential/linear_5/reduce_sum[axes=(0,)]" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=185 deduplicated_name="fusion.38"
+		XLA Label: fusion
+		Shape: f32[262144,800]
+		==========================
+
+	Buffer 2:
+		Size: 800.00MiB
+		Operator: op_name="jit(update)/jit(main)/transpose(jvp(jit(loss_dsm)))/vmap(mlp_s1)/sequential/linear_6/dot_general[dimension_numbers=(((1,), (1,)), ((), ())) precision=None preferred_element_type=float32]" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=180
+		XLA Label: custom-call
+		Shape: f32[262144,800]
+		==========================
+
+	Buffer 3:
+		Size: 800.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/vmap(mlp_s1)/sequential/tanh" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=127 deduplicated_name="fusion.100"
+		XLA Label: fusion
+		Shape: f32[262144,800]
+		==========================
+
+	Buffer 4:
+		Size: 800.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/vmap(mlp_s1)/sequential/tanh" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=127 deduplicated_name="fusion.100"
+		XLA Label: fusion
+		Shape: f32[262144,800]
+		==========================
+
+	Buffer 5:
+		Size: 400.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/vmap(mlp_s1)/sequential/tanh" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=127 deduplicated_name="fusion.99"
+		XLA Label: fusion
+		Shape: f32[262144,400]
+		==========================
+
+	Buffer 6:
+		Size: 242.00MiB
+		Entry Parameter Subshape: f32[262144,242]
+		==========================
+
+	Buffer 7:
+		Size: 200.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/vmap(mlp_s1)/sequential/tanh" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=127 deduplicated_name="fusion.98"
+		XLA Label: fusion
+		Shape: f32[262144,200]
+		==========================
+
+	Buffer 8:
+		Size: 161.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/slice[start_indices=(0, 0) limit_indices=(262144, 80) strides=None]" source_file="/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/trainxt.py" source_line=90
+		XLA Label: slice
+		Shape: f32[262144,161]
+		==========================
+
+	Buffer 9:
+		Size: 100.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/vmap(mlp_s1)/sequential/tanh" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=127 deduplicated_name="fusion.97"
+		XLA Label: fusion
+		Shape: f32[262144,100]
+		==========================
+
+	Buffer 10:
+		Size: 50.00MiB
+		Operator: op_name="jit(update)/jit(main)/jvp(jit(loss_dsm))/vmap(mlp_s1)/sequential/tanh" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py" source_line=127 deduplicated_name="fusion.96"
+		XLA Label: fusion
+		Shape: f32[262144,50]
+		==========================
+
+	Buffer 11:
+		Size: 2.44MiB
+		Entry Parameter Subshape: f32[800,800]
+		==========================
+
+	Buffer 12:
+		Size: 2.44MiB
+		Entry Parameter Subshape: f32[800,800]
+		==========================
+
+	Buffer 13:
+		Size: 2.44MiB
+		Entry Parameter Subshape: f32[800,800]
+		==========================
+
+	Buffer 14:
+		Size: 2.44MiB
+		Operator: op_name="jit(update)/jit(main)/add" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/optax/_src/update.py" source_line=43
+		XLA Label: fusion
+		Shape: f32[800,800]
+		==========================
+
+	Buffer 15:
+		Size: 2.44MiB
+		Operator: op_name="jit(update)/jit(main)/add" source_file="/zhome/77/8/118225/.local/lib/python3.10/site-packages/optax/_src/update.py" source_line=43
+		XLA Label: fusion
+		Shape: f32[800,800]
+		==========================
+
+
+terminate called without an active exception
+/zhome/77/8/118225/.lsbatch/1707648279.20111519.shell: line 37:  8098 Aborted                 python3 train_score.py --manifold Landmarks --dim 40 --loss_type dsm --load_model 0 --T_sample 0 --t 0.01 --train_net s1 --max_T 1.0 --lr_rate 0.001 --epochs 50000 --x_samples 64 --t_samples 256 --repeats 16 --samples_per_batch 32 --dt_steps 1000 --save_step 10 --seed 2712
