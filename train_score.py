@@ -38,7 +38,7 @@ from jaxgeometry.statistics.score_matching.model_loader import load_model
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="HyperbolicSpace",
+    parser.add_argument('--manifold', default="SN",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
@@ -50,7 +50,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--t', default=0.1,
                         type=float)
-    parser.add_argument('--train_net', default="s1",
+    parser.add_argument('--train_net', default="s2",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
