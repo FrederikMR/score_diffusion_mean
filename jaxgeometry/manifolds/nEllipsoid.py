@@ -226,7 +226,9 @@ class nEllipsoid(EmbeddedManifold):
         Fx = Fx/self.params
         v /= self.params
         
-        return (v-jnp.dot(v,Fx)*Fx)*self.params
+        proj_mat = jnp.eye(self.emb_dim)-jnp.einsum('i,j->ij', Fx, Fx)
+        
+        return jnp.dot(proj_mat, v)*self.params
     
     def ProjdW(self, x:Tuple[Array, Array], dW:Array)->Array:
         

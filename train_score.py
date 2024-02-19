@@ -62,9 +62,9 @@ def parse_args():
                         type=int)
     parser.add_argument('--t_samples', default=128,
                         type=int)
-    parser.add_argument('--repeats', default=8*2,
+    parser.add_argument('--repeats', default=8,
                         type=int)
-    parser.add_argument('--samples_per_batch', default=16*2,
+    parser.add_argument('--samples_per_batch', default=16,
                         type=int)
     parser.add_argument('--dt_steps', default=1000,
                         type=int)

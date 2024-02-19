@@ -88,7 +88,7 @@ class MLP_s2(hk.Module):
         
         alpha = self.model_alpha()(x).reshape(-1,self.dim)
         diag = vmap(lambda x: jnp.diag(x))(alpha)
-        beta = self.model_beta()(x)
+        #beta = self.model_beta()(x)
         
         shape = list(x.shape)
         shape[-1] = 1
@@ -96,7 +96,7 @@ class MLP_s2(hk.Module):
 
         hess_rn = -jnp.einsum('ij,...i->...ij', jnp.eye(self.dim), 1/t)
         
-        return (diag+hess_rn).squeeze()+jnp.einsum('...ik,...jk->...ij', beta, beta).squeeze()#+\
+        return (diag+hess_rn).squeeze()#+jnp.einsum('...ik,...jk->...ij', beta, beta).squeeze()#+\
             
 @dataclasses.dataclass
 class MLP_s1s2(hk.Module):

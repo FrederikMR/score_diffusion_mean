@@ -289,13 +289,11 @@ class EmbeddedSampling(object):
         x = self.update_coords(x)
 
         Fx = self.M.F(x)
-        JFx = self.M.JF(x)
-        Q, _ = jnp.linalg.qr(JFx)
+        JFx = self.M.JF(x)        
         
-        
-        val1 = M.proj(x0, s2_model(x0,Fx,t))
-        val2 = s1_model(x0,Fx,t)-M.proj(x0, s1_model(x0,Fx,t))
-        val3 = jacfwd(lambda x: M.proj(x, val2))(x0)
+        val1 = self.M.proj(x0, s2_model(x0,Fx,t))
+        val2 = s1_model(x0,Fx,t)-self.M.proj(x0, s1_model(x0,Fx,t))
+        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x0)
         
         
         return val1+val3#jnp.einsum('i,j->ij', M.proj(x0, s1_model(x0,Fx,t)), x)
@@ -453,16 +451,25 @@ class TMSampling(object):
                    t:Array
                    )->Array:
         
-        P = vmap(lambda v: self.M.proj(x, v))(jnp.eye(self.dim))
+        x = self.update_coords(x)
+
+        Fx = self.M.F(x)
+        return s2_model(x0,Fx,t)
         
-        return jnp.tensordot(P,s2_model(x0,x,t),(1,0))
+        JFx = self.M.JF(x)        
+        
+        val1 = self.M.proj(x0, s2_model(x0,Fx,t))
+        val2 = s1_model(x0,Fx,t)-self.M.proj(x0, s1_model(x0,Fx,t))
+        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x0)
+        
+        return val1+val3#jnp.einsum('i,j->ij', M.proj(x0, s1_model(x0,Fx,t)), x)
     
     def dW_TM(self,
               x:Array,
               dW:Array
               )->Array:
         
-        return self.M.proj(x,dW)
+        return dW#self.M.proj(x,dW)
     
     def dW_local(self,
                 x:Array,
@@ -603,9 +610,17 @@ class ProjectionSampling(object):
                    t:Array
                    )->Array:
         
-        P = vmap(lambda v: self.M.proj(x, v))(jnp.eye(self.dim))
+        x = self.update_coords(x)
+
+        Fx = self.M.F(x)
+        JFx = self.M.JF(x)        
         
-        return jnp.tensordot(P,s2_model(x0,x,t),(1,0))
+        val1 = self.M.proj(x0, s2_model(x0,Fx,t))
+        val2 = s1_model(x0,Fx,t)-self.M.proj(x0, s1_model(x0,Fx,t))
+        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x0)
+        
+        
+        return val1+val3#jnp.einsum('i,j->ij', M.proj(x0, s1_model(x0,Fx,t)), x)
     
     def dW_TM(self,
               x:Array,
