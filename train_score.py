@@ -54,7 +54,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
-    parser.add_argument('--lr_rate', default=0.001,
+    parser.add_argument('--lr_rate', default=0.0002,
                         type=float)
     parser.add_argument('--epochs', default=50000,
                         type=int)
