@@ -1,4 +1,4 @@
-## This file is part of Jax Geometry
+    ## This file is part of Jax Geometry
 #
 # Copyright (C) 2021, Stefan Sommer (sommer@di.ku.dk)
 # https://bitbucket.org/stefansommer/jaxgeometry
