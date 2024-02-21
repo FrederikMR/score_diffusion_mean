@@ -454,7 +454,6 @@ class TMSampling(object):
         x = self.update_coords(x)
 
         Fx = self.M.F(x)
-        return s2_model(x0,Fx,t)
         
         JFx = self.M.JF(x)        
         

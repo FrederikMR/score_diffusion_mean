@@ -205,9 +205,6 @@ def train_s2(M:object,
             
             dW = generator.dW_TM(x0,dW)
             
-            xp = x0+dW
-            xm = x0-dW
-            
             s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
             
             s1 = s1_model(x0,x0,t)#generator.grad_TM(s1_model, x0, x0, t)
@@ -216,17 +213,20 @@ def train_s2(M:object,
             s1p = s1_model(x0,xt,t)#generator.grad_TM(s1_model, x0, xt, t)
             s2p = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
             
-            s1m = s1_model(x0,xm,t)#generator.grad_TM(s1_model, x0, xm, t)
-            s2m = s2_model(x0,xm,t)#generator.proj_hess(s1_model, s2_model, x0, xm, t)
+            #s1m = generator.grad_TM(s1_model, x0, xm, t)
+            #s2m = generator.proj_hess(s1_model, s2_model, x0, xm, t)
 
-            psi = s2+jnp.einsum('i,j->ij', s1, s1)
-            psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
-            psim = s2m+jnp.einsum('i,j->ij', s1m, s1m)
+            #psi = s2+jnp.einsum('i,j->ij', s1, s1)
+            #psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
+            
+            psi = jnp.diag(s2)+s1*s1
+            psip = jnp.diag(s2p)+s1p*s1p
+            #psim = s2m+jnp.einsum('i,j->ij', s1m, s1m)
             diff = (jnp.eye(N_dim)-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
             
             loss1 = psip**2
             loss2 = .0#psim**2
-            loss3 = 2.*diff(psip-psi)#2*diff*((psip-psi)+(psim-psi))
+            loss3 = 2.*diff*(psip-psi)#2*diff*((psip-psi)+(psim-psi))
             
             loss_s2 = loss1+loss2+loss3
     

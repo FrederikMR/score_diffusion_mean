@@ -462,7 +462,7 @@ def train_score()->None:
         state = load_model(s1_path)
         rng_key = jran.PRNGKey(2712)
         s1 = lambda x,y,t: s1_model.apply(state.params,rng_key, jnp.hstack((x, y, t)))
-        s1 = lambda x,y,t: (x-y)/t#M.grady_log_hk(x,y,t)
+        #s1 = lambda x,y,t: (x-y)/t#M.grady_log_hk(x,y,t)
         
         if args.load_model:
             state_s2 = load_model(s1_path)
