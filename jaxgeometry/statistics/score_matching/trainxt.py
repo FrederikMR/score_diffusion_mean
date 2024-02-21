@@ -201,7 +201,7 @@ def train_s2(M:object,
                  )->float:
         
         #https://github.com/chenlin9/high_order_dsm/blob/main/functions/loss.py
-        def f2(x0,xt,t,dW,dt):
+        def f(x0,xt,t,dW,dt):
             
             dW = generator.dW_TM(x0,dW)
             
@@ -232,7 +232,7 @@ def train_s2(M:object,
     
             return 0.5*jnp.sum(loss_s2)#jnp.mean(loss_s2)#jnp.mean(loss_s2)
         
-        def f(x0,xt,t,dW,dt):
+        def f2(x0,xt,t,dW,dt):
             
             dW = generator.dW_TM(xt,dW)
         
