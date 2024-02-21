@@ -1,6 +1,6 @@
 #!/bin/sh
-#BSUB -q gpuv100
-#BSUB -J SPDN2_s1
+#BSUB -q gpua100
+#BSUB -J SPDN2_s2
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
