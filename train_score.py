@@ -54,7 +54,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
-    parser.add_argument('--lr_rate', default=0.0002,
+    parser.add_argument('--lr_rate', default=0.001,
                         type=float)
     parser.add_argument('--epochs', default=50000,
                         type=int)
@@ -462,7 +462,7 @@ def train_score()->None:
         state = load_model(s1_path)
         rng_key = jran.PRNGKey(2712)
         s1 = lambda x,y,t: s1_model.apply(state.params,rng_key, jnp.hstack((x, y, t)))
-        #s1 = lambda x,y,t: M.grady_log_hk(x,y,t)
+        s1 = lambda x,y,t: (x-y)/t#M.grady_log_hk(x,y,t)
         
         if args.load_model:
             state_s2 = load_model(s1_path)
@@ -487,7 +487,7 @@ def train_score()->None:
                  seed=args.seed
                  )
     elif args.train_net == "s1s2":
-        state = load_model(s1_path)
+        #state = load_model(s1_path)
         rng_key = jran.PRNGKey(2712)
             
         if not os.path.exists(s1s2_path):
