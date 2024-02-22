@@ -1,5 +1,5 @@
 #!/bin/sh
-#BSUB -q gpua100
+#BSUB -q gpuv100
 #BSUB -J S2_s2
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
