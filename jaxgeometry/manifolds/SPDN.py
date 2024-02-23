@@ -100,7 +100,7 @@ class SPDN(EmbeddedManifold):
     def Stdgsharp(self, x:Tuple[Array,Array])->Array:
         
         P = self.F(x).reshape(self.N, self.N)
-        D = self.Dp
+        D = self.Dn.T
         
         return jnp.matmul(D,jnp.matmul(jnp.kron(P,P), D.T))
     
@@ -117,8 +117,9 @@ class SPDN(EmbeddedManifold):
         E = jnp.eye(self.N*self.N)[:p]
         D = self.Dn
         P = self.F(x).reshape(self.N,self.N)
+        pinv = jnp.linalg.inv(P)
             
-        return -vmap(lambda e: jnp.matmul(D.T,jnp.matmul(jnp.kron(jnp.linalg.inv(P), e.reshape(self.N,self.N)), D)))(E)
+        return -vmap(lambda e: jnp.matmul(D.T,jnp.matmul(jnp.kron(pinv, e.reshape(self.N,self.N)), D)))(E)
     
     def StdExpt(self, x:Tuple[Array, Array], v:Array, t:float=1.0)->Array:
         

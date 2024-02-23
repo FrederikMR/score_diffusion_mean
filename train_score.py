@@ -28,7 +28,7 @@ import os
 
 #jaxgeometry
 from jaxgeometry.manifolds import Euclidean, nSphere, nEllipsoid, Cylinder, S1, Torus, \
-    H2, Landmarks, Heisenberg, SPDN, Latent, HypParaboloid, Sym, nHyperbolicSpace, Grassmanian
+    H2, Landmarks, Heisenberg, SPDN, Latent, HypParaboloid, Sym, nHyperbolicSpace, Grassmanian, SO, Stiefel
 from jaxgeometry.statistics.score_matching import train_s1, train_s2, train_s1s2, TMSampling, LocalSampling, \
     EmbeddedSampling, ProjectionSampling
 from jaxgeometry.statistics.score_matching.model_loader import load_model
@@ -38,7 +38,7 @@ from jaxgeometry.statistics.score_matching.model_loader import load_model
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="RN",
+    parser.add_argument('--manifold', default="Stiefel",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
@@ -50,17 +50,17 @@ def parse_args():
                         type=int)
     parser.add_argument('--t', default=0.1,
                         type=float)
-    parser.add_argument('--train_net', default="s2",
+    parser.add_argument('--train_net', default="s1",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
-    parser.add_argument('--lr_rate', default=0.001,
+    parser.add_argument('--lr_rate', default=0.0001,
                         type=float)
     parser.add_argument('--epochs', default=50000,
                         type=int)
     parser.add_argument('--x_samples', default=32,
                         type=int)
-    parser.add_argument('--t_samples', default=128,
+    parser.add_argument('--t_samples', default=128,#128
                         type=int)
     parser.add_argument('--repeats', default=8,
                         type=int)
@@ -141,12 +141,23 @@ def train_score()->None:
                                                         dim=generator_dim, 
                                                         r = max(generator_dim//2,1))(x))
         
+        @hk.transform
+        def s1s2_model(x):
+            
+            s1s2 =  models.MLP_s1s2(
+                models.MLP_s1(dim=generator_dim, layers=layers), 
+                models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                                dim=generator_dim, 
+                                                                r = max(generator_dim//2,1)))
+            return s1s2(x)
+        
     elif args.manifold == "SN":
         sampling_method = 'TMSampling'
         generator_dim = args.dim+1
         if not args.T_sample:
             s1_path = ''.join(('scores/S',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S',str(args.dim),'/s2/'))
+            s1s2_path = ''.join(('scores/S',str(args.dim),'/s1s2/'))
         else:
             s1_path = ''.join(('scores/S',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S',str(args.dim),'/s2_T'))
@@ -166,8 +177,19 @@ def train_score()->None:
                                                         dim=generator_dim, 
                                                         r = max(generator_dim//2,1))(x))
         
+        @hk.transform
+        def s1s2_model(x):
+            
+            s1s2 =  models.MLP_s1s2(
+                models.MLP_s1(dim=generator_dim, layers=layers), 
+                models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                                dim=generator_dim, 
+                                                                r = max(generator_dim//2,1)))
+            
+            return s1s2(x)
+        
     elif args.manifold == "HyperbolicSpace":
-        sampling_method = 'LocalSampling'
+        sampling_method = 'TMSampling'
         generator_dim = args.dim
         if not args.T_sample:
             s1_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s1_',args.loss_type,'/'))
@@ -203,6 +225,56 @@ def train_score()->None:
             
         M = Grassmanian(N=2*args.dim,K=args.dim)
         x0 = (jnp.eye(2*args.dim)[:,:args.dim].reshape(-1),)*2
+        
+        if args.dim<10:
+            layers = [50,100,100,50]
+        elif args.dim<50:
+            layers = [50,100,200,200,100,50]
+        else:
+            layers = [50,100,200,400,400,200,100,50]
+        
+        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
+        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                        dim=generator_dim, 
+                                                        r = max(generator_dim//2,1))(x))
+        
+    elif args.manifold == "SO":
+        sampling_method = 'TMSampling'
+        generator_dim = args.dim**2
+        if not args.T_sample:
+            s1_path = ''.join(('scores/SO',str(args.dim),'/s1_',args.loss_type,'/'))
+            s2_path = ''.join(('scores/SO',str(args.dim),'/s2/'))
+        else:
+            s1_path = ''.join(('scores/SO',str(args.dim),'/s1_T_',args.loss_type,'/'))
+            s2_path = ''.join(('scores/SO',str(args.dim),'/s2_T'))
+            
+        M = SO(N=args.dim)
+        x0 = (jnp.eye(args.dim).reshape(-1),)*2
+        
+        if args.dim<10:
+            layers = [50,100,100,50]
+        elif args.dim<50:
+            layers = [50,100,200,200,100,50]
+        else:
+            layers = [50,100,200,400,400,200,100,50]
+        
+        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
+        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                        dim=generator_dim, 
+                                                        r = max(generator_dim//2,1))(x))
+        
+    elif args.manifold == "Stiefel":
+        sampling_method = 'TMSampling'
+        generator_dim = args.dim*2
+        if not args.T_sample:
+            s1_path = ''.join(('scores/Stiefel',str(args.dim),'/s1_',args.loss_type,'/'))
+            s2_path = ''.join(('scores/Stiefel',str(args.dim),'/s2/'))
+        else:
+            s1_path = ''.join(('scores/Stiefel',str(args.dim),'/s1_T_',args.loss_type,'/'))
+            s2_path = ''.join(('scores/Stiefel',str(args.dim),'/s2_T'))
+            
+        M = Stiefel(N=args.dim, K=2)
+        x0 = (jnp.block([jnp.eye(2), jnp.zeros((2,args.dim-2))]).T.reshape(-1),)*2
         
         if args.dim<10:
             layers = [50,100,100,50]
@@ -331,7 +403,7 @@ def train_score()->None:
             s2_path = ''.join(('scores/SPDN',str(args.dim),'/s2_T'))
 
         M = SPDN(N=args.dim)
-        x0 = M.coords([10.]*(args.dim*(args.dim+1)//2))
+        x0 = M.coords([100.]*(args.dim*(args.dim+1)//2))
         
         if args.dim<3:
             layers = [50,100,100,50]
@@ -351,6 +423,7 @@ def train_score()->None:
         if not args.T_sample:
             s1_path = ''.join(('scores/Sym',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Sym',str(args.dim),'/s2/'))
+            s1s2_path = ''.join(('scores/Sym',str(args.dim),'/s1s2/'))
         else:
             s1_path = ''.join(('scores/Sym',str(args.dim),'/s1_T_/',args.loss_type,'/'))
             s2_path = ''.join(('scores/Sym',str(args.dim),'/s2_T'))
@@ -370,12 +443,24 @@ def train_score()->None:
                                                         dim=generator_dim, 
                                                         r = max(generator_dim//2,1))(x))
         
+        @hk.transform
+        def s1s2_model(x):
+            
+            s1s2 =  models.MLP_s1s2(
+                models.MLP_s1(dim=generator_dim, layers=layers), 
+                models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                                dim=generator_dim, 
+                                                                r = max(generator_dim//2,1)))
+            
+            return s1s2(x)
+        
     elif args.manifold == "HypParaboloid":
         sampling_method = 'LocalSampling'
         generator_dim = 2
         if not args.T_sample:
             s1_path = ''.join(('scores/HypParaboloid/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/HypParaboloid/s2/'))
+            s1s2_path = ''.join(('scores/HypParaboloid/s1s2/'))
         else:
             s1_path = ''.join(('scores/HypParaboloid/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/HypParaboloid/s2_T'))
@@ -389,6 +474,18 @@ def train_score()->None:
         s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
                                                         dim=generator_dim, 
                                                         r = max(generator_dim//2,1))(x))
+        
+        @hk.transform
+        def s1s2_model(x):
+            
+            s1s2 =  models.MLP_s1s2(
+                models.MLP_s1(dim=generator_dim, layers=layers), 
+                models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                                dim=generator_dim, 
+                                                                r = max(generator_dim//2,1)))
+            
+            return s1s2(x)
+        
     else:
         return
         
@@ -487,7 +584,7 @@ def train_score()->None:
                  seed=args.seed
                  )
     elif args.train_net == "s1s2":
-        #state = load_model(s1_path)
+        state = load_model(s1_path)
         rng_key = jran.PRNGKey(2712)
             
         if not os.path.exists(s1s2_path):
@@ -505,9 +602,11 @@ def train_score()->None:
                  dW_dim=dW_dim,
                  batch_size=batch_size,
                  state=state_s1s2,
+                 s1_params=state.params,
                  lr_rate=args.lr_rate,
                  epochs=args.epochs,
                  save_step=args.save_step,
+                 gamma=1.0,
                  save_path=s1s2_path,
                  seed=args.seed
                  )

@@ -44,23 +44,23 @@ class nHyperbolicSpace(EmbeddedManifold):
         ##### Metric:
             
         metric = jnp.eye(self.dim)
-        if inner_product == 'Lorentizian':
-            metric = metric.at[0,0].set(-1)
-        else:
-            metric = metric.at[-1,-1].set(-1)
+        #if inner_product == 'Lorentizian':
+        #    metric = metric.at[0,0].set(-1)
+        #else:
+        #    metric = metric.at[-1,-1].set(-1)
             
-        self.g = lambda x: metric
+        #self.g = lambda x: metric
         
-        metric(self)
-        curvature(self)
-        geodesic(self)
-        Log(self)
-        parallel_transport(self)
+        #metric(self)
+        #curvature(self)
+        #geodesic(self)
+        #Log(self)
+        #parallel_transport(self)
 
         # action of matrix group on elements
         self.act = lambda g,x: jnp.tensordot(g,x,(1,0))
         
-        self.dot = lambda x,v,w: jnp.tensordot(jnp.tensordot(self.g(x),w,(1,0)),v,(0,0))
+        self.dot = lambda x,v,w: -w[-1]*v[-1]+jnp.dot(w[:-1],v[:-1])#jnp.tensordot(jnp.tensordot(self.g(x),w,(1,0)),v,(0,0))
         self.norm = lambda x,v: jnp.sqrt(jnp.max(jnp.array([self.dot(x,v,v),0.])))
         self.dist = lambda x,y: 1/jnp.sqrt(jnp.abs(self.K))*jnp.arccosh(self.K*self.dot(x[1],y[1]))
         self.Exp = self.StdExp

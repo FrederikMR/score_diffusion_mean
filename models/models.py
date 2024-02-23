@@ -87,17 +87,17 @@ class MLP_s2(hk.Module):
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         
         alpha = self.model_alpha()(x).reshape(-1,self.dim)
-        
-        diag = vmap(lambda x: jnp.diag(x))(alpha)
-        #beta = self.model_beta()(x)
+        beta = self.model_beta()(x)
         
         shape = list(x.shape)
         shape[-1] = 1
         t = x.T[-1].reshape(shape)
+        
+        diag = vmap(lambda x: jnp.diag(x))(alpha)
 
         hess_rn = -jnp.einsum('ij,...i->...ij', jnp.eye(self.dim), 1/t)
         
-        return (diag+hess_rn).squeeze()#+jnp.einsum('...ik,...jk->...ij', beta, beta).squeeze()
+        return diag.squeeze()+hess_rn.squeeze()+jnp.einsum('...ik,...jk->...ij', beta, beta).squeeze()
             
 @dataclasses.dataclass
 class MLP_s1s2(hk.Module):

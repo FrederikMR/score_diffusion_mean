@@ -207,20 +207,20 @@ def train_s2(M:object,
             
             s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
             
-            s1 = s1_model(x0,x0,t)#generator.grad_TM(s1_model, x0, x0, t)
+            s1 = generator.grad_TM(s1_model, x0, x0, t)
             s2 = s2_model(x0,x0,t)#generator.proj_hess(s1_model, s2_model, x0, x0, t)
 
-            s1p = s1_model(x0,xt,t)#generator.grad_TM(s1_model, x0, xt, t)
+            s1p = generator.grad_TM(s1_model, x0, xt, t)
             s2p = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
             
             #s1m = generator.grad_TM(s1_model, x0, xm, t)
             #s2m = generator.proj_hess(s1_model, s2_model, x0, xm, t)
 
-            #psi = s2+jnp.einsum('i,j->ij', s1, s1)
-            #psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
+            psi = s2+jnp.einsum('i,j->ij', s1, s1)
+            psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
             
-            psi = jnp.diag(s2)+s1*s1
-            psip = jnp.diag(s2p)+s1p*s1p
+            #psi = jnp.diag(s2)+s1*s1
+            #psip = jnp.diag(s2p)+s1p*s1p
             #psim = s2m+jnp.einsum('i,j->ij', s1m, s1m)
             diff = (jnp.eye(N_dim)-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
             
@@ -357,6 +357,8 @@ def train_s1s2(M:object,
                dW_dim:int,
                batch_size:int,
                state:TrainingState=None,
+               s1_params:dict=None,
+               s2_params:dict=None,
                lr_rate:float=0.0002,
                epochs:int=100,
                save_step:int=100,
@@ -391,33 +393,33 @@ def train_s1s2(M:object,
             
             dW = generator.dW_TM(x0,dW)
             
-            xp = x0+dW
-            xm = x0-dW
-            
             s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[0]
             s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[1]
             
-            s1 = generator.grad_TM(s1_model, x0, x0, t)
-            s2 = generator.proj_hess(s1_model, s2_model, x0, x0, t)
+            s1 = s1_model(x0,x0,t)#generator.grad_TM(s1_model, x0, x0, t)
+            s2 = s2_model(x0,x0,t)#generator.proj_hess(s1_model, s2_model, x0, x0, t)
 
-            s1p = generator.grad_TM(s1_model, x0, xp, t)
-            s2p = generator.proj_hess(s1_model, s2_model, x0, xp, t)
+            s1p = s1_model(x0,xt,t)#generator.grad_TM(s1_model, x0, xt, t)
+            s2p = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
             
-            s1m = generator.grad_TM(s1_model, x0, xm, t)
-            s2m = generator.proj_hess(s1_model, s2_model, x0, xm, t)
+            #s1m = generator.grad_TM(s1_model, x0, xm, t)
+            #s2m = generator.proj_hess(s1_model, s2_model, x0, xm, t)
 
             psi = s2+jnp.einsum('i,j->ij', s1, s1)
             psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
-            psim = s2m+jnp.einsum('i,j->ij', s1m, s1m)
+            
+            #psi = jnp.diag(s2)+s1*s1
+            #psip = jnp.diag(s2p)+s1p*s1p
+            #psim = s2m+jnp.einsum('i,j->ij', s1m, s1m)
             diff = (jnp.eye(N_dim)-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
             
             loss1 = psip**2
-            loss2 = psim**2
-            loss3 = 2*diff*((psip-psi)+(psim-psi))
+            loss2 = .0#psim**2
+            loss3 = 2.*diff*(psip-psi)#2*diff*((psip-psi)+(psim-psi))
             
             loss_s2 = loss1+loss2+loss3
     
-            return 0.5*jnp.mean(loss_s2)#jnp.mean(loss_s2)
+            return 0.5*jnp.sum(loss_s2)#jnp.mean(loss_s2)#jnp.mean(loss_s2)
         
         x0 = data[:,:N_dim]
         xt = data[:,N_dim:(2*N_dim)]
@@ -461,12 +463,20 @@ def train_s1s2(M:object,
     if type(s1s2_model) == hk.Transformed:
         if state is None:
             initial_params = s1s2_model.init(jrandom.PRNGKey(seed), next(train_dataset)[:,:(2*N_dim+1)])
+            if s1_params is not None:
+                initial_params.update(s1_params)
+            if s2_params is not None:
+                initial_params.update(s2_params)
             initial_opt_state = optimizer.init(initial_params)
             state = TrainingState(initial_params, None, initial_opt_state, initial_rng_key)
         apply_fn = lambda params, data, rng_key, state_val: s1s2_model.apply(params, rng_key, data)
     elif type(s1s2_model) == hk.TransformedWithState:
         if state is None:
             initial_params, init_state = s1s2_model.init(jrandom.PRNGKey(seed), next(train_dataset)[:,:(2*N_dim+1)])
+            if s1_params is not None:
+                initial_params.update(s1_params)
+            if s2_params is not None:
+                initial_params.update(s2_params)
             initial_opt_state = optimizer.init(initial_params)
             state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
         apply_fn = lambda params, data, rng_key, state_val: s1s2_model.apply(params, state_val, rng_key, data)[0]

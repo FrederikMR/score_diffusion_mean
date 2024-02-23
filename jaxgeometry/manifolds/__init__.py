@@ -38,5 +38,7 @@ from .Latent import Latent
 from .Sym import Sym
 from .nHyperbolicSpace import nHyperbolicSpace
 from .Grassmanian import Grassmanian
+from .SOn import SO
+from .Stiefel import Stiefel
 
 #%% Code
