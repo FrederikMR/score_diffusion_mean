@@ -90,6 +90,7 @@ def train_score()->None:
         if not args.T_sample:
             s1_path = ''.join(('scores/R',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/R',str(args.dim),'/s2/'))
+            s1s2_path = ''.join(('scores/R',str(args.dim),'/s1s2/'))
         else:
             s1_path = ''.join(('scores/R',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/R',str(args.dim),'/s2_T'))
@@ -127,6 +128,7 @@ def train_score()->None:
         if not args.T_sample:
             s1_path = ''.join(('scores/S1/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S1/s2/'))
+            s1s2_path = ''.join(('scores/Circle/s1s2/'))
         else:
             s1_path = ''.join(('scores/S1/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/S1/s2_T'))
@@ -194,6 +196,7 @@ def train_score()->None:
         if not args.T_sample:
             s1_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s2/'))
+            s1s2_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s1s2/'))
         else:
             s1_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s2_T'))
@@ -219,6 +222,7 @@ def train_score()->None:
         if not args.T_sample:
             s1_path = ''.join(('scores/Grassmanian',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Grassmanian',str(args.dim),'/s2/'))
+            s1s2_path = ''.join(('scores/Grassmanian',str(args.dim),'/s1s2/'))
         else:
             s1_path = ''.join(('scores/Grassmanian',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Grassmanian',str(args.dim),'/s2_T'))
@@ -244,6 +248,7 @@ def train_score()->None:
         if not args.T_sample:
             s1_path = ''.join(('scores/SO',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/SO',str(args.dim),'/s2/'))
+            s1s2_path = ''.join(('scores/SO',str(args.dim),'/s1s2/'))
         else:
             s1_path = ''.join(('scores/SO',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/SO',str(args.dim),'/s2_T'))
@@ -269,6 +274,7 @@ def train_score()->None:
         if not args.T_sample:
             s1_path = ''.join(('scores/Stiefel',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Stiefel',str(args.dim),'/s2/'))
+            s1s2_path = ''.join(('scores/Stiefel',str(args.dim),'/s1s2/'))
         else:
             s1_path = ''.join(('scores/Stiefel',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Stiefel',str(args.dim),'/s2_T'))
@@ -294,6 +300,7 @@ def train_score()->None:
         if not args.T_sample:
             s1_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s2/'))
+            s1s2_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1s2/'))
         else:
             s1_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s2_T'))
@@ -319,6 +326,7 @@ def train_score()->None:
         if not args.T_sample:
             s1_path = ''.join(('scores/Cylinder/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Cylinder/s2/'))
+            s1s2_path = ''.join(('scores/Cylinder/s1s2/'))
         else:
             s1_path = ''.join(('scores/Cylinder/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Cylinder/s2_T'))
@@ -340,6 +348,7 @@ def train_score()->None:
         if not args.T_sample:
             s1_path = ''.join(('scores/Torus/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Torus/s2/'))
+            s1s2_path = ''.join(('scores/Torus/s1s2/'))
         else:
             s1_path = ''.join(('scores/Torus/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Torus/s2_T'))
@@ -360,6 +369,7 @@ def train_score()->None:
         if not args.T_sample:
             s1_path = ''.join(('scores/Landmarks',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/Landmarks',str(args.dim),'/s2/'))
+            s1s2_path = ''.join(('scores/Landmarks',str(args.dim),'/s1s2/'))
         else:
             s1_path = ''.join(('scores/Landmarks',str(args.dim),'/s1_T_/',args.loss_type,'/'))
             s2_path = ''.join(('scores/Landmarks',str(args.dim),'/s2_T'))
@@ -398,6 +408,7 @@ def train_score()->None:
         if not args.T_sample:
             s1_path = ''.join(('scores/SPDN',str(args.dim),'/s1_',args.loss_type,'/'))
             s2_path = ''.join(('scores/SPDN',str(args.dim),'/s2/'))
+            s1s2_path = ''.join(('scores/SPDN',str(args.dim),'/s1s2/'))
         else:
             s1_path = ''.join(('scores/SPDN',str(args.dim),'/s1_T_',args.loss_type,'/'))
             s2_path = ''.join(('scores/SPDN',str(args.dim),'/s2_T'))
@@ -488,6 +499,17 @@ def train_score()->None:
         
     else:
         return
+    
+    @hk.transform
+    def s1s2_model(x):
+        
+        s1s2 =  models.MLP_s1s2(
+            models.MLP_s1(dim=generator_dim, layers=layers), 
+            models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                            dim=generator_dim, 
+                                                            r = max(generator_dim//2,1)))
+        
+        return s1s2(x)
         
     if sampling_method == 'LocalSampling':
         dW_dim = M.dim
