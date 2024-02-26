@@ -41,7 +41,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=3,
                         type=int)
-    parser.add_argument('--loss_type', default="dsmvr",
+    parser.add_argument('--loss_type', default="dsmdiagvr",
                         type=str)
     parser.add_argument('--load_model', default=0,
                         type=int)
@@ -87,7 +87,12 @@ def train_score()->None:
     
     N_sim = args.x_samples*args.repeats
     T_sample_name = (args.T_sample == 1)*"T"
-    s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_{args.loss_type}/"
+    if args.loss_type == "dsmdiagvr":
+        s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_dsmvr/"
+    elif args.loss_type == "dsmdiag":
+        s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_dsm/"
+    else:
+        s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_{args.loss_type}/"
     s2_path = f"scores/{args.manifold}{args.dim}/s2{T_sample_name}_{args.loss_type}/"
     s1s2_path = f"scores/{args.manifold}{args.dim}/s1s2{T_sample_name}_{args.loss_type}/"
     
