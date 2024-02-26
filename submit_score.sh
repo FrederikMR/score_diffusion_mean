@@ -25,7 +25,6 @@ python3 train_score.py \
     --T_sample 1 \
     --t 0.1 \
     --train_net s1 \
-    --sampling_method LocalSampling \
     --max_T 1.0 \
     --lr_rate 0.0002 \
     --epochs 50000 \
