@@ -18,7 +18,7 @@ module swap cudnn/v8.9.1.23-prod-cuda-12.X
 module swap python3/3.10.12
 
 python3 train_score.py \
-    --manifold SPDN \
+    --manifold SN \
     --dim 10 \
     --loss_type dsmvr \
     --load_model 0 \
