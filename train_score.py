@@ -102,7 +102,7 @@ def train_score()->None:
     elif args.manifold == "Circle":
         M = S1()
         x0 = M.coords([0.])
-    elif args.manifold == "SN":
+    elif args.manifold == "Sphere":
         M = nSphere(N=args.dim)
         x0 = M.coords([0.]*args.dim)
     elif args.manifold == "HyperbolicSpace":
