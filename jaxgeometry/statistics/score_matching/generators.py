@@ -59,6 +59,17 @@ class LocalSampling(object):
     def __str__(self)->str:
         
         return "Generating Samples for Brownian Motion on Manifolds in Local Coordinates"
+    
+    def sim_diffusion_mean(self, 
+                           x0:Tuple[Array, Array],
+                           N_sim:int
+                           )->Tuple[Array, Array]:
+        
+        x0s = tile(x0, N_sim)
+        dW = dWs(N_sim*self.M.dim,self._dts).reshape(-1,N_sim,self.M.dim)
+        (ts,xss,chartss,*_) = self.product(x0s,self._dts,dW,jnp.repeat(1.,N_sim))
+        
+        return (xss[-1], chartss[-1])
         
     def __call__(self)->Tuple[Array, Array, Array, Array, Array]:
         
@@ -191,6 +202,17 @@ class EmbeddedSampling(object):
     def __str__(self)->str:
         
         return "Generating Samples for Brownian Motion on Manifolds using embedded chart"
+    
+    def sim_diffusion_mean(self, 
+                           x0:Tuple[Array, Array],
+                           N_sim:int
+                           )->Tuple[Array, Array]:
+        
+        x0s = tile(x0, N_sim)
+        dW = dWs(N_sim*self.M.dim,self._dts).reshape(-1,N_sim,self.M.dim)
+        (ts,xss,chartss,*_) = self.product(x0s,self._dts,dW,jnp.repeat(1.,N_sim))
+        
+        return (xss[-1], chartss[-1])
 
     def __call__(self)->Tuple[Array, Array, Array, Array, Array]:
         
@@ -382,6 +404,17 @@ class TMSampling(object):
     def __str__(self)->str:
         
         return "Generating Samples for Brownian Motion on Manifolds using Projection in R^n"
+    
+    def sim_diffusion_mean(self, 
+                           x0:Tuple[Array, Array],
+                           N_sim:int
+                           )->Tuple[Array, Array]:
+        
+        x0s = tile(x0, N_sim)
+        dW = dWs(N_sim*self.dim,self._dts).reshape(-1,N_sim,self.dim)
+        (ts,xss,chartss,*_) = self.product(x0s,self._dts,dW,jnp.repeat(1.,N_sim))
+        
+        return (chartss[-1], xss[-1])
         
     def __call__(self)->Tuple[Array, Array, Array, Array, Array]:
         
@@ -533,6 +566,17 @@ class ProjectionSampling(object):
     def __str__(self)->str:
         
         return "Generating Samples for Brownian Motion on Manifolds using Projection in R^n"
+    
+    def sim_diffusion_mean(self, 
+                           x0:Tuple[Array, Array],
+                           N_sim:int
+                           )->Tuple[Array, Array]:
+        
+        x0s = tile(x0, N_sim)
+        dW = dWs(N_sim*self.dim,self._dts).reshape(-1,N_sim,self.dim)
+        (ts,xss,chartss,*_) = self.product(x0s,self._dts,dW,jnp.repeat(1.,N_sim))
+        
+        return (chartss[-1], xss[-1])
         
     def __call__(self)->Tuple[Array, Array, Array, Array, Array]:
         

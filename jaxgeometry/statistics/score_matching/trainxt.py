@@ -13,6 +13,7 @@ Created on Fri Sep  8 12:20:21 2023
 
 from jaxgeometry.setup import *
 from .model_loader import save_model
+from .loss_fun import *
 
 #%% TrainingState
 
@@ -36,76 +37,23 @@ def train_s1(M:object,
              save_step:int=100,
              optimizer:object=None,
              save_path:str = "",
-             loss_type:str='vsm',
+             loss_type:str='dsmvr',
              seed:int=2712
              )->None:
     
-    def loss_vsm(params:hk.Params, state_val:dict, rng_key:Array, data:Array)->float:
-        """ compute loss."""
+    @jit
+    def loss_fun(params:hk.Params, state_val:dict, rng_key:Array, data:Array):
         
-        x0 = data[:,:N_dim]
-        xt = data[:,N_dim:2*N_dim]
-        t = data[:,2*N_dim]
-        #dW = data[:,(2*N_dim+1):-1]
-        #dt = data[:,-1]
-        
-        s = apply_fn(params, data[:,:(2*N_dim+1)], rng_key, state_val)
-        norm2s = jnp.sum(s*s, axis=1)
-        
-        s1 = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
-        (xts, chartts) = vmap(generator.update_coords)(xt)
-        
-        divs = vmap(lambda x0, xt, chart, t: M.div((xt, chart), 
-                                                   lambda x: generator.grad_local(s1, x0, x, t)))(x0,xts,chartts,t)
-        
-        return jnp.mean(norm2s+2.0*divs)
-
-    def loss_dsm(params:hk.Params, state_val:dict, rng_key:Array, data:Array)->float:
-        
-        def f(x0,xt,t,dW,dt):
-            
-            s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
-            dW = generator.dW_TM(x0,dW)
-            
-            s1 = s1_model(x0,xt,t)
-            s1p = s1_model(x0,x0,t)
-            
-            l1_loss = dW/dt+s1
-            l1_loss = jnp.dot(l1_loss,l1_loss)
-            var_loss = 2.*jnp.dot(s1p,dW)/dt+jnp.dot(dW,dW)/(dt**2)
-            
-            return l1_loss-var_loss
-            
-            #s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
-            #s1 = generator.grad_TM(s1_model, x0, xt, t)
-            #s1_x0 = generator.grad_TM(s1_model, x0, x0, t)
-            #dW = generator.dW_TM(xt,dW)
-            
-            #l1_loss = dW+dt*s1
-            #l1_loss = jnp.sum(l1_loss*l1_loss)
-            
-            #eps = dt
-            #z = -dW/jnp.sqrt(dt)
-            
-            #var_loss = eps*jnp.dot(z,z)-2*eps**(1.5)*jnp.dot(z, s1_x0)
-            
-            #return (l1_loss-var_loss)/(eps**2)
-            
-            #s1 = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
-            #s1 = generator.grad_TM(s1, x0, xt, t)
-            #dW = generator.dW_TM(xt,dW)
-
-            #loss = dW/dt+s1
-            
-            #return jnp.mean(loss*loss)
-
+        s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
+    
         x0 = data[:,:N_dim]
         xt = data[:,N_dim:(2*N_dim)]
         t = data[:,2*N_dim]
         dW = data[:,(2*N_dim+1):-1]
         dt = data[:,-1]
         
-        return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
+        return loss_model(generator, s1_model, params, state_val, rng_key,
+                          x0, xt, t, dW, dt)
     
     @jit
     def update(state:TrainingState, data:Array):
@@ -118,12 +66,15 @@ def train_s1(M:object,
         return TrainingState(new_params, state.state_val, new_opt_state, rng_key), loss
     
     if loss_type == "vsm":
-        loss_fun = jit(loss_vsm)
+        loss_model = vsm_s1fun
     elif loss_type == "dsm":
-        loss_fun = jit(loss_dsm)
+        loss_model = dsm_s1fun
+    elif loss_type == "dsmvr":
+        loss_model = dsmvr_s1fun
     else:
-        print("Invalid loss function: Using Denoising Score Matching as default")
-        loss_fun = jit(loss_dsm)
+        raise Exception("Invalid loss type. You can choose: vsm, dsm, dsmvr")
+        
+        return
         
     if optimizer is None:
         optimizer = optax.adam(learning_rate = lr_rate,
@@ -190,7 +141,8 @@ def train_s2(M:object,
              save_step:int=100,
              optimizer:object=None,
              save_path:str = "",
-             seed:int=2712
+             seed:int=2712,
+             loss_type = "dsmvr",
              )->None:
     
     @jit
@@ -200,93 +152,16 @@ def train_s2(M:object,
                  data:Array
                  )->float:
         
-        #https://github.com/chenlin9/high_order_dsm/blob/main/functions/loss.py
-        def f(x0,xt,t,dW,dt):
-            
-            dW = generator.dW_TM(x0,dW)
-            
-            s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
-            
-            s1 = generator.grad_TM(s1_model, x0, x0, t)
-            s2 = s2_model(x0,x0,t)#generator.proj_hess(s1_model, s2_model, x0, x0, t)
-
-            s1p = generator.grad_TM(s1_model, x0, xt, t)
-            s2p = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
-            
-            #s1m = generator.grad_TM(s1_model, x0, xm, t)
-            #s2m = generator.proj_hess(s1_model, s2_model, x0, xm, t)
-
-            psi = s2+jnp.einsum('i,j->ij', s1, s1)
-            psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
-            
-            #psi = jnp.diag(s2)+s1*s1
-            #psip = jnp.diag(s2p)+s1p*s1p
-            #psim = s2m+jnp.einsum('i,j->ij', s1m, s1m)
-            diff = (jnp.eye(N_dim)-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
-            
-            loss1 = psip**2
-            loss2 = .0#psim**2
-            loss3 = 2.*diff*(psip-psi)#2*diff*((psip-psi)+(psim-psi))
-            
-            loss_s2 = loss1+loss2+loss3
+        s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
     
-            return 0.5*jnp.sum(loss_s2)#jnp.mean(loss_s2)#jnp.mean(loss_s2)
-        
-        def f2(x0,xt,t,dW,dt):
-            
-            dW = generator.dW_TM(xt,dW)
-        
-            s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
-            
-            s1 = generator.grad_TM(s1_model, x0, xt, t)
-            s2 = generator.proj_hess(s1_model, s2_model, x0, xt, t)
-
-            loss_s2 = s2+jnp.einsum('i,j->ij', s1, s1)+(jnp.eye(N_dim)-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
-            
-            return jnp.sum(loss_s2*loss_s2)
-        
-        def f1(x0,xt,t,dW,dt):
-            
-            dW = generator.dW_TM(x0,dW)
-            
-            xp = x0+dW
-            xm = x0-dW
-            
-            s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
-            
-            s1 = generator.grad_TM(s1_model, x0, x0, t)
-            s2 = generator.proj_hess(s1_model, s2_model, x0, x0, t)
-
-            s1p = generator.grad_TM(s1_model, x0, xp, t)
-            s2p = generator.proj_hess(s1_model, s2_model, x0, xp, t)
-            
-            s1m = generator.grad_TM(s1_model, x0, xm, t)
-            s2m = generator.proj_hess(s1_model, s2_model, x0, xm, t)
-
-            psi = s2+s1*s1
-            psip = s2p+s1p*s1p
-            psim = s2m+s1m*s1m
-            diff = (jnp.eye(N_dim)-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
-            
-            loss1 = psip**2
-            loss2 = psim**2
-            loss3 = 2*diff*((psip-psi)+(psim-psi))
-            
-            loss_s2 = loss1+loss2+loss3
-    
-            return 0.5*jnp.sum(loss_s2)#jnp.mean(loss_s2)
-        
         x0 = data[:,:N_dim]
         xt = data[:,N_dim:(2*N_dim)]
         t = data[:,2*N_dim]
-        noise = data[:,(2*N_dim+1):-1]
+        dW = data[:,(2*N_dim+1):-1]
         dt = data[:,-1]
         
-        loss = jnp.mean(vmap(
-                        f,
-                        (0,0,0,0,0))(x0,xt,t,noise,dt))
-    
-        return loss
+        return loss_model(generator, s1_model, s2_model, params, state_val, rng_key,
+                          x0, xt, t, dW, dt)
     
     @jit
     def update(state:TrainingState, data:Array):
@@ -297,6 +172,15 @@ def train_s2(M:object,
         new_params = optax.apply_updates(state.params, updates)
         
         return TrainingState(new_params, state.state_val, new_opt_state, rng_key), loss
+    
+    if loss_type == 'dsm':
+        loss_model = dsm_s2fun
+    elif loss_type == "dsmdiag":
+        loss_model = dsmdiag_s2fun
+    elif loss_type == "dsmvr":
+        loss_model = dsmvr_s2fun
+    elif loss_type == "dsmdiagvr":
+        loss_model = dsmdiagvr_s2fun
         
     if optimizer is None:
         optimizer = optax.adam(learning_rate = lr_rate,
@@ -365,7 +249,8 @@ def train_s1s2(M:object,
                optimizer:object=None,
                gamma:float = 1.0,
                save_path:str = "",
-               seed:int=2712
+               seed:int=2712,
+               loss_type:str='dsmvr'
                )->None:
     
     @jit
@@ -375,67 +260,21 @@ def train_s1s2(M:object,
                  data:Array
                  )->float:
         
-        def s1_loss(x0,xt,t,dW,dt):
-            
-            s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[0]
-            dW = generator.dW_TM(x0,dW)
-            
-            s1 = s1_model(x0,xt,t)
-            s1p = s1_model(x0,x0,t)
-            
-            l1_loss = dW/dt+s1
-            l1_loss = jnp.dot(l1_loss,l1_loss)
-            var_loss = 2.*jnp.dot(s1p,dW)/dt+jnp.dot(dW,dW)/(dt**2)
-            
-            return l1_loss-var_loss
-        
-        def s2_loss(x0,xt,t,dW,dt):
-            
-            dW = generator.dW_TM(x0,dW)
-            
-            s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[0]
-            s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[1]
-            
-            s1 = s1_model(x0,x0,t)#generator.grad_TM(s1_model, x0, x0, t)
-            s2 = s2_model(x0,x0,t)#generator.proj_hess(s1_model, s2_model, x0, x0, t)
-
-            s1p = s1_model(x0,xt,t)#generator.grad_TM(s1_model, x0, xt, t)
-            s2p = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
-            
-            #s1m = generator.grad_TM(s1_model, x0, xm, t)
-            #s2m = generator.proj_hess(s1_model, s2_model, x0, xm, t)
-
-            psi = s2+jnp.einsum('i,j->ij', s1, s1)
-            psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
-            
-            #psi = jnp.diag(s2)+s1*s1
-            #psip = jnp.diag(s2p)+s1p*s1p
-            #psim = s2m+jnp.einsum('i,j->ij', s1m, s1m)
-            diff = (jnp.eye(N_dim)-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
-            
-            loss1 = psip**2
-            loss2 = .0#psim**2
-            loss3 = 2.*diff*(psip-psi)#2*diff*((psip-psi)+(psim-psi))
-            
-            loss_s2 = loss1+loss2+loss3
+        s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[0]
+        s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[1]
     
-            return 0.5*jnp.sum(loss_s2)#jnp.mean(loss_s2)#jnp.mean(loss_s2)
-        
         x0 = data[:,:N_dim]
         xt = data[:,N_dim:(2*N_dim)]
         t = data[:,2*N_dim]
-        noise = data[:,(2*N_dim+1):-1]
+        dW = data[:,(2*N_dim+1):-1]
         dt = data[:,-1]
         
-        loss1 = jnp.mean(vmap(
-                        s1_loss,
-                        (0,0,0,0,0))(x0,xt,t,noise,dt))
+        s1_loss = loss_s1model(generator, s1_model, params, state_val, rng_key,
+                               x0, xt, t, dW, dt)
+        s2_loss = loss_s2model(generator, s1_model, s2_model, params, state_val, rng_key,
+                               x0, xt, t, dW, dt)
         
-        loss2 = jnp.mean(vmap(
-                        s2_loss,
-                        (0,0,0,0,0))(x0,xt,t,noise,dt))
-    
-        return jnp.mean(gamma*loss1+loss2)
+        return s2_loss+gamma*s1_loss
     
     @jit
     def update(state:TrainingState, data:Array):
@@ -446,6 +285,19 @@ def train_s1s2(M:object,
         new_params = optax.apply_updates(state.params, updates)
         
         return TrainingState(new_params, state.state_val, new_opt_state, rng_key), loss
+    
+    if loss_type == 'dsm':
+        loss_s1model = dsm_s1fun
+        loss_s2model = dsm_s2fun
+    elif loss_type == "dsmdiag":
+        loss_s1model = dsm_s1fun
+        loss_s2model = dsmdiag_s2fun
+    elif loss_type == "dsmvr":
+        loss_s1model = dsmvr_s1fun
+        loss_s2model = dsmvr_s2fun
+    elif loss_type == "dsmdiagvr":
+        loss_s1model = dsmvr_s1fun
+        loss_s2model = dsmdiagvr_s2fun
         
     if optimizer is None:
         optimizer = optax.adam(learning_rate = lr_rate,

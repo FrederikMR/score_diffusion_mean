@@ -39,8 +39,6 @@ def GRW(M:object,
         t,x,chart,s = c
         dt,dW = y
         
-        print(x.shape)
-        
         dW = M.proj(x,dW)
         
         det = b_fun(t, x, chart)

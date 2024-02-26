@@ -20,11 +20,12 @@ module swap python3/3.10.12
 python3 train_score.py \
     --manifold SPDN \
     --dim 10 \
-    --loss_type dsm \
+    --loss_type dsmvr \
     --load_model 0 \
     --T_sample 0 \
     --t 0.01 \
     --train_net s1s2 \
+    --sampling_method TMSampling \
     --max_T 1.0 \
     --lr_rate 0.001 \
     --epochs 50000 \

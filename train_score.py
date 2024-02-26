@@ -27,8 +27,7 @@ from models import models
 import os
 
 #jaxgeometry
-from jaxgeometry.manifolds import Euclidean, nSphere, nEllipsoid, Cylinder, S1, Torus, \
-    H2, Landmarks, Heisenberg, SPDN, Latent, HypParaboloid, Sym, nHyperbolicSpace, Grassmanian, SO, Stiefel
+from jaxgeometry.manifolds import *
 from jaxgeometry.statistics.score_matching import train_s1, train_s2, train_s1s2, TMSampling, LocalSampling, \
     EmbeddedSampling, ProjectionSampling
 from jaxgeometry.statistics.score_matching.model_loader import load_model
@@ -38,11 +37,11 @@ from jaxgeometry.statistics.score_matching.model_loader import load_model
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Stiefel",
+    parser.add_argument('--manifold', default="SN",
                         type=str)
-    parser.add_argument('--dim', default=2,
+    parser.add_argument('--dim', default=3,
                         type=int)
-    parser.add_argument('--loss_type', default="dsm",
+    parser.add_argument('--loss_type', default="dsmvr",
                         type=str)
     parser.add_argument('--load_model', default=0,
                         type=int)
@@ -50,11 +49,15 @@ def parse_args():
                         type=int)
     parser.add_argument('--t', default=0.1,
                         type=float)
-    parser.add_argument('--train_net', default="s1",
+    parser.add_argument('--gamma', default=1.0,
+                        type=float)
+    parser.add_argument('--sampling_method', default='TMSampling',
+                        type=str)
+    parser.add_argument('--train_net', default="s1s2",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
-    parser.add_argument('--lr_rate', default=0.0001,
+    parser.add_argument('--lr_rate', default=0.0002,
                         type=float)
     parser.add_argument('--epochs', default=50000,
                         type=int)
@@ -83,302 +86,44 @@ def train_score()->None:
     args = parse_args()
     
     N_sim = args.x_samples*args.repeats
+    T_sample_name = (args.T_sample == 1)*"T"
+    s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_{args.loss_type}/"
+    s2_path = f"scores/{args.manifold}{args.dim}/s2{T_sample_name}_{args.loss_type}/"
+    s1s2_path = f"scores/{args.manifold}{args.dim}/s1s2{T_sample_name}_{args.loss_type}/"
     
-    if args.manifold == "RN":
-        sampling_method = 'LocalSampling'
-        generator_dim = args.dim
-        if not args.T_sample:
-            s1_path = ''.join(('scores/R',str(args.dim),'/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/R',str(args.dim),'/s2/'))
-            s1s2_path = ''.join(('scores/R',str(args.dim),'/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/R',str(args.dim),'/s1_T_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/R',str(args.dim),'/s2_T'))
-        s1s2_path = ''.join(('scores/R',str(args.dim),'/s1s2/'))
-            
+    if args.manifold == "Euclidean":
         M = Euclidean(N=args.dim)
         x0 = M.coords([0.]*args.dim)
-        
-        if args.dim<10:
-            layers = [50,100,100,50]
-        elif args.dim<50:
-            layers = [50,100,200,200,100,50]
-        else:
-            layers = [50,100,200,400,400,200,100,50]
-        
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-
-        @hk.transform
-        def s1s2_model(x):
-            
-            s1s2 =  models.MLP_s1s2(
-                models.MLP_s1(dim=generator_dim, layers=layers), 
-                models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                                dim=generator_dim, 
-                                                                r = max(generator_dim//2,1)))
-            
-            return s1s2(x)
-    
     elif args.manifold == "Circle":
-        sampling_method = 'LocalSampling'
-        generator_dim=1
-        if not args.T_sample:
-            s1_path = ''.join(('scores/S1/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/S1/s2/'))
-            s1s2_path = ''.join(('scores/Circle/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/S1/s1_T_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/S1/s2_T'))
-        
         M = S1()
         x0 = M.coords([0.])
-        
-        layers = [50,100,50]
-        
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-        
-        @hk.transform
-        def s1s2_model(x):
-            
-            s1s2 =  models.MLP_s1s2(
-                models.MLP_s1(dim=generator_dim, layers=layers), 
-                models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                                dim=generator_dim, 
-                                                                r = max(generator_dim//2,1)))
-            return s1s2(x)
-        
     elif args.manifold == "SN":
-        sampling_method = 'TMSampling'
-        generator_dim = args.dim+1
-        if not args.T_sample:
-            s1_path = ''.join(('scores/S',str(args.dim),'/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/S',str(args.dim),'/s2/'))
-            s1s2_path = ''.join(('scores/S',str(args.dim),'/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/S',str(args.dim),'/s1_T_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/S',str(args.dim),'/s2_T'))
-            
         M = nSphere(N=args.dim)
         x0 = M.coords([0.]*args.dim)
-        
-        if args.dim<10:
-            layers = [50,100,100,50]
-        elif args.dim<50:
-            layers = [50,100,200,200,100,50]
-        else:
-            layers = [50,100,200,400,400,200,100,50]
-        
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-        
-        @hk.transform
-        def s1s2_model(x):
-            
-            s1s2 =  models.MLP_s1s2(
-                models.MLP_s1(dim=generator_dim, layers=layers), 
-                models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                                dim=generator_dim, 
-                                                                r = max(generator_dim//2,1)))
-            
-            return s1s2(x)
-        
     elif args.manifold == "HyperbolicSpace":
-        sampling_method = 'TMSampling'
-        generator_dim = args.dim
-        if not args.T_sample:
-            s1_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s2/'))
-            s1s2_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s1_T_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/HyperbolicSpace',str(args.dim),'/s2_T'))
-            
         M = nHyperbolicSpace(N=args.dim)
         x0 = (jnp.concatenate((jnp.zeros(args.dim-1), -1.*jnp.ones(1))),)*2
-        
-        if args.dim<10:
-            layers = [50,100,100,50]
-        elif args.dim<50:
-            layers = [50,100,200,200,100,50]
-        else:
-            layers = [50,100,200,400,400,200,100,50]
-        
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-        
     elif args.manifold == "Grassmanian":
-        sampling_method = 'TMSampling'
-        generator_dim = 2*args.dim*args.dim
-        if not args.T_sample:
-            s1_path = ''.join(('scores/Grassmanian',str(args.dim),'/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Grassmanian',str(args.dim),'/s2/'))
-            s1s2_path = ''.join(('scores/Grassmanian',str(args.dim),'/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/Grassmanian',str(args.dim),'/s1_T_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Grassmanian',str(args.dim),'/s2_T'))
-            
         M = Grassmanian(N=2*args.dim,K=args.dim)
         x0 = (jnp.eye(2*args.dim)[:,:args.dim].reshape(-1),)*2
-        
-        if args.dim<10:
-            layers = [50,100,100,50]
-        elif args.dim<50:
-            layers = [50,100,200,200,100,50]
-        else:
-            layers = [50,100,200,400,400,200,100,50]
-        
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-        
     elif args.manifold == "SO":
-        sampling_method = 'TMSampling'
-        generator_dim = args.dim**2
-        if not args.T_sample:
-            s1_path = ''.join(('scores/SO',str(args.dim),'/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/SO',str(args.dim),'/s2/'))
-            s1s2_path = ''.join(('scores/SO',str(args.dim),'/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/SO',str(args.dim),'/s1_T_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/SO',str(args.dim),'/s2_T'))
-            
         M = SO(N=args.dim)
         x0 = (jnp.eye(args.dim).reshape(-1),)*2
-        
-        if args.dim<10:
-            layers = [50,100,100,50]
-        elif args.dim<50:
-            layers = [50,100,200,200,100,50]
-        else:
-            layers = [50,100,200,400,400,200,100,50]
-        
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-        
     elif args.manifold == "Stiefel":
-        sampling_method = 'TMSampling'
-        generator_dim = args.dim*2
-        if not args.T_sample:
-            s1_path = ''.join(('scores/Stiefel',str(args.dim),'/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Stiefel',str(args.dim),'/s2/'))
-            s1s2_path = ''.join(('scores/Stiefel',str(args.dim),'/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/Stiefel',str(args.dim),'/s1_T_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Stiefel',str(args.dim),'/s2_T'))
-            
         M = Stiefel(N=args.dim, K=2)
         x0 = (jnp.block([jnp.eye(2), jnp.zeros((2,args.dim-2))]).T.reshape(-1),)*2
-        
-        if args.dim<10:
-            layers = [50,100,100,50]
-        elif args.dim<50:
-            layers = [50,100,200,200,100,50]
-        else:
-            layers = [50,100,200,400,400,200,100,50]
-        
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-        
     elif args.manifold == "Ellipsoid":
-        sampling_method = 'TMSampling'
-        generator_dim = args.dim+1
-        if not args.T_sample:
-            s1_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s2/'))
-            s1s2_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s1_T_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Ellipsoid',str(args.dim),'/s2_T'))
-
         M = nEllipsoid(N=args.dim, params = jnp.linspace(0.5,1.0,args.dim+1))
         x0 = M.coords([0.]*args.dim)
-        
-        if args.dim<10:
-            layers = [50,100,200,200,100,50]
-        elif args.dim<50:
-            layers = [50,100,200,400,400,200,100,50]
-        else:
-            layers = [50,100,200,400,800,800,400,200,100,50]
-        
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-        
     elif args.manifold == "Cylinder":
-        sampling_method = 'EmbeddedSampling'
-        generator_dim = 3
-        if not args.T_sample:
-            s1_path = ''.join(('scores/Cylinder/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Cylinder/s2/'))
-            s1s2_path = ''.join(('scores/Cylinder/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/Cylinder/s1_T_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Cylinder/s2_T'))
-        
-
         M = Cylinder(params=(1.,jnp.array([0.,0.,1.]),jnp.pi/2.))
         x0 = M.coords([0.]*2)
-        
-        layers = [50,100,100,50]
-        
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-        
     elif args.manifold == "Torus":
-        sampling_method = 'EmbeddedSampling'
-        generator_dim = 3
-        if not args.T_sample:
-            s1_path = ''.join(('scores/Torus/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Torus/s2/'))
-            s1s2_path = ''.join(('scores/Torus/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/Torus/s1_T_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Torus/s2_T'))
-
         M = Torus()        
         x0 = M.coords([0.]*2)
-        
-        layers = [50,100,100,50]
-        
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-        
     elif args.manifold == "Landmarks":
-        sampling_method = 'LocalSampling'
-        generator_dim = 2*args.dim
-        if not args.T_sample:
-            s1_path = ''.join(('scores/Landmarks',str(args.dim),'/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Landmarks',str(args.dim),'/s2/'))
-            s1s2_path = ''.join(('scores/Landmarks',str(args.dim),'/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/Landmarks',str(args.dim),'/s1_T_/',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Landmarks',str(args.dim),'/s2_T'))
-
-        M = Landmarks(N=args.dim,m=2)
-        
+        M = Landmarks(N=args.dim,m=2)        
         x0 = M.coords(jnp.vstack((jnp.linspace(-10.0,10.0,M.N),jnp.linspace(10.0,-10.0,M.N))).T.flatten())
-        #x0 = M.coords(jnp.vstack((jnp.linspace(-5.0,5.0,M.N),jnp.zeros(M.N))).T.flatten())
-        
         if args.dim >=10:
             with open('../../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt', 'r') as the_file:
                 all_data = [line.strip() for line in the_file.readlines()]
@@ -388,131 +133,20 @@ def train_score()->None:
                 
                 idx = jnp.round(jnp.linspace(0, len(x1) - 1, args.dim)).astype(int)
                 x0 = M.coords(jnp.vstack((x1[idx],x2[idx])).T.flatten())
-        
-        if args.dim<5:
-            layers = [50,100,100,50]
-            #layers = [50,100,200,200,100,50]
-        elif args.dim<25:
-            layers = [50,100,200,400,400,200,100,50]
-        else:
-            layers = [50,100,200,400,800,800,400,200,100,50]
-        
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-        
     elif args.manifold == "SPDN":
-        sampling_method = 'LocalSampling'
-        generator_dim = args.dim*(args.dim+1)//2
-        if not args.T_sample:
-            s1_path = ''.join(('scores/SPDN',str(args.dim),'/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/SPDN',str(args.dim),'/s2/'))
-            s1s2_path = ''.join(('scores/SPDN',str(args.dim),'/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/SPDN',str(args.dim),'/s1_T_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/SPDN',str(args.dim),'/s2_T'))
-
         M = SPDN(N=args.dim)
         x0 = M.coords([100.]*(args.dim*(args.dim+1)//2))
-        
-        if args.dim<3:
-            layers = [50,100,100,50]
-        elif args.dim<8:
-            layers = [50,100,200,200,100,50]
-        else:
-            layers = [50,100,200,400,400,200,100,50]
-
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-        
     elif args.manifold == "Sym":
-        sampling_method = 'LocalSampling'
-        generator_dim = (args.dim*(args.dim+1))//2
-        if not args.T_sample:
-            s1_path = ''.join(('scores/Sym',str(args.dim),'/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Sym',str(args.dim),'/s2/'))
-            s1s2_path = ''.join(('scores/Sym',str(args.dim),'/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/Sym',str(args.dim),'/s1_T_/',args.loss_type,'/'))
-            s2_path = ''.join(('scores/Sym',str(args.dim),'/s2_T'))
-
         M = Sym(N=args.dim)
         x0 = M.coords([1.]*(args.dim*(args.dim+1)//2))
-
-        if args.dim<3:
-            layers = [50,100,100,50]
-        elif args.dim<8:
-            layers = [50,100,200,200,100,50]
-        else:
-            layers = [50,100,200,400,400,200,100,50]
-
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-        
-        @hk.transform
-        def s1s2_model(x):
-            
-            s1s2 =  models.MLP_s1s2(
-                models.MLP_s1(dim=generator_dim, layers=layers), 
-                models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                                dim=generator_dim, 
-                                                                r = max(generator_dim//2,1)))
-            
-            return s1s2(x)
-        
     elif args.manifold == "HypParaboloid":
-        sampling_method = 'LocalSampling'
-        generator_dim = 2
-        if not args.T_sample:
-            s1_path = ''.join(('scores/HypParaboloid/s1_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/HypParaboloid/s2/'))
-            s1s2_path = ''.join(('scores/HypParaboloid/s1s2/'))
-        else:
-            s1_path = ''.join(('scores/HypParaboloid/s1_T_',args.loss_type,'/'))
-            s2_path = ''.join(('scores/HypParaboloid/s2_T'))
-
         M = HypParaboloid()
         x0 = M.coords([0.]*2)
-        
-        layers = [50,100,100,50]
-        
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                        dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
-        
-        @hk.transform
-        def s1s2_model(x):
-            
-            s1s2 =  models.MLP_s1s2(
-                models.MLP_s1(dim=generator_dim, layers=layers), 
-                models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                                dim=generator_dim, 
-                                                                r = max(generator_dim//2,1)))
-            
-            return s1s2(x)
-        
     else:
         return
-    
-    @hk.transform
-    def s1s2_model(x):
         
-        s1s2 =  models.MLP_s1s2(
-            models.MLP_s1(dim=generator_dim, layers=layers), 
-            models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                            dim=generator_dim, 
-                                                            r = max(generator_dim//2,1)))
-        
-        return s1s2(x)
-        
-    if sampling_method == 'LocalSampling':
-        dW_dim = M.dim
+    if args.sampling_method == 'LocalSampling':
+        generator_dim = M.dim
         data_generator = LocalSampling(M=M,
                                        x0=x0,
                                        repeats=args.repeats,
@@ -524,8 +158,8 @@ def train_score()->None:
                                        T_sample=args.T_sample,
                                        t=args.t
                                        )
-    elif sampling_method == "EmbeddedSampling":
-        dW_dim = M.dim
+    elif args.sampling_method == "EmbeddedSampling":
+        generator_dim = M.dim
         data_generator = EmbeddedSampling(M=M,
                                           x0=x0,
                                           repeats=args.repeats,
@@ -537,8 +171,8 @@ def train_score()->None:
                                           T_sample=args.T_sample,
                                           t=args.t
                                           )
-    elif sampling_method == "ProjectionSampling":
-        dW_dim = M.emb_dim
+    elif args.sampling_method == "ProjectionSampling":
+        generator_dim = M.emb_dim
         data_generator = ProjectionSampling(M=M,
                                             x0=(x0[1],x0[0]),
                                             dim=generator_dim,
@@ -551,8 +185,8 @@ def train_score()->None:
                                             T_sample=args.T_sample,
                                             t=args.t
                                             )
-    elif sampling_method == "TMSampling":
-        dW_dim = M.emb_dim
+    elif args.sampling_method == "TMSampling":
+        generator_dim = M.emb_dim
         data_generator = TMSampling(M=M,
                                     x0=(x0[1],x0[0]),
                                     dim=generator_dim,
@@ -577,11 +211,36 @@ def train_score()->None:
         batch_size = args.x_samples*args.repeats
     else:
         batch_size = args.x_samples*args.t_samples*args.repeats
+        
+    if generator_dim<10:
+        layers = [50,100,100,50]
+    elif args.dim<50:
+        layers = [50,100,200,200,100,50]
+    else:
+        layers = [50,100,200,400,400,200,100,50]
+        
+    s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
+    s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                    dim=generator_dim, 
+                                                    r = max(generator_dim//2,1))(x))
+
+    @hk.transform
+    def s1s2_model(x):
+        
+        s1s2 =  models.MLP_s1s2(
+            models.MLP_s1(dim=generator_dim, layers=layers), 
+            models.MLP_s2(layers_alpha=layers, 
+                          layers_beta=layers,
+                          dim=generator_dim,
+                          r = max(generator_dim//2,1))
+            )
+        
+        return s1s2(x)
+
     if args.train_net == "s2":
         state = load_model(s1_path)
         rng_key = jran.PRNGKey(2712)
         s1 = lambda x,y,t: s1_model.apply(state.params,rng_key, jnp.hstack((x, y, t)))
-        #s1 = lambda x,y,t: (x-y)/t#M.grady_log_hk(x,y,t)
         
         if args.load_model:
             state_s2 = load_model(s1_path)
@@ -596,21 +255,24 @@ def train_score()->None:
                  s2_model=s2_model,
                  generator=data_generator,
                  N_dim=generator_dim,
-                 dW_dim=dW_dim,
+                 dW_dim=generator_dim,
                  batch_size=batch_size,
                  state=state_s2,
                  lr_rate=args.lr_rate,
                  epochs=args.epochs,
                  save_step=args.save_step,
                  save_path=s2_path,
-                 seed=args.seed
+                 seed=args.seed,
+                 loss_type = args.loss_type
                  )
     elif args.train_net == "s1s2":
         state = load_model(s1_path)
         rng_key = jran.PRNGKey(2712)
             
         if not os.path.exists(s1s2_path):
-            os.makedirs(s1s2_path)
+            os.makedirs(s1s2_path)#s1s2 = hk.transform(lambda x: models.MLP_s1s2(models.MLP_s1(dim=M.dim, layers=layers), 
+#                                              models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+#                                                dim=M.dim, r = max(M.dim//2,1)))(x))
             
         if args.load_model:
             state_s1s2 = load_model(s1s2_path)
@@ -621,16 +283,17 @@ def train_score()->None:
                  s1s2_model=s1s2_model,
                  generator=data_generator,
                  N_dim=generator_dim,
-                 dW_dim=dW_dim,
+                 dW_dim=generator_dim,
                  batch_size=batch_size,
                  state=state_s1s2,
                  s1_params=state.params,
                  lr_rate=args.lr_rate,
                  epochs=args.epochs,
                  save_step=args.save_step,
-                 gamma=1.0,
+                 gamma=args.gamma,
                  save_path=s1s2_path,
-                 seed=args.seed
+                 seed=args.seed,
+                 loss_type = args.loss_type
                  )
     else:
         if args.load_model:
@@ -645,7 +308,7 @@ def train_score()->None:
                  model=s1_model,
                  generator=data_generator,
                  N_dim=generator_dim,
-                 dW_dim=dW_dim,
+                 dW_dim=generator_dim,
                  batch_size=batch_size,
                  state =state,
                  lr_rate=args.lr_rate,

@@ -51,11 +51,11 @@ class nEllipsoid(EmbeddedManifold):
             s2 = jnp.sum(x[0]**2)
             val = jnp.concatenate(((1-s2).reshape(1), 2*x[0]))/(1+s2)
                 
-            return self.params*jnp.dot(self.get_B(x[1]), val)
+            return self.params*jnp.dot(self.get_B(x[1]/self.params), val)
     
         def invF_steographic(x):
             
-            Rinvx = jnp.linalg.solve(self.get_B(x[1]),x[0]/self.params)
+            Rinvx = jnp.linalg.solve(self.get_B(x[1]/self.params),x[0]/self.params)
             x0 = Rinvx[0]
             
             val = vmap(lambda xi: xi/(1+x0))(Rinvx[1:])
@@ -128,14 +128,14 @@ class nEllipsoid(EmbeddedManifold):
 
     def chart(self):
         """ return default coordinate chart """
-        return jnp.eye(self.dim+1)[:,self.chart_center]
+        return jnp.eye(self.dim+1)[:,self.chart_center]/self.params
 
     def centered_chart(self,x):
         """ return centered coordinate chart """
         if type(x) == type(()): # coordinate tuple
-            return lax.stop_gradient(self.F(x))/self.params
+            return lax.stop_gradient(self.F(x))#/self.params
         else:
-            return x/self.params # already in embedding space
+            return x#/self.params # already in embedding space
 
     def get_B(self,v):
         """ R^N basis with first basis vector v """
@@ -222,7 +222,6 @@ class nEllipsoid(EmbeddedManifold):
         return jnp.dot(self.invJF((Fx,x[1])),self.params*w)
     
     def StdProj(self, Fx:Array, v:Array):
-                
         Fx = Fx/self.params
         v /= self.params
         
