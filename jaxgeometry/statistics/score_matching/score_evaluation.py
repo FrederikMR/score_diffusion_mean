@@ -79,13 +79,6 @@ class ScoreEvaluation(object):
                    t:Array
                    )->Array:
         
-        if self.s2_approx:
-            s2 = lambda x,y,t: self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((x, y, t)))
-        else:
-            s2 = jacfwdx(lambda y: jnp.dot(self.M.invJF((self.M.F(y), y[1])), 
-                                           self.s1_model.apply(self.s1_state.params,self.rng_key, 
-                                                               jnp.hstack((self.M.F(x), self.M.F(y), t)))))(y)
-        
         if self.method == 'Embedded':
             if self.s2_approx:
                 s2 = self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((x[1], y[1], t)))
@@ -96,7 +89,7 @@ class ScoreEvaluation(object):
                                                                    jnp.hstack((self.M.F(x), self.M.F(y), t)))))(y)
             s1 = self.s1_model.apply(self.s1_state.params,self.rng_key, 
                                 jnp.hstack((self.M.F(x), self.M.F(y), t)))
-            return self.hess_TM(self.M.F(y), s1, s2)
+            return s2#self.hess_TM(self.M.F(y), s1, s2)
         else:
             if self.s2_approx:
                 s2 = self.s2_model.apply(self.s2_state.params, self.rng_key, jnp.hstack((x[0],y[0],t)))

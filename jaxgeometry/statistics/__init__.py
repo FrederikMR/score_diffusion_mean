@@ -26,5 +26,6 @@ from .diffusion_mean import diffusion_mean
 from .Frechet_mean import Frechet_mean
 from .iterative_mle import iterative_mle
 from .tangent_PCA import tangent_PCA
+from .vae import *
 
 #%% Code

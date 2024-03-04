@@ -108,8 +108,8 @@ def dsmvr_s1fun(generator:object,
         s1p = s1_model(x0,x0,t)
         
         l1_loss = dW/dt+s1
-        l1_loss = jnp.dot(l1_loss,l1_loss)
-        var_loss = 2.*jnp.dot(s1p,dW)/dt+jnp.dot(dW,dW)/(dt**2)
+        l1_loss = 0.5*jnp.dot(l1_loss,l1_loss)
+        var_loss = jnp.dot(s1p,dW)/dt+jnp.dot(dW,dW)/(dt**2)
         
         return l1_loss-var_loss
     

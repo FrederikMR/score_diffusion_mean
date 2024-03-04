@@ -30,13 +30,13 @@ from jaxgeometry.statistics.score_matching import TMSampling, LocalSampling, \
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Ellipsoid",
+    parser.add_argument('--manifold', default="SPDN",
                         type=str)
-    parser.add_argument('--dim', default=2,
+    parser.add_argument('--dim', default=5,
                         type=int)
-    parser.add_argument('--N_sim', default=1000,
+    parser.add_argument('--N_sim', default=100,
                         type=int)
-    parser.add_argument('--sampling_method', default='TMSampling',
+    parser.add_argument('--sampling_method', default='LocalSampling',
                         type=str)
     parser.add_argument('--save_path', default='../data/',
                         type=str)
@@ -114,7 +114,7 @@ def train_score()->None:
     elif args.manifold == "SPDN":
         sampling_method = 'LocalSampling'
         M = SPDN(N=args.dim)
-        x0 = M.coords([100.]*(args.dim*(args.dim+1)//2))
+        x0 = M.coords([10.]*(args.dim*(args.dim+1)//2))
     elif args.manifold == "Sym":
         sampling_method = 'LocalSampling'
         M = Sym(N=args.dim)

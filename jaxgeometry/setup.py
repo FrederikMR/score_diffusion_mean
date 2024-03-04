@@ -68,6 +68,9 @@ import os
 #pickle
 import pickle
 
+#dataclasses
+import dataclasses
+
 #Plotting
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker

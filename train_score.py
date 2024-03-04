@@ -37,11 +37,11 @@ from jaxgeometry.statistics.score_matching.model_loader import load_model
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SN",
+    parser.add_argument('--manifold', default="Euclidean",
                         type=str)
-    parser.add_argument('--dim', default=3,
+    parser.add_argument('--dim', default=2,
                         type=int)
-    parser.add_argument('--loss_type', default="dsmdiagvr",
+    parser.add_argument('--loss_type', default="dsmvr",
                         type=str)
     parser.add_argument('--load_model', default=0,
                         type=int)
@@ -51,7 +51,7 @@ def parse_args():
                         type=float)
     parser.add_argument('--gamma', default=1.0,
                         type=float)
-    parser.add_argument('--train_net', default="s1s2",
+    parser.add_argument('--train_net', default="s1",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
@@ -97,46 +97,57 @@ def train_score()->None:
     if args.manifold == "Euclidean":
         sampling_method = 'LocalSampling'
         M = Euclidean(N=args.dim)
+        generator_dim = M.dim
         x0 = M.coords([0.]*args.dim)
     elif args.manifold == "Circle":
         sampling_method = 'TMSampling'
         M = S1()
+        generator_dim = M.emb_dim
         x0 = M.coords([0.])
     elif args.manifold == "Sphere":
         sampling_method = 'TMSampling'
         M = nSphere(N=args.dim)
+        generator_dim = M.emb_dim
         x0 = M.coords([0.]*args.dim)
     elif args.manifold == "HyperbolicSpace":
         sampling_method = 'TMSampling'
         M = nHyperbolicSpace(N=args.dim)
+        generator_dim = M.emb_dim
         x0 = (jnp.concatenate((jnp.zeros(args.dim-1), -1.*jnp.ones(1))),)*2
     elif args.manifold == "Grassmanian":
         sampling_method = 'TMSampling'
         M = Grassmanian(N=2*args.dim,K=args.dim)
+        generator_dim = M.emb_dim
         x0 = (jnp.eye(2*args.dim)[:,:args.dim].reshape(-1),)*2
     elif args.manifold == "SO":
         sampling_method = 'TMSampling'
         M = SO(N=args.dim)
+        generator_dim = M.emb_dim
         x0 = (jnp.eye(args.dim).reshape(-1),)*2
     elif args.manifold == "Stiefel":
         sampling_method = 'TMSampling'
         M = Stiefel(N=args.dim, K=2)
+        generator_dim = M.emb_dim
         x0 = (jnp.block([jnp.eye(2), jnp.zeros((2,args.dim-2))]).T.reshape(-1),)*2
     elif args.manifold == "Ellipsoid":
         sampling_method = 'TMSampling'
         M = nEllipsoid(N=args.dim, params = jnp.linspace(0.5,1.0,args.dim+1))
+        generator_dim = M.emb_dim
         x0 = M.coords([0.]*args.dim)
     elif args.manifold == "Cylinder":
         sampling_method = 'EmbeddedSampling'
         M = Cylinder(params=(1.,jnp.array([0.,0.,1.]),jnp.pi/2.))
+        generator_dim = M.dim
         x0 = M.coords([0.]*2)
     elif args.manifold == "Torus":
         sampling_method = 'EmbeddedSampling'
-        M = Torus()        
+        M = Torus()
+        generator_dim = M.dim
         x0 = M.coords([0.]*2)
     elif args.manifold == "Landmarks":
         sampling_method = 'LocalSampling'
-        M = Landmarks(N=args.dim,m=2)        
+        M = Landmarks(N=args.dim,m=2)   
+        generator_dim = M.dim
         x0 = M.coords(jnp.vstack((jnp.linspace(-10.0,10.0,M.N),jnp.linspace(10.0,-10.0,M.N))).T.flatten())
         if args.dim >=10:
             with open('../../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt', 'r') as the_file:
@@ -150,14 +161,17 @@ def train_score()->None:
     elif args.manifold == "SPDN":
         sampling_method = 'LocalSampling'
         M = SPDN(N=args.dim)
-        x0 = M.coords([100.]*(args.dim*(args.dim+1)//2))
+        generator_dim = M.dim
+        x0 = M.coords([10.]*(args.dim*(args.dim+1)//2))
     elif args.manifold == "Sym":
         sampling_method = 'LocalSampling'
         M = Sym(N=args.dim)
+        generator_dim = M.dim
         x0 = M.coords([1.]*(args.dim*(args.dim+1)//2))
     elif args.manifold == "HypParaboloid":
         sampling_method = 'LocalSampling'
         M = HypParaboloid()
+        generator_dim = M.dim
         x0 = M.coords([0.]*2)
     else:
         return
@@ -231,7 +245,7 @@ def train_score()->None:
         
     if generator_dim<10:
         layers = [50,100,100,50]
-    elif args.dim<50:
+    elif generator_dim<50:
         layers = [50,100,200,200,100,50]
     else:
         layers = [50,100,200,400,400,200,100,50]
