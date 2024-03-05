@@ -26,10 +26,15 @@ import haiku as hk
 #pandas
 import pandas as pd
 
+#pickle
+import pickle
+
 #os
 import os
 
 from typing import List
+
+import timeit
 
 #jaxgeometry
 from jaxgeometry.manifolds import *
@@ -47,9 +52,9 @@ from jaxgeometry.statistics import diffusion_mean as dm_bridge
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SPDN",
+    parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=[2,5],
+    parser.add_argument('--dim', default=[2,3,5,10,20],
                         type=List)
     parser.add_argument('--loss_type', default="dsmvr",
                         type=str)
@@ -61,7 +66,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--data_path', default='../data/',
                         type=str)
-    parser.add_argument('--save_path', default='../data/',
+    parser.add_argument('--save_path', default='../results/estimates/',
                         type=str)
     parser.add_argument('--t', default=0.1,
                         type=float)
@@ -71,11 +76,13 @@ def parse_args():
                         type=float)
     parser.add_argument('--max_iter', default=1000,
                         type=int)
+    parser.add_argument('--repeats', default=5,
+                        type=int)
     parser.add_argument('--bridge_iter', default=100,
                         type=int)
     parser.add_argument('--diffusion_mean', default=1,
                         type=int)
-    parser.add_argument('--bridge_sampling', default=0,
+    parser.add_argument('--bridge_sampling', default=1,
                         type=int)
     parser.add_argument('--seed', default=2712,
                         type=int)
@@ -200,15 +207,21 @@ def evaluate_diffusion_mean():
     bridge_mu_error = []
     score_t_error = []
     bridge_t_error = []
+    s1_ntrain = []
+    s2_ntrain = []
+    score_mu_time = []
+    score_std_time = []
+    bridge_mu_time = []
+    bridge_std_time = []
     for N in args.dim:
         M, x0, method, generator_dim, opt_val = load_manifold(N)
         if args.loss_type == "dsmdiagvr":
-            s1_path = f"scores/{args.manifold}{N}/s1_dsmvr/"
+            s1_path = f"../scores/{args.manifold}{N}/s1_dsmvr/"
         elif args.loss_type == "dsmdiag":
-            s1_path = f"scores/{args.manifold}{N}/s1_dsm/"
+            s1_path = f"../scores/{args.manifold}{N}/s1_dsm/"
         else:
-            s1_path = f"scores/{args.manifold}{N}/s1_{args.loss_type}/"
-        s2_path = f"scores/{args.manifold}{N}/{args.s2_type}_{args.loss_type}/"
+            s1_path = f"../scores/{args.manifold}{N}/s1_{args.loss_type}/"
+        s2_path = f"../scores/{args.manifold}{N}/{args.s2_type}_{args.loss_type}/"
         data_path = f"{args.data_path}{args.manifold}{N}/"
         
         if generator_dim<10:
@@ -220,10 +233,13 @@ def evaluate_diffusion_mean():
         
         
         s1_state = load_model(s1_path)
+        s1_ntrain.append(len(jnp.load(''.join((s1_path, 'loss_arrays.npy')))))
         if args.s2_approx:
             s2_state = load_model(s2_path)
+            s2_ntrain.append(len(jnp.load(''.join((s2_path, 'loss_arrays.npy')))))
         else:
             s2_state = None
+            s2_ntrain.append(jnp.nan)
             
         s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
         
@@ -280,9 +296,20 @@ def evaluate_diffusion_mean():
             mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                    step_size=args.step_size, max_iter=args.max_iter)
             T_sm = args.t0*jnp.ones(len(mu_sm[0]))
+            time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
+            time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
+                                 number=1, globals=locals(), repeat=args.repeats)
+            score_mu_time.append(jnp.mean(jnp.array(time)))
+            score_std_time.append(jnp.std(jnp.array(time)))
         else:
             mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                    step_size=args.step_size, max_iter=args.max_iter)
+                
+            time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
+            time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
+                                 number=1, globals=locals(), repeat=args.repeats)
+            score_mu_time.append(jnp.mean(jnp.array(time)))
+            score_std_time.append(jnp.std(jnp.array(time)))
             #mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]))
             
         if args.bridge_sampling:
@@ -293,34 +320,48 @@ def evaluate_diffusion_mean():
             mu_bridgex, T_bridge, mu_bridgechart = zip(*mu_bridge)
             mu_bridgex, mu_bridgechart = jnp.stack(mu_bridgex), jnp.stack(mu_bridgechart)
             T_bridge = jnp.stack(T_bridge)
+            time = timeit.repeat('M.diffusion_mean(X_obs,num_steps=args.bridge_iter,N=1)', number=1,
+                                 globals=locals(), repeat=args.repeats)
+            bridge_mu_time.append(jnp.mean(jnp.array(time)))
+            bridge_std_time.append(jnp.std(jnp.array(time)))
         else:
             mu_bridgex, mu_bridgechart, T_bridge = [jnp.nan], [jnp.nan], [jnp.nan]
+            bridge_mu_time.append(jnp.nan)
+            bridge_std_time.append(jnp.nan)
             
-        print(T_sm[-1])
         if method == "Local":
-            score_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_sm[0][-1]))
+            D = len(mu_opt[0])
+            score_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_sm[0][-1])/D)
             score_t_error.append(jnp.linalg.norm(T_opt-T_sm[-1]))
             
-            bridge_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_bridgex[-1]))
+            bridge_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_bridgex[-1])/D)
             bridge_t_error.append(jnp.linalg.norm(T_opt-T_bridge[-1]))
         else:
-            score_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_sm[1][-1]))
+            D = len(mu_opt[1])
+            score_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_sm[1][-1])/D)
             score_t_error.append(jnp.linalg.norm(T_opt-T_sm[-1]))
             
-            bridge_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_bridgechart[-1]))
+            bridge_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_bridgechart[-1])/D)
             bridge_t_error.append(jnp.linalg.norm(T_opt-T_bridge[-1]))
 
-    score_mu_error = jnp.stack(score_mu_error)
-    bridge_mu_error = jnp.stack(bridge_mu_error)
-    score_t_error = jnp.stack(score_t_error)
-    bridge_t_error = jnp.stack(bridge_t_error)
+    error = {'score_mu_error': jnp.stack(score_mu_error),
+             'bridge_mu_error': jnp.stack(bridge_mu_error),
+             'score_t_error': jnp.stack(score_t_error),
+             'bridge_t_error': jnp.stack(bridge_t_error),
+             'dim': args.dim,
+             's1_ntrain': jnp.stack(s1_ntrain),
+             's2_ntrain': jnp.stack(s2_ntrain),
+             'score_mu_time': jnp.stack(score_mu_time),
+             'score_std_time': jnp.stack(score_std_time),
+             'bridge_mu_time': jnp.stack(bridge_mu_time),
+             'bridge_std_time': jnp.stack(bridge_std_time)
+             }
     
-    print(score_mu_error)
-    print(bridge_mu_error)
-    print(score_t_error)
-    print(bridge_t_error)
-    
-    #%%timeit [num for num in range(20)]
+    save_path = f"{args.save_path}{args.manifold}.pkl"
+    if not os.path.exists(args.save_path):
+        os.makedirs(args.save_path)
+    with open(save_path, 'wb') as f:
+        pickle.dump(error, f)
     
     return
 

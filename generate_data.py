@@ -30,14 +30,12 @@ from jaxgeometry.statistics.score_matching import TMSampling, LocalSampling, \
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SPDN",
+    parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=5,
+    parser.add_argument('--dim', default=50,
                         type=int)
     parser.add_argument('--N_sim', default=100,
                         type=int)
-    parser.add_argument('--sampling_method', default='LocalSampling',
-                        type=str)
     parser.add_argument('--save_path', default='../data/',
                         type=str)
     parser.add_argument('--max_T', default=0.5,
@@ -126,7 +124,7 @@ def train_score()->None:
     else:
         return
         
-    if args.sampling_method == 'LocalSampling':
+    if sampling_method == 'LocalSampling':
         generator_dim = M.dim
         data_generator = LocalSampling(M=M,
                                        x0=x0,
@@ -134,7 +132,7 @@ def train_score()->None:
                                        dt_steps=args.dt_steps,
                                        )
         sim = data_generator.sim_diffusion_mean((x0[0],x0[1]), args.N_sim)
-    elif args.sampling_method == "EmbeddedSampling":
+    elif sampling_method == "EmbeddedSampling":
         generator_dim = M.dim
         data_generator = EmbeddedSampling(M=M,
                                           x0=x0,
@@ -142,7 +140,7 @@ def train_score()->None:
                                           dt_steps=args.dt_steps,
                                           )
         sim = data_generator.sim_diffusion_mean((x0[0],x0[1]), args.N_sim)
-    elif args.sampling_method == "ProjectionSampling":
+    elif sampling_method == "ProjectionSampling":
         generator_dim = M.emb_dim
         data_generator = ProjectionSampling(M=M,
                                             x0=(x0[1],x0[0]),
@@ -151,7 +149,7 @@ def train_score()->None:
                                             dt_steps=args.dt_steps,
                                             )
         sim = data_generator.sim_diffusion_mean((x0[1],x0[0]), args.N_sim)
-    elif args.sampling_method == "TMSampling":
+    elif sampling_method == "TMSampling":
         generator_dim = M.emb_dim
         data_generator = TMSampling(M=M,
                                     x0=(x0[1],x0[0]),
