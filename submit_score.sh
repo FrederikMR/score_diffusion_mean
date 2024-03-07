@@ -20,7 +20,7 @@ module swap python3/3.10.12
 python3 train_score.py \
     --manifold HyperbolicSpace \
     --dim 20 \
-    --loss_type dsmdiagvr \
+    --loss_type dsmvr \
     --load_model 0 \
     --T_sample 0 \
     --t 0.1 \
