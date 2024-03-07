@@ -1,0 +1,68 @@
+Loaded dependency [python3/3.10.12]: gcc/11.4.0-binutils-2.40
+Loaded dependency [python3/3.10.12]: sqlite3/3.42.0
+
+Switching from python3/3.8.2 to python3/3.10.12
+  Loading requirement: gcc/11.4.0-binutils-2.40 sqlite3/3.42.0
+2024-03-06 10:30:03.389598: E tensorflow/compiler/xla/stream_executor/cuda/cuda_dnn.cc:9342] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2024-03-06 10:30:03.389638: E tensorflow/compiler/xla/stream_executor/cuda/cuda_fft.cc:609] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2024-03-06 10:30:03.397600: E tensorflow/compiler/xla/stream_executor/cuda/cuda_blas.cc:1518] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+jax.errors.SimplifiedTraceback: For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 360, in <module>
+    train_score()
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 284, in train_score
+    train_s2(M=M,
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/trainxt.py", line 216, in train_s2
+    state, loss_val = update(state, data)
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/trainxt.py", line 170, in update
+    loss, gradients = value_and_grad(loss_fun)(state.params, state.state_val, rng_key, data)
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/trainxt.py", line 163, in loss_fun
+    return loss_model(generator, s1_model, s2_model, params, state_val, rng_key,
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/loss_fun.py", line 263, in dsmdiagvr_s2fun
+    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/loss_fun.py", line 242, in f
+    s1 = generator.grad_TM(s1_model, x0, x0, t)
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/generators.py", line 124, in grad_TM
+    return s1_model(x0, x, t)
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 274, in <lambda>
+    s1 = lambda x,y,t: s1_model.apply(state.params,rng_key, jnp.hstack((x, y, t)))
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/transform.py", line 187, in apply_fn
+    out, state = f.apply(params, None, *args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/transform.py", line 457, in apply_fn
+    out = f(*args, **kwargs)
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 253, in <lambda>
+    s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/module.py", line 465, in wrapped
+    out = f(*args, **kwargs)
+  File "/appl/python/3.10.12/lib/python3.10/contextlib.py", line 79, in inner
+    return func(*args, **kwds)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/module.py", line 306, in run_interceptors
+    return bound_method(*args, **kwargs)
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/models/models.py", line 55, in __call__
+    return self.model()(x)+grad_euc
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/module.py", line 465, in wrapped
+    out = f(*args, **kwargs)
+  File "/appl/python/3.10.12/lib/python3.10/contextlib.py", line 79, in inner
+    return func(*args, **kwds)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/module.py", line 306, in run_interceptors
+    return bound_method(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py", line 127, in __call__
+    out = layer(out)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/module.py", line 465, in wrapped
+    out = f(*args, **kwargs)
+  File "/appl/python/3.10.12/lib/python3.10/contextlib.py", line 79, in inner
+    return func(*args, **kwds)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/module.py", line 306, in run_interceptors
+    return bound_method(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/basic.py", line 178, in __call__
+    w = hk.get_parameter("w", [input_size, output_size], dtype, init=w_init)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/base.py", line 602, in wrapped
+    return wrapped._current(*args, **kwargs)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/base.py", line 707, in get_parameter
+    raise ValueError(
+ValueError: 'mlp_s1/~model/linear_3/w' with retrieved shape (200, 200) does not match shape=[200, 400] dtype=dtype('float32')
+terminate called without an active exception
+/zhome/77/8/118225/.lsbatch/1709651645.20489568.shell: line 37: 23866 Aborted                 python3 train_score.py --manifold SPDN --dim 10 --loss_type dsmdiagvr --load_model 0 --T_sample 0 --t 0.1 --train_net s2 --max_T 1.0 --lr_rate 0.0002 --epochs 50000 --x_samples 64 --t_samples 256 --repeats 16 --samples_per_batch 32 --dt_steps 1000 --save_step 10 --seed 2712
