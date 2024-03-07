@@ -1,0 +1,19 @@
+Loaded dependency [python3/3.10.12]: gcc/11.4.0-binutils-2.40
+Loaded dependency [python3/3.10.12]: sqlite3/3.42.0
+
+Switching from python3/3.8.2 to python3/3.10.12
+  Loading requirement: gcc/11.4.0-binutils-2.40 sqlite3/3.42.0
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 18, in <module>
+    import haiku as hk
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/__init__.py", line 20, in <module>
+    from haiku import experimental
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/experimental/__init__.py", line 36, in <module>
+    from haiku._src.eval_shape import fast_eval_shape
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/haiku/_src/eval_shape.py", line 17, in <module>
+    from unittest import mock
+  File "/appl/python/3.10.12/lib/python3.10/unittest/mock.py", line 26, in <module>
+    import asyncio
+  File "/appl/python/3.10.12/lib/python3.10/asyncio/__init__.py", line 23, in <module>
+    __all__ = (base_events.__all__ +
+NameError: name 'base_events' is not defined

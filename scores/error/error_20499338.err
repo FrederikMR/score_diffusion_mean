@@ -1,0 +1,50 @@
+Loaded dependency [python3/3.10.12]: gcc/11.4.0-binutils-2.40
+Loaded dependency [python3/3.10.12]: sqlite3/3.42.0
+
+Switching from python3/3.8.2 to python3/3.10.12
+  Loading requirement: gcc/11.4.0-binutils-2.40 sqlite3/3.42.0
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 30, in <module>
+    from jaxgeometry.manifolds import *
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/__init__.py", line 24, in <module>
+    import jaxgeometry.dynamics as dynamics
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/dynamics/__init__.py", line 24, in <module>
+    from .flow import flow
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/dynamics/flow.py", line 24, in <module>
+    from jaxgeometry.setup import *
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/setup.py", line 49, in <module>
+    import optax
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/optax/__init__.py", line 17, in <module>
+    from optax import contrib
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/optax/contrib/__init__.py", line 17, in <module>
+    from optax._src.contrib.mechanic import MechanicState
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/optax/_src/contrib/mechanic.py", line 38, in <module>
+    from optax._src import utils
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/optax/_src/utils.py", line 22, in <module>
+    import jax.scipy.stats.norm as multivariate_normal
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/jax/scipy/stats/__init__.py", line 18, in <module>
+    from jax.scipy.stats import bernoulli as bernoulli
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/jax/scipy/stats/bernoulli.py", line 18, in <module>
+    from jax._src.scipy.stats.bernoulli import (
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/jax/_src/scipy/stats/bernoulli.py", line 16, in <module>
+    import scipy.stats as osp_stats
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/scipy/stats/__init__.py", line 608, in <module>
+    from ._stats_py import *
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/scipy/stats/_stats_py.py", line 46, in <module>
+    from . import distributions
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/scipy/stats/distributions.py", line 8, in <module>
+    from ._distn_infrastructure import (rv_discrete, rv_continuous, rv_frozen)  # noqa: F401
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/scipy/stats/_distn_infrastructure.py", line 23, in <module>
+    from scipy import optimize
+  File "<frozen importlib._bootstrap>", line 1075, in _handle_fromlist
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/scipy/__init__.py", line 189, in __getattr__
+    return _importlib.import_module(f'scipy.{name}')
+  File "/appl/python/3.10.12/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/scipy/optimize/__init__.py", line 410, in <module>
+    from ._minimize import *
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/scipy/optimize/_minimize.py", line 32, in <module>
+    from ._cobyla_py import _minimize_cobyla
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/scipy/optimize/_cobyla_py.py", line 17, in <module>
+    from scipy.optimize import _cobyla as cobyla
+KeyboardInterrupt
