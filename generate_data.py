@@ -30,9 +30,9 @@ from jaxgeometry.statistics.score_matching import TMSampling, LocalSampling, \
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Sphere",
+    parser.add_argument('--manifold', default="HypParaboloid",
                         type=str)
-    parser.add_argument('--dim', default=50,
+    parser.add_argument('--dim', default=2,
                         type=int)
     parser.add_argument('--N_sim', default=100,
                         type=int)
@@ -99,7 +99,7 @@ def train_score()->None:
     elif args.manifold == "Landmarks":
         sampling_method = 'LocalSampling'
         M = Landmarks(N=args.dim,m=2)        
-        x0 = M.coords(jnp.vstack((jnp.linspace(-10.0,10.0,M.N),jnp.linspace(10.0,-10.0,M.N))).T.flatten())
+        x0 = M.coords(jnp.vstack((jnp.linspace(-5.0,0.0,M.N),jnp.linspace(5.0,0.0,M.N))).T.flatten())
         if args.dim >=10:
             with open('../../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt', 'r') as the_file:
                 all_data = [line.strip() for line in the_file.readlines()]
@@ -159,8 +159,7 @@ def train_score()->None:
                                     dt_steps=args.dt_steps,
                                     )
         sim = data_generator.sim_diffusion_mean((x0[1],x0[0]), args.N_sim)
-        
-        
+
     xs, chart = sim[0], sim[1]
     
     if not os.path.exists(save_path):

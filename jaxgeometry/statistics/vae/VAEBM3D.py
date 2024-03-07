@@ -126,15 +126,46 @@ class VAEBM(hk.Module):
         Brownian_coords(M)
         
         self.M = M
+        
+    def Jf(self,z):
+        
+        return jacfwd(self.decoder(z.reshape(-1,2)))(z)
+        
+    def G(self,z):
+        
+        Jf = self.Jf(z)
+        
+        return jnp.dot(Jf.T,Jf)
+    
+    def DG(self,z):
+        
+        return jacfwd(self.G)(z)
+    
+    def Ginv(self,z):
+        
+        return jnp.linalg.inv(G(z))
+    
+    def Chris(self,z):
+        
+        Dgx = self.DG(z)
+        gsharpx = self.Ginv(z)
+        return 0.5*(jnp.einsum('im,kml->ikl',gsharpx,Dgx)
+                   +jnp.einsum('im,lmk->ikl',gsharpx,Dgx)
+                   -jnp.einsum('im,klm->ikl',gsharpx,Dgx))
+    
+    def euclidean_sample(self, mu:Array, t:Array):
+        
+        return
+    
+    def taylor_sample(self, mu:Array, t:Array):
+        
+        return
   
-    def sample(self, mu:Array, t:Array)->Array:
+    def local_sample(self, mu:Array, t:Array)->Array:
         
         def step(carry, t):
             
             return
-        
-        
-        
         
         _dts = vmap(lambda t: dts(t, 100))(t).squeeze()
         N_data = len(mu.reshape(-1,2))

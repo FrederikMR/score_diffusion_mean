@@ -65,7 +65,7 @@ class nHyperbolicSpace(EmbeddedManifold):
         self.dist = lambda x,y: 1/jnp.sqrt(jnp.abs(self.K))*jnp.arccosh(self.K*self.dot(x[1],y[1]))
         self.Exp = self.StdExp
         self.ExpEmbedded = self.StdExpEmbedded
-        self.Log = lambda x,y: (y[1]-K*jnp.dot(x[1],y[1])*x[1])*jnp.arcosh(self.K*jnp.dot(x[1],y[1]))/ \
+        self.Log = lambda x,y: (y[1]-K*jnp.dot(x[1],y[1])*x[1])*jnp.arccosh(self.K*jnp.dot(x[1],y[1]))/ \
             jnp.sinh(jnp.arccosh(self.K*jnp.dot(x[1],y[1])))
         self.ParallelTransport = lambda x,y,v: v-self.K*self.dot(y[1],v)*(x[1]+y[1])/(1+self.K*self.dot(x[1],y[1]))
         self.proj = self.StdProj
@@ -97,7 +97,7 @@ class nHyperbolicSpace(EmbeddedManifold):
             
     def StdExp(self, x:Tuple[Array, Array], v:Array, T:float=1.0)->Array:
         
-         al = T*self.norm(x,v)*jnp.sqrt(jnp.abs(self.K))
+         val = T*self.norm(x,v)*jnp.sqrt(jnp.abs(self.K))
          
          exp_map = jnp.cosh(val)+v*jnp.sinh(val)/(val)
          

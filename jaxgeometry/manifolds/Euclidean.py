@@ -76,7 +76,7 @@ class Euclidean(Manifold):
         #Log
         self.Log = jit(lambda x,y: y[0]-x[0])
         self.dist = jit(lambda x,y: jnp.sqrt(jnp.sum((x[0]-y[0])**2)))
-        self.Exp = lambda x, v, T=1.0: (x[0]+v, jnp.zeros(1))
+        self.Exp = lambda x, v, T=1.0: (x[0]+T*v, jnp.zeros(1))
         self.ParallelTransport = lambda x,y,v: v
         self.Proj = lambda x,v: v
         

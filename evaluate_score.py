@@ -46,19 +46,21 @@ from jaxgeometry.statistics.score_matching.model_loader import load_model
 from jaxgeometry.statistics.score_matching import diffusion_mean as dm_score
 from jaxgeometry.statistics.score_matching import ScoreEvaluation
 from jaxgeometry.statistics import diffusion_mean as dm_bridge
+from jaxgeometry.statistics import Frechet_mean
+from jaxgeometry.statistics import Frechet_mean
 
 #%% Args Parser
 
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Sphere",
+    parser.add_argument('--manifold', default="HypParaboloid",
                         type=str)
-    parser.add_argument('--dim', default=[2,3,5,10,20],
+    parser.add_argument('--dim', default=[2],
                         type=List)
     parser.add_argument('--loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--s2_approx', default=0,
+    parser.add_argument('--s2_approx', default=1,
                         type=int)
     parser.add_argument('--fixed_time', default=0,
                         type=int)
@@ -82,7 +84,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--diffusion_mean', default=1,
                         type=int)
-    parser.add_argument('--bridge_sampling', default=1,
+    parser.add_argument('--bridge_sampling', default=0,
                         type=int)
     parser.add_argument('--seed', default=2712,
                         type=int)
@@ -160,7 +162,7 @@ def load_manifold(dim:int)->None:
         method = 'Local'
         M = Landmarks(N=dim,m=2)   
         generator_dim = M.dim
-        x0 = M.coords(jnp.vstack((jnp.linspace(-10.0,10.0,M.N),jnp.linspace(10.0,-10.0,M.N))).T.flatten())
+        x0 = M.coords(jnp.vstack((jnp.linspace(-5.0,0.0,M.N),jnp.linspace(5.0,0.0,M.N))).T.flatten())
         if dim >=10:
             with open('../../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt', 'r') as the_file:
                 all_data = [line.strip() for line in the_file.readlines()]
@@ -168,7 +170,7 @@ def load_manifold(dim:int)->None:
                 x1 = jnp.array([float(x) for x in all_data[0].split()[2:]])
                 x2 = jnp.array([float(x) for x in all_data[1].split()[2:]])
                 
-                idx = jnp.round(jnp.linspace(0, len(x1) - 1, args.dim)).astype(int)
+                idx = jnp.round(jnp.linspace(0, len(x1) - 1, dim)).astype(int)
                 x0 = M.coords(jnp.vstack((x1[idx],x2[idx])).T.flatten())
         opt_val = "x0"
     elif args.manifold == "SPDN":
@@ -223,7 +225,7 @@ def evaluate_diffusion_mean():
             s1_path = f"../scores/{args.manifold}{N}/s1_{args.loss_type}/"
         s2_path = f"../scores/{args.manifold}{N}/{args.s2_type}_{args.loss_type}/"
         data_path = f"{args.data_path}{args.manifold}{N}/"
-        
+
         if generator_dim<10:
             layers = [50,100,100,50]
         elif generator_dim<50:
@@ -288,7 +290,7 @@ def evaluate_diffusion_mean():
                 T_opt = T_sm[-1]
             mu_opt = (mu_sm[0][-1], mu_sm[1][-1])
         else:
-            mu_opt, T_opt = x0, args.t0
+            mu_opt, T_opt = x0, 0.5
         
         
         dm_score(M, s1_model=ScoreEval.grady_log, s2_model = ScoreEval.gradt_log, method="Gradient")
@@ -296,7 +298,7 @@ def evaluate_diffusion_mean():
             mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                    step_size=args.step_size, max_iter=args.max_iter)
             T_sm = args.t0*jnp.ones(len(mu_sm[0]))
-            time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
+            time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                                  number=1, globals=locals(), repeat=args.repeats)
             score_mu_time.append(jnp.mean(jnp.array(time)))
@@ -304,7 +306,7 @@ def evaluate_diffusion_mean():
         else:
             mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                    step_size=args.step_size, max_iter=args.max_iter)
-                
+
             time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                                  number=1, globals=locals(), repeat=args.repeats)
@@ -365,6 +367,137 @@ def evaluate_diffusion_mean():
     
     return
 
+#%% Load Data
+
+def evaluate_frechet_mean():
+    
+    args = parse_args()
+    
+    score_mu_error = []
+    frechet_mu_error = []
+    s1_ntrain = []
+    s2_ntrain = []
+    score_mu_time = []
+    score_std_time = []
+    frechet_mu_time = []
+    frechet_std_time = []
+    for N in args.dim:
+        M, x0, method, generator_dim, opt_val = load_manifold(N)
+        if args.loss_type == "dsmdiagvr":
+            s1_path = f"../scores/{args.manifold}{N}/s1T_dsmvr/"
+        elif args.loss_type == "dsmdiag":
+            s1_path = f"../scores/{args.manifold}{N}/s1T_dsm/"
+        else:
+            s1_path = f"../scores/{args.manifold}{N}/s1T_{args.loss_type}/"
+        s2_path = f"../scores/{args.manifold}{N}/{args.s2_type}_{args.loss_type}/"
+        data_path = f"{args.data_path}{args.manifold}{N}/"
+
+        if generator_dim<10:
+            layers = [50,100,100,50]
+        elif generator_dim<50:
+            layers = [50,100,200,200,100,50]
+        else:
+            layers = [50,100,200,400,400,200,100,50]
+        
+        
+        s1_state = load_model(s1_path)
+        s1_ntrain.append(len(jnp.load(''.join((s1_path, 'loss_arrays.npy')))))
+        if args.s2_approx:
+            s2_state = load_model(s2_path)
+            s2_ntrain.append(len(jnp.load(''.join((s2_path, 'loss_arrays.npy')))))
+        else:
+            s2_state = None
+            s2_ntrain.append(jnp.nan)
+            
+        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
+        
+        if args.s2_type == "s2":
+            s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                            dim=generator_dim, r = max(generator_dim//2,1))(x))
+        elif args.s2_type == "s1s2":
+            @hk.transform
+            def s2_model(x):
+                
+                s1s2 =  models.MLP_s1s2(
+                    models.MLP_s1(dim=generator_dim, layers=layers), 
+                    models.MLP_s2(layers_alpha=layers, 
+                                  layers_beta=layers,
+                                  dim=generator_dim,
+                                  r = max(generator_dim//2,1))
+                    )
+                
+                return s1s2(x)[1]
+            
+        ScoreEval = ScoreEvaluation(M, 
+                                    s1_model=s1_model, 
+                                    s1_state=s1_state, 
+                                    s2_model=s2_model, 
+                                    s2_state=s2_state,
+                                    s2_approx=args.s2_approx, 
+                                    method=method, 
+                                    seed=args.seed)
+        
+        xs = pd.read_csv(''.join((data_path, 'xs.csv')), header=None)
+        charts = pd.read_csv(''.join((data_path, 'chart.csv')), header=None)
+        X_obs = (jnp.array(xs.values), jnp.array(charts.values))
+        
+        if opt_val == "opt":            
+            mu_opt, T_opt = M.mlxt_hk(X_obs)
+        else:
+            mu_opt = x0
+        
+        
+        dm_score(M, s1_model=lambda x,y,t: t*ScoreEval.grady_log(x,y,t), 
+                 s2_model = ScoreEval.gradt_log, method="Gradient")
+        mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t]), \
+                                               step_size=args.step_size, max_iter=args.max_iter)
+        time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t]), step_size=args.step_size, max_iter=args.bridge_iter)
+        time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
+                             number=1, globals=locals(), repeat=args.repeats)
+        score_mu_time.append(jnp.mean(jnp.array(time)))
+        score_std_time.append(jnp.std(jnp.array(time)))
+        
+        if args.bridge_sampling:
+            Frechet_mean(M)
+            mu_frechet,loss,iterations,vs = M.Frechet_mean(zip(X_obs[0], X_obs[1]),(X_obs[0][0], X_obs[1][0]))
+            time_fun = lambda x: M.Frechet_mean(zip(X_obs[0], X_obs[1]),(x[0], x[1]))
+            time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
+                                 number=1, globals=locals(), repeat=args.repeats)
+            frechet_mu_time.append(jnp.mean(jnp.array(time)))
+            frechet_std_time.append(jnp.std(jnp.array(time)))
+        else:
+            mu_frechet = (jnp.nan, jnp.nan)
+            frechet_mu_time.append(jnp.nan)
+            frechet_std_time.append(jnp.nan)
+            
+        if method == "Local":
+            D = len(mu_opt[0])
+            score_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_sm[0][-1])/D)
+            frechet_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_frechet[0])/D)
+        else:
+            D = len(mu_opt[1])
+            score_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_sm[1][-1])/D)            
+            frechet_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_frechet[1])/D)
+
+    error = {'score_mu_error': jnp.stack(score_mu_error),
+             'frechet_mu_error': jnp.stack(frechet_mu_error),
+             'dim': args.dim,
+             's1_ntrain': jnp.stack(s1_ntrain),
+             's2_ntrain': jnp.stack(s2_ntrain),
+             'score_mu_time': jnp.stack(score_mu_time),
+             'score_std_time': jnp.stack(score_std_time),
+             'frechet_mu_time': jnp.stack(frechet_mu_time),
+             'frechet_std_time': jnp.stack(frechet_std_time)
+             }
+    
+    save_path = f"{args.save_path}frechet_{args.manifold}.pkl"
+    if not os.path.exists(args.save_path):
+        os.makedirs(args.save_path)
+    with open(save_path, 'wb') as f:
+        pickle.dump(error, f)
+    
+    return
+
 #%% Main
 
 if __name__ == '__main__':
@@ -374,4 +507,4 @@ if __name__ == '__main__':
     if args.diffusion_mean:
         evaluate_diffusion_mean()
     else:
-        pass
+        evaluate_frechet_mean()

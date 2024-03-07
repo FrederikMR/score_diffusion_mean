@@ -84,8 +84,7 @@ class Stiefel(EmbeddedManifold):
         val1 = jnp.dot(Fx.T, v)
         val2 = -jnp.dot(v.T,v)
         
-        
-        mat1 = jnp.block([Fx, T*v]).T
+        mat1 = jnp.block([Fx, T*v])
         mat2 = jnp.block([[val1, -val2],
                           [jnp.eye(self.K), val1]
                           ])
@@ -93,7 +92,7 @@ class Stiefel(EmbeddedManifold):
         
         exp_map = jnp.dot(mat1, jnp.dot(jscipy.linalg.expm(mat2), mat3))
         
-        return (exp.reshape(-1), exp_map.reshape(-1))
+        return (exp_map.reshape(-1), exp_map.reshape(-1))
             
     def StdExpEmbedded(self, x:Array, v:Array, T:float=1.0)->Tuple[Array, Array]:
         

@@ -13,92 +13,96 @@ Created on Sun Oct 15 22:38:42 2023
 #%% Modules
 
 from jaxgeometry.setup import *
+from jaxgeometry.optimization.JAXOptimization import JointJaxOpt, RMJaxOpt, JaxOpt
+from jaxgeometry.optimization.GradientDescent import JointGradientDescent, RMGradientDescent, GradientDescent
 
 #%% Code
 
-#def euclidean(point, data):
-#    """
-#    Euclidean distance between point & data.
-#    Point has dimensions (m,), data has dimensions (n,m), and output will be of size (n,).
-#    """
-#    return jnp.sqrt(jnp.sum((point - data)**2, axis=1))
-class GaussianMixture:
-    def __init__(self, p_fun, diffusion_fun, grady_log, gradt_log, n_clusters=4, max_iter=100):
-        self.p_fun = p_fun
-        self.diffusion_fun = diffusion_fun
+class MLGeodesicRegression(object):
+    def __init__(self,
+                 M:object,
+                 grady_log:Callable,
+                 gradt_log:Callable,
+                 Exp:Callable=None,
+                 gradp_exp:Callable=None,
+                 gradv_exp:Callable=None,
+                 max_iter:int=100,
+                 lr_rm:float=0.01,
+                 lr_euc:float=0.01
+                 )->None:
+        
+        self.M = M
         self.grady_log = grady_log
         self.gradt_log = gradt_log
-        self.n_clusters = n_clusters
-        self.max_iter = max_iter
-        self.key = random.PRNGKey(2712)
-    def fit(self, X_train):
-        # Initialize the centroids, using the "k-means++" method, where a random datapoint is selected as the first,
-        # then the rest are initialized w/ probabilities proportional to their distances to the first
-        # Pick a random point from train data for first centroid
-        key, subkey = random.split(self.key)
-        self.key = subkey
-        centroid_idx = [random.choice(subkey, jnp.arange(0,len(X_train[0]), 1))]
-        self.pi = jnp.ones(self.n_clusters)/self.n_clusters
-        self.centroids = (X_train[0][jnp.array(centroid_idx)].reshape(1,-1), 
-                          X_train[1][jnp.array(centroid_idx)].reshape(1,-1))
-        self.diffusion_time = jnp.ones(self.n_clusters)*0.5
-        for _ in range(self.n_clusters-1):
-            # Calculate distances from points to the centroids
-            dists = vmap(lambda x,chartx,t: vmap(lambda y,charty: \
-                                               self.p_fun((x,chartx), 
-                                                             (y,charty), t))(X_train[0], 
-                                                                          X_train[1]))(self.centroids[0], 
-                                                                                       self.centroids[1],
-                                                                                       self.diffusion_time[:(_+1)])
-            dists = jnp.nan_to_num(jnp.sum(dists, axis=0), nan=0)         
-            # Normalize the distances
-            dists /= jnp.sum(dists)
-            # Choose remaining points based on their distances
-            key, subkey = random.split(self.key)
-            self.key = subkey
-            new_centroid_idx = [random.choice(key, jnp.arange(0,len(X_train[0])), p=dists)]
-            centroid_idx += new_centroid_idx
-            self.centroids = (X_train[0][jnp.array(centroid_idx)], 
-                              X_train[1][jnp.array(centroid_idx)])
+        self.gradp_exp = gradp_exp
+        self.gradv_exp = gradv_exp
+        if Exp is None:
+            self.Exp = M.Exp
+        else:
+            self.Exp = Exp
             
-        for _ in range(self.max_iter):
-            # Sort each datapoint, assigning to nearest centroid
-            print(f"Iteration {_+1}/{self.max_iter}")
-            print(self.centroids[1].shape)
-            print(self.diffusion_time.shape)
-            gamma_zk = vmap(lambda mu,chartmu,t: \
-                            vmap(lambda x,chartx: \
-                                 self.p_fun((x,chartx),(mu,chartmu),t))(X_train[0],
-                                                                        X_train[1]))(self.centroids[0],
-                                                                                     self.centroids[1],
-                                                                                     self.diffusion_time)
-            gamma_zk = gamma_zk/jnp.sum(gamma_zk, axis=0)
-            centroid_idx = jnp.argmax(gamma_zk, axis=0)
-            centroid_idx = jnp.stack([centroid_idx==k for k in range(self.n_clusters)])
-            prev_centroids = self.centroids
-            prev_diffusion = self.diffusion_time
-            mu1 = []
-            mu2 = []
-            diffusion_time = []
-            for i in range(self.n_clusters):
-                mu, t = self.diffusion_fun((X_train[0],X_train[1]),
-                                        (self.centroids[0][i], self.centroids[1][i]),
-                                        self.diffusion_time[i],
-                                        grady_log=lambda x,y,t: grady_log(x,y,t)/gamma_zk[i],
-                                        grady_log=lambda x,y,t: grady_log(x,y,t)/gamma_zk[i])
-                mu1.append(mu[0])
-                mu2.append(mu[1])
-                diffusion_time.append(t)
-            self.centroids = (jnp.stack(mu1), jnp.stack(mu2))
-            self.diffusion_time = jnp.stack(diffusion_time)
-                
-                
-            for i in range(self.n_clusters):
-                if jnp.isnan(self.centroids[0][i]).any():  # Catch any np.nans, resulting from a centroid having no points
-                    self.centroids = list(self.centroids)
-                    self.centroids[0] = self.centroids[0].at[i].set(prev_centroids[0][i])
-                    self.centroids[1] = self.centroids[1].at[i].set(prev_centroids[1][i])
-                    self.centroids = tuple(self.centroids)
-                    self.diffusion_time = prev_diffusion
-                    
-        self.centroid_idx = centroid_idx
+        self.max_iter=max_iter
+        self.lr_rm = lr_rm
+        self.lr_euc = lr_euc
+        
+        return
+    
+    def gradp(self, X_obs:Tuple[Array, Array], mu:Tuple[Array, Array], sigma:Array, v:Array, X:Array):
+        
+        w = jnp.dot(X,v)
+        exp_val = vmap(lambda w: self.Exp(mu,w))(w)
+        val1 = -vmap(lambda x,chart,exp: self.grady_log((x,chart),exp,sigma**2))(X_obs[0], X_obs[1],exp_val)
+        val2 = vmap(lambda w: self.gradp_exp(mu, w))(w)
+        
+        val = jnp.einsum('...i,...ij->...j', val1, val2)
+        
+        return jnp.mean(val, axis=0)
+    
+    def gradv(self, X_obs:Tuple[Array, Array], mu:Tuple[Array, Array], sigma:Array, v:Array, X:Array):
+        
+        w = jnp.dot(X,v)
+        exp_val = vmap(lambda w: self.Exp(mu,w))(w)
+        val1 = -vmap(lambda x,chart,exp: self.grady_log((x,chart),exp,sigma**2))(X_obs[0], X_obs[1],exp_val)
+        val2 = vmap(lambda w: self.gradv_exp(mu, w))(w)
+        
+        term1 = jnp.einsum('...ij,...jk->...ik', val2, X)
+        term2 = jnp.einsum('...j,...jk->...k', val1, term1)
+        
+        return jnp.mean(term2, axis=0)
+    
+    def gradt(self, X_obs:Tuple[Array, Array], mu:Tuple[Array, Array], sigma:Array, v:Array, X:Array):
+        
+        w = jnp.dot(X,v)
+        exp_val = vmap(lambda w: self.Exp(mu,w))(w)
+        val1 = -vmap(lambda x,chart, exp: self.gradt_log((x,chart),exp,sigma**2))(X_obs[0], X_obs[1], exp_val)
+        
+        return 2*jnp.mean(val1, axis=0)
+    
+    def fit(self, X_obs:Tuple[Array, Array], X:Array, v:Array, mu:Tuple[Array, Array], 
+            sigma:Array, method="JAX", opt="Joint")->None:
+        
+        gradv = lambda mu,y: self.gradv(X_obs, mu, y[0], y[1:], X)
+        gradt = lambda mu,y: self.gradv(X_obs, mu, y[0], y[1:], X)
+        grad_euc = lambda mu,y: jnp.concatenate((gradt(mu,y), gradv(mu,y)))
+        grad_rm = lambda mu,y: self.gradp(X_obs, mu, y[0], y[1:], X)
+        
+        if method == "JAX":
+            x0_euc = jnp.concatenate((sigma, v))
+            mu, euc, _, _ = JointJaxOpt(mu,x0_euc,self.M, grad_fn_rm = grad_rm,
+                                        grad_fn_euc = grad_euc,max_iter=self.max_iter)
+            mu = (mu[0][-1], mu[1][-1])
+            sigma, v = euc[-1][0], euc[-1][1:]
+        else:
+            x0_euc = jnp.concatenate((sigma, v))
+            mu, euc, _, _ = JointGradientDescent(mu,x0_euc,self. M,grad_fn_rm = grad_rm,
+                                        grad_fn_euc = grad_euc,step_size_rm=self.lr_rm,
+                                        step_size_euc=self.lr_euc,
+                                        max_iter=self.max_iter)
+            mu = (mu[0][-1], mu[1][-1])
+            sigma, v = euc[-1][0], euc[-1][1:]
+            
+        self.mu = mu
+        self.sigma = sigma
+        self.v = v
+        
+        return

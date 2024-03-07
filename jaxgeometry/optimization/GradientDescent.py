@@ -126,7 +126,8 @@ def JointGradientDescent(mu_rm:Array,
         
         #grad_euc = grad_euc/jnp.linalg.norm(grad_euc)
         mu_euc -= step_size_euc*grad_euc
-        mu_euc = jnp.clip(mu_euc, lb_euc, ub_euc)
+        if bool_val:
+            mu_euc = jnp.clip(mu_euc, lb_euc, ub_euc)
     
         new_chart = M.centered_chart(mu_rm)
         mu_rm = M.update_coords(mu_rm,new_chart)
@@ -146,6 +147,8 @@ def JointGradientDescent(mu_rm:Array,
     ub_euc = bnds_euc[1]
     lb_rm = bnds_rm[0]
     ub_rm = bnds_rm[1]
+    
+    bool_val = all(x is not None for x in bnds_euc)
     
     grad_rm = grad_fn_rm(mu_rm, mu_euc)
     grad_euc = grad_fn_euc(mu_rm, mu_euc)

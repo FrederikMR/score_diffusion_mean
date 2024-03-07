@@ -85,9 +85,9 @@ class SO(EmbeddedManifold):
         v = v.reshape(self.N,self.N)
         Fx = x[1].reshape(self.N,self.N)
         
-        exp_map = jnp.dot(Fx, jscipy.linalg.expm(t*v))
+        exp_map = jnp.dot(Fx, jscipy.linalg.expm(T*v))
         
-        return (exp.reshape(-1), exp_map.reshape(-1))
+        return (exp_map.reshape(-1), exp_map.reshape(-1))
             
     def StdExpEmbedded(self, x:Array, v:Array, T:float=1.0)->Tuple[Array, Array]:
         

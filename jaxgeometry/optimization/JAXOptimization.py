@@ -150,7 +150,8 @@ def JointJaxOpt(mu_rm:Array,
         mu_euc = mu[N_rm:]
         
         mux_rm = mux_rm#jnp.clip(mux_rm, lb_rm, ub_rm)
-        mu_euc = jnp.clip(mu_euc, lb_euc, ub_euc)
+        if bool_val:
+            mu_euc = jnp.clip(mu_euc, lb_euc, ub_euc)
         
         new_chart = M.centered_chart((mux_rm, mu_rm[1]))
         mu_rm = M.update_coords((mux_rm, mu_rm[1]),new_chart)
@@ -175,6 +176,8 @@ def JointJaxOpt(mu_rm:Array,
         opt_init, opt_update, get_params = optimizer(0.1, b1=0.9, b2=0.999, eps=1e-8)
     else:
         opt_init, opt_update, get_params = optimizer(*opt_params)
+        
+    bool_val = all(x is not None for x in bnds_euc)
         
     opt_state = opt_init(jnp.hstack((mu_rm[0], mu_euc)))
     grad_rm = grad_fn_rm(mu_rm, mu_euc)

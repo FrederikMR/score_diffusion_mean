@@ -37,7 +37,7 @@ from jaxgeometry.statistics.score_matching.model_loader import load_model
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Euclidean",
+    parser.add_argument('--manifold', default="HypParaboloid",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
@@ -51,7 +51,7 @@ def parse_args():
                         type=float)
     parser.add_argument('--gamma', default=1.0,
                         type=float)
-    parser.add_argument('--train_net', default="s1",
+    parser.add_argument('--train_net', default="s1s2",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
@@ -148,7 +148,7 @@ def train_score()->None:
         sampling_method = 'LocalSampling'
         M = Landmarks(N=args.dim,m=2)   
         generator_dim = M.dim
-        x0 = M.coords(jnp.vstack((jnp.linspace(-10.0,10.0,M.N),jnp.linspace(10.0,-10.0,M.N))).T.flatten())
+        x0 = M.coords(jnp.vstack((jnp.linspace(-5.0,0.0,M.N),jnp.linspace(5.0,-0.0,M.N))).T.flatten())
         if args.dim >=10:
             with open('../../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt', 'r') as the_file:
                 all_data = [line.strip() for line in the_file.readlines()]
