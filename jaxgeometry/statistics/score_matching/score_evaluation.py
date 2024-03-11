@@ -60,7 +60,7 @@ class ScoreEvaluation(object):
         
         return term1+term2
     
-    def grady_log(self, 
+    def grady_val(self, 
                   x:Tuple[Array, Array], 
                   y:Tuple[Array, Array], 
                   t:Array,
@@ -72,6 +72,21 @@ class ScoreEvaluation(object):
                                                     jnp.hstack((self.M.F(x), self.M.F(y), t))))
         else:
             return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
+        
+    def grady_log(self, 
+                  x:Tuple[Array, Array], 
+                  y:Tuple[Array, Array], 
+                  t:Array,
+                  )->Array:
+        
+        if self.method == 'Embedded':
+            s1 = self.grad_TM(self.M.F(y), 
+                                self.s1_model.apply(self.s1_state.params,self.rng_key, 
+                                                    jnp.hstack((self.M.F(x), self.M.F(y), t))))
+        else:
+            s1 = self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
+            
+        return jnp.dot(self.M.gsharp(y), s1)
         
     def ggrady_log(self,
                    x:Tuple[Array, Array],
@@ -97,7 +112,8 @@ class ScoreEvaluation(object):
                 s2 = jacfwdx(lambda y: self.s1_model.apply(self.s1_state.params,
                                                            self.rng_key, 
                                                            jnp.hstack((x[0], y[0], t))))(y)
-            return s2
+    
+            return (s2-jnp.einsum('mij,m->ij',self.M.Gamma_g(y), self.grady_val(x,y,t)))
         
     def gradt_log(self, 
                   x:Array,

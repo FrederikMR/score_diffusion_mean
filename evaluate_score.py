@@ -58,7 +58,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=[2],
                         type=List)
-    parser.add_argument('--loss_type', default="dsmvr",
+    parser.add_argument('--loss_type', default="dsmdiagvr",
                         type=str)
     parser.add_argument('--s2_approx', default=1,
                         type=int)
@@ -69,6 +69,8 @@ def parse_args():
     parser.add_argument('--data_path', default='../data/',
                         type=str)
     parser.add_argument('--save_path', default='../results/estimates/',
+                        type=str)
+    parser.add_argument('--score_path', default='scores/',
                         type=str)
     parser.add_argument('--t', default=0.1,
                         type=float)
@@ -218,12 +220,12 @@ def evaluate_diffusion_mean():
     for N in args.dim:
         M, x0, method, generator_dim, opt_val = load_manifold(N)
         if args.loss_type == "dsmdiagvr":
-            s1_path = f"../scores/{args.manifold}{N}/s1_dsmvr/"
+            s1_path = f"{args.score_path}{args.manifold}{N}/s1_dsmvr/"
         elif args.loss_type == "dsmdiag":
-            s1_path = f"../scores/{args.manifold}{N}/s1_dsm/"
+            s1_path = f"{args.score_path}{args.manifold}{N}/s1_dsm/"
         else:
-            s1_path = f"../scores/{args.manifold}{N}/s1_{args.loss_type}/"
-        s2_path = f"../scores/{args.manifold}{N}/{args.s2_type}_{args.loss_type}/"
+            s1_path = f"{args.score_path}{args.manifold}{N}/s1_{args.loss_type}/"
+        s2_path = f"{args.score_path}{args.manifold}{N}/{args.s2_type}_{args.loss_type}/"
         data_path = f"{args.data_path}{args.manifold}{N}/"
 
         if generator_dim<10:

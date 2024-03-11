@@ -41,7 +41,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
-    parser.add_argument('--loss_type', default="dsmvr",
+    parser.add_argument('--loss_type', default="dsmdiagvr",
                         type=str)
     parser.add_argument('--load_model', default=0,
                         type=int)
@@ -51,7 +51,7 @@ def parse_args():
                         type=float)
     parser.add_argument('--gamma', default=1.0,
                         type=float)
-    parser.add_argument('--train_net', default="s1s2",
+    parser.add_argument('--train_net', default="s2",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)

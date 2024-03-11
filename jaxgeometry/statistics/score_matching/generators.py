@@ -75,12 +75,11 @@ class LocalSampling(object):
     def __call__(self)->Tuple[Array, Array, Array, Array, Array]:
         
         while True:
-            
-            self.counter += 1
-            print(self.counter)
-            if self.counter > 100:
-                self.counter = 0
-                self.x0s = self.x0s_default
+          #  self.counter += 1
+          #  print(self.counter)
+          #  if self.counter > 100:
+          #      self.counter = 0
+          #      self.x0s = self.x0s_default
             
             dW = dWs(self.N_sim*self.M.dim,self._dts).reshape(-1,self.N_sim,self.M.dim)
             (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
