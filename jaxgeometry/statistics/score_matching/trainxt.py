@@ -77,12 +77,13 @@ def train_s1(M:object,
         return
         
     if optimizer is None:
-        optimizer = optax.adam(learning_rate = lr_rate,
-                               b1 = 0.9,
-                               b2 = 0.999,
-                               eps = 1e-08,
-                               eps_root = 0.0,
-                               mu_dtype=None)
+        optimizer = optax.sgd(learning_rate=lr_rate)
+        #optimizer = optax.adam(learning_rate = lr_rate,
+        #                       b1 = 0.9,
+        #                       b2 = 0.999,
+        #                       eps = 1e-08,
+        #                       eps_root = 0.0,
+        #                       mu_dtype=None)
         
     train_dataset = tf.data.Dataset.from_generator(generator,output_types=tf.float32,
                                                    output_shapes=([batch_size,2*N_dim+dW_dim+2]))
@@ -183,12 +184,13 @@ def train_s2(M:object,
         loss_model = dsmdiagvr_s2fun
         
     if optimizer is None:
-        optimizer = optax.adam(learning_rate = lr_rate,
-                               b1 = 0.9,
-                               b2 = 0.999,
-                               eps = 1e-08,
-                               eps_root = 0.0,
-                               mu_dtype=None)
+        optimizer = optax.sgd(learning_rate=lr_rate)
+        #optimizer = optax.adam(learning_rate = lr_rate,
+        #                       b1 = 0.9,
+        #                       b2 = 0.999,
+        #                       eps = 1e-08,
+        #                       eps_root = 0.0,
+        #                       mu_dtype=None)
         
     train_dataset = tf.data.Dataset.from_generator(generator,output_types=tf.float32,
                                                    output_shapes=([batch_size,2*N_dim+dW_dim+2]))
@@ -300,12 +302,13 @@ def train_s1s2(M:object,
         loss_s2model = dsmdiagvr_s2fun
         
     if optimizer is None:
-        optimizer = optax.adam(learning_rate = lr_rate,
-                               b1 = 0.9,
-                               b2 = 0.999,
-                               eps = 1e-08,
-                               eps_root = 0.0,
-                               mu_dtype=None)
+        optimizer = optax.sgd(learning_rate=lr_rate)
+        #optimizer = optax.adam(learning_rate = lr_rate,
+        #                       b1 = 0.9,
+        #                       b2 = 0.999,
+        #                       eps = 1e-08,
+        #                       eps_root = 0.0,
+        #                       mu_dtype=None)
         
     train_dataset = tf.data.Dataset.from_generator(generator,output_types=tf.float32,
                                                    output_shapes=([batch_size,2*N_dim+dW_dim+2]))
