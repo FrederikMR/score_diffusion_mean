@@ -33,5 +33,5 @@ python3 train_score.py \
     --repeats 16 \
     --samples_per_batch 32 \
     --dt_steps 1000 \
-    --save_step 10 \
+    --save_step 100 \
     --seed 2712
