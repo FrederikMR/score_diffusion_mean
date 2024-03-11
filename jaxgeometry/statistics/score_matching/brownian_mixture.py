@@ -18,18 +18,28 @@ from jaxgeometry.setup import *
 
 class BrownianMixture(object):
     def __init__(self, 
+                 p0:Callable,
                  grady_log:Callable, 
                  gradt_log:Callable, 
                  n_clusters:int=4,
                  eps:float=0.01,
-                 max_iter=100):
+                 max_iter:int=100
+                 )->None:
         
+        self.p0 = p0
         self.grady_log = grady_log
         self.gradt_log = gradt_log
         self.n_clusters = n_clusters
         self.max_iter = max_iter
         self.eps = eps
         self.key = jrandom.PRNGKey(2712)
+        
+        return
+    
+    def gamma_z(self, X_obs:Tuple[Array,Array], mu:Tuple[Array,Array], t:Array):
+        
+        log_p = vmap(lambda x,c: vmap(lambda mu_x,mu_c,t: self.log_p))
+        
         
         return
     

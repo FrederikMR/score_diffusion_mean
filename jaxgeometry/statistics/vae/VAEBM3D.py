@@ -155,44 +155,81 @@ class VAEBM(hk.Module):
     
     def euclidean_sample(self, mu:Array, t:Array):
         
-        return
+        return mu+t*jran.normal(hk.next_rng_key(), mu.shape)
     
     def taylor_sample(self, mu:Array, t:Array):
         
-        return
+        def step(carry, step):
+            
+            t,z = carry
+            dt, dW = step
+            
+            t += dt
+            ginv = self.Ginv(z)
+            
+            stoch = jnp.dot(ginv, dW)
+            
+            z += stoch
+            
+            return ((t,z),)*2
+        
+        dt = vmap(lambda t: dts(t,100))(t).squeeze()
+        N_data = mu.shape[0]
+        dW = vmap(lambda dt: dWs(self.encoder.latent_dim,dt))(dt).reshape(-1,N_data,self.encoder.latent_dim)
+        
+        #vmap(lambda mu,dt,dW: lax.scan(step, init=(mu,0.0), xs=(dt,dW)))(mu,dt,jnp.transpose(dW, axis=(1,0,2)))
+        val, _ =lax.scan(lambda carry, step: vmap(lambda t,z,dt,dW: step((t,z),(dt,dW)))(carry[0],carry[1],step[0],step[1]),
+                         init=(mu,t), xs=(dt,dW)
+                         )
+
+        return val[1]
   
     def local_sample(self, mu:Array, t:Array)->Array:
         
-        def step(carry, t):
+        def step(carry, step):
             
-            return
+            t,z = carry
+            dt, dW = step
+            
+            t += dt
+            ginv = self.Ginv(z)
+            Chris = self.Chris(z)
+            
+            stoch = jnp.dot(ginv, dW)
+            det = 0.5*jnp.einsum('jk,ijk->i', ginv, chris)
+            
+            z += det+stoch
+            
+            return ((t,z),)*2
         
-        _dts = vmap(lambda t: dts(t, 100))(t).squeeze()
-        N_data = len(mu.reshape(-1,2))
-        dW = vmap(lambda dt: dWs(self.M.dim,dt))(_dts).reshape(-1,N_data,self.M.dim)
-        print(_dts.shape)
-        print(mu.shape)
-        print(t.shape)
-        print(dW.shape)
-        (ts, xss, chartss) = vmap(lambda mu,_dts, dW: self.M.Brownian_coords((mu,jnp.zeros(1)),_dts,dW))(mu, _dts, dW)
+        dt = vmap(lambda t: dts(t,100))(t).squeeze()
+        N_data = mu.shape[0]
+        dW = vmap(lambda dt: dWs(self.encoder.latent_dim,dt))(dt).reshape(-1,N_data,self.encoder.latent_dim)
+        
+        #vmap(lambda mu,dt,dW: lax.scan(step, init=(mu,0.0), xs=(dt,dW)))(mu,dt,jnp.transpose(dW, axis=(1,0,2)))
+        val, _ =lax.scan(lambda carry, step: vmap(lambda t,z,dt,dW: step((t,z),(dt,dW)))(carry[0],carry[1],step[0],step[1]),
+                         init=(mu,t), xs=(dt,dW)
+                         )
 
-        return xss[:,-1]
+        return val[1]
 
-    def __call__(self, x: Array) -> VAEOutput:
-      """Forward pass of the variational autoencoder."""
-      x = x.astype(jnp.float32)
-      mu, t = self.encoder(x)
-      
-      z = self.sample(mu, t)
-      x_hat = self.decoder(z)
-      
-      F = lambda z: self.decoder(z[0].reshape(-1,2))        
-      M = Latent(dim=2, emb_dim=3, F=F, invF=None)
-      Brownian_coords(M)
-      
-      self.M = M
-    
-      return VAEOutput(z, x_hat, mu, t)
+    def __call__(self, x: Array, sample_method='Local') -> VAEOutput:
+        """Forward pass of the variational autoencoder."""
+        x = x.astype(jnp.float32)
+        mu, t = self.encoder(x)
+        
+        if sample_method == 'Local':
+            z = self.local_sample(mu, t)
+        elif sample_method == 'Taylor':
+            z = self.taylor_sample(mu, t)
+        elif sample_method == 'Euclidean':
+            z = self.euclidean_sample(mu, t)
+        else:
+            raise ValueError("Invalid sampling method. Choose either: Local, Taylor, Euclidean")          
+
+        x_hat = self.decoder(z)
+          
+        return VAEOutput(z, x_hat, mu, t)
 
 #%% Transformed model
     

@@ -48,6 +48,7 @@ class LocalSampling(object):
         self.x0s = tile(x0, repeats)
         self.x0s_default = tile(x0, repeats)
         self._dts = dts(T=self.max_T, n_steps=self.dt_steps)
+        self.counter = 0
         
         Brownian_coords(M)
         (product, sde_product, chart_update_product) = product_sde(M, 
@@ -74,6 +75,13 @@ class LocalSampling(object):
     def __call__(self)->Tuple[Array, Array, Array, Array, Array]:
         
         while True:
+            
+            self.counter += 1
+            print(self.counter)
+            if self.counter > 100:
+                self.counter = 0
+                self.x0s = self.x0s_default
+            
             dW = dWs(self.N_sim*self.M.dim,self._dts).reshape(-1,self.N_sim,self.M.dim)
             (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
                                                 jnp.repeat(self.x0s[1],self.x_samples,axis=0)),

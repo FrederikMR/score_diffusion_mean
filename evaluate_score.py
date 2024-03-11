@@ -64,7 +64,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--fixed_time', default=0,
                         type=int)
-    parser.add_argument('--s2_type', default="s1s2",
+    parser.add_argument('--s2_type', default="s2",
                         type=str)
     parser.add_argument('--data_path', default='../data/',
                         type=str)
@@ -262,6 +262,20 @@ def evaluate_diffusion_mean():
                 
                 return s1s2(x)[1]
             
+           # s1_state = s2_state
+           # @hk.transform
+           # def s1_model(x):
+           #     
+           #     s1s2 =  models.MLP_s1s2(
+           #         models.MLP_s1(dim=generator_dim, layers=layers), 
+           #         models.MLP_s2(layers_alpha=layers, 
+           #                       layers_beta=layers,
+           #                       dim=generator_dim,
+           #                       r = max(generator_dim//2,1))
+           #         )
+           #     
+           #     return s1s2(x)[0]
+            
         ScoreEval = ScoreEvaluation(M, 
                                     s1_model=s1_model, 
                                     s1_state=s1_state, 
@@ -306,7 +320,14 @@ def evaluate_diffusion_mean():
         else:
             mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                    step_size=args.step_size, max_iter=args.max_iter)
-
+            print(T_sm[-1])
+            print(mu_sm[0][-1])
+            print(mu_sm[1][-1])
+            test, _ = M.sm_dmt(X_obs, args.t0, (mu_sm[0][-1], mu_sm[1][-1]), max_iter=10, step_size=0.001)
+            from jax import vmap
+            print(ScoreEval.gradt_log(x0,x0,0.5))
+            val = vmap(lambda t: jnp.mean(vmap(lambda x,c: ScoreEval.gradt_log(x0, (x,c), t))(X_obs[0],X_obs[1])))(test)
+            print(val)
             time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                                  number=1, globals=locals(), repeat=args.repeats)
