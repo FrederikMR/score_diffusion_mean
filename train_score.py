@@ -41,7 +41,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
-    parser.add_argument('--loss_type', default="dsmdiagvr",
+    parser.add_argument('--loss_type', default="dsmvr",
                         type=str)
     parser.add_argument('--load_model', default=0,
                         type=int)
