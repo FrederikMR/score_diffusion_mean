@@ -134,8 +134,8 @@ def dsm_s2fun(generator:object,
         
         dW = generator.dW_TM(xt,dW)    
         
-        s1 = generator.grad_TM(s1_model, x0, xt, t)
-        s2 = generator.proj_hess(s1_model, s2_model, x0, xt, t)
+        s1 = s1_model(x0,xt,t)#generator.grad_TM(s1_model, x0, xt, t)#s1_model(x0,xt,t)
+        s2 = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
 
         loss_s2 = s2+jnp.einsum('i,j->ij', s1, s1)+(eye-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
         
@@ -164,8 +164,8 @@ def dsmdiag_s2fun(generator:object,
         
         dW = generator.dW_TM(xt,dW)    
         
-        s1 = generator.grad_TM(s1_model, x0, xt, t)
-        s2 = generator.proj_hess(s1_model, s2_model, x0, xt, t)
+        s1 = s1_model(x0,xt,t)#generator.grad_TM(s1_model, x0, xt, t)
+        s2 = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
 
         loss_s2 = jnp.eye(s2)+s1*s1+(1-dW*dW/dt)/dt
         
@@ -194,10 +194,10 @@ def dsmvr_s2fun(generator:object,
         
         dW = generator.dW_TM(x0,dW)
                 
-        s1 = generator.grad_TM(s1_model, x0, x0, t)
+        s1 = s1_model(x0,x0,t)#generator.grad_TM(s1_model, x0, x0, t)#
         s2 = s2_model(x0,x0,t)#generator.proj_hess(s1_model, s2_model, x0, x0, t)
 
-        s1p = generator.grad_TM(s1_model, x0, xt, t)
+        s1p = s1_model(x0,xt,t)#generator.grad_TM(s1_model, x0, xt, t)#
         s2p = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
         
         #s1m = generator.grad_TM(s1_model, x0, xm, t)
@@ -239,10 +239,10 @@ def dsmdiagvr_s2fun(generator:object,
         
         dW = generator.dW_TM(x0,dW)
                 
-        s1 = generator.grad_TM(s1_model, x0, x0, t)
+        s1 = s1_model(x0,x0,t)#generator.grad_TM(s1_model, x0, x0, t)#
         s2 = s2_model(x0,x0,t)#generator.proj_hess(s1_model, s2_model, x0, x0, t)
 
-        s1p = generator.grad_TM(s1_model, x0, xt, t)
+        s1p = s1_model(x0,xt,t)#generator.grad_TM(s1_model, x0, xt, t)#
         s2p = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
 
         psi = jnp.diag(s2)+s1*s1

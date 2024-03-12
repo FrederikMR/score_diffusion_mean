@@ -58,7 +58,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=[2],
                         type=List)
-    parser.add_argument('--loss_type', default="dsmdiagvr",
+    parser.add_argument('--loss_type', default="dsmvr",
                         type=str)
     parser.add_argument('--s2_approx', default=1,
                         type=int)
@@ -323,13 +323,6 @@ def evaluate_diffusion_mean():
             mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                    step_size=args.step_size, max_iter=args.max_iter)
             print(T_sm[-1])
-            print(mu_sm[0][-1])
-            print(mu_sm[1][-1])
-            test, _ = M.sm_dmt(X_obs, args.t0, (mu_sm[0][-1], mu_sm[1][-1]), max_iter=10, step_size=0.001)
-            from jax import vmap
-            print(ScoreEval.gradt_log(x0,x0,0.5))
-            val = vmap(lambda t: jnp.mean(vmap(lambda x,c: ScoreEval.gradt_log(x0, (x,c), t))(X_obs[0],X_obs[1])))(test)
-            print(val)
             time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                                  number=1, globals=locals(), repeat=args.repeats)
