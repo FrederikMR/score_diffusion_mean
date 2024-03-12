@@ -1,10 +1,10 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J SPDN2_s1
+#BSUB -J Landmarks50_s1
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
-#BSUB -R "rusage[mem=32GB]"
+#BSUB -R "rusage[mem=64GB]"
 #BSUB -u fmry@dtu.dk
 #BSUB -o scores/output/output_%J.out
 #BSUB -e scores/error/error_%J.err
@@ -18,8 +18,8 @@ module swap cudnn/v8.9.1.23-prod-cuda-12.X
 module swap python3/3.10.12
 
 python3 train_score.py \
-    --manifold SPDN \
-    --dim 20 \
+    --manifold Landmarks \
+    --dim 50 \
     --loss_type dsmvr \
     --load_model 0 \
     --T_sample 0 \
