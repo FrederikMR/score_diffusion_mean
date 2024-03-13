@@ -54,13 +54,13 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="HypParaboloid",
+    parser.add_argument('--manifold', default="SPDN",
                         type=str)
-    parser.add_argument('--dim', default=[2],
+    parser.add_argument('--dim', default=[10],
                         type=List)
     parser.add_argument('--loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--s2_approx', default=1,
+    parser.add_argument('--s2_approx', default=0,
                         type=int)
     parser.add_argument('--fixed_time', default=0,
                         type=int)
@@ -323,6 +323,7 @@ def evaluate_diffusion_mean():
             mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                    step_size=args.step_size, max_iter=args.max_iter)
             print(T_sm[-1])
+            print(mu_sm[0][-1])
             time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                                  number=1, globals=locals(), repeat=args.repeats)
