@@ -1,0 +1,102 @@
+Loaded dependency [python3/3.10.12]: gcc/11.4.0-binutils-2.40
+Loaded dependency [python3/3.10.12]: sqlite3/3.42.0
+
+Switching from python3/3.8.2 to python3/3.10.12
+  Loading requirement: gcc/11.4.0-binutils-2.40 sqlite3/3.42.0
+2024-03-13 12:11:17.536116: E tensorflow/compiler/xla/stream_executor/cuda/cuda_dnn.cc:9342] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2024-03-13 12:11:17.536161: E tensorflow/compiler/xla/stream_executor/cuda/cuda_fft.cc:609] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2024-03-13 12:11:17.556818: E tensorflow/compiler/xla/stream_executor/cuda/cuda_blas.cc:1518] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2024-03-13 12:12:37.057371: W external/xla/xla/service/gpu/runtime/support.cc:58] Intercepted XLA runtime error:
+INTERNAL: jaxlib/gpu/blas_kernels.cc:100: operation gpuStreamSynchronize(stream) failed: an illegal memory access was encountered
+2024-03-13 12:12:37.057622: E external/xla/xla/pjrt/pjrt_stream_executor_client.cc:2593] Execution of replica 0 failed: INTERNAL: Failed to execute XLA Runtime executable: run time error: custom call 'xla.gpu.custom_call' failed: jaxlib/gpu/blas_kernels.cc:100: operation gpuStreamSynchronize(stream) failed: an illegal memory access was encountered; current tracing scope: custom-call.4; current profiling annotation: XlaModule:#hlo_module=jit__lambda_,program_id=143#.
+2024-03-13 12:12:37.120765: W tensorflow/core/framework/op_kernel.cc:1827] UNKNOWN: XlaRuntimeError: INTERNAL: Failed to execute XLA Runtime executable: run time error: custom call 'xla.gpu.custom_call' failed: jaxlib/gpu/blas_kernels.cc:100: operation gpuStreamSynchronize(stream) failed: an illegal memory access was encountered; current tracing scope: custom-call.4; current profiling annotation: XlaModule:#hlo_module=jit__lambda_,program_id=143#.
+jax.errors.SimplifiedTraceback: For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+
+
+The above exception was the direct cause of the following exception:
+
+
+Traceback (most recent call last):
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/ops/script_ops.py", line 270, in __call__
+    ret = func(*args)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/autograph/impl/api.py", line 643, in wrapper
+    return func(*args, **kwargs)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/from_generator_op.py", line 198, in generator_py_func
+    values = next(generator_state.get_iterator(iterator_id))
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/generators.py", line 85, in __call__
+    (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
+
+jaxlib.xla_extension.XlaRuntimeError: INTERNAL: Failed to execute XLA Runtime executable: run time error: custom call 'xla.gpu.custom_call' failed: jaxlib/gpu/blas_kernels.cc:100: operation gpuStreamSynchronize(stream) failed: an illegal memory access was encountered; current tracing scope: custom-call.4; current profiling annotation: XlaModule:#hlo_module=jit__lambda_,program_id=143#.
+
+
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 360, in <module>
+    train_score()
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_score.py", line 338, in train_score
+    train_s1(M=M,
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/trainxt.py", line 95, in train_s1
+    initial_params = model.init(jrandom.PRNGKey(seed), next(train_dataset)[:,:(2*N_dim+1)])
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow_datasets/core/dataset_utils.py", line 82, in _eager_dataset_iterator
+    for elem in ds:
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/iterator_ops.py", line 809, in __next__
+    return self._next_internal()
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/iterator_ops.py", line 772, in _next_internal
+    ret = gen_dataset_ops.iterator_get_next(
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/ops/gen_dataset_ops.py", line 3028, in iterator_get_next
+    _ops.raise_from_not_ok_status(e, name)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/framework/ops.py", line 5888, in raise_from_not_ok_status
+    raise core._status_to_exception(e) from None  # pylint: disable=protected-access
+tensorflow.python.framework.errors_impl.UnknownError: {{function_node __wrapped__IteratorGetNext_output_types_1_device_/job:localhost/replica:0/task:0/device:CPU:0}} XlaRuntimeError: INTERNAL: Failed to execute XLA Runtime executable: run time error: custom call 'xla.gpu.custom_call' failed: jaxlib/gpu/blas_kernels.cc:100: operation gpuStreamSynchronize(stream) failed: an illegal memory access was encountered; current tracing scope: custom-call.4; current profiling annotation: XlaModule:#hlo_module=jit__lambda_,program_id=143#.
+jax.errors.SimplifiedTraceback: For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+
+
+The above exception was the direct cause of the following exception:
+
+
+Traceback (most recent call last):
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/ops/script_ops.py", line 270, in __call__
+    ret = func(*args)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/autograph/impl/api.py", line 643, in wrapper
+    return func(*args, **kwargs)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/from_generator_op.py", line 198, in generator_py_func
+    values = next(generator_state.get_iterator(iterator_id))
+
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/generators.py", line 85, in __call__
+    (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
+
+jaxlib.xla_extension.XlaRuntimeError: INTERNAL: Failed to execute XLA Runtime executable: run time error: custom call 'xla.gpu.custom_call' failed: jaxlib/gpu/blas_kernels.cc:100: operation gpuStreamSynchronize(stream) failed: an illegal memory access was encountered; current tracing scope: custom-call.4; current profiling annotation: XlaModule:#hlo_module=jit__lambda_,program_id=143#.
+
+
+	 [[{{node PyFunc}}]] [Op:IteratorGetNext] name: 
+2024-03-13 12:12:37.634226: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x96986d0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.635632: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x7f5edc1bdbc0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.638293: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x9f3e320; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.641344: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0xbe5e4d0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.642490: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0xbf86da0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.647809: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x97f39f0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.648675: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x89f92b0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.649119: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x9828dd0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.649567: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x9ab74a0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.649979: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x973d730; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.650436: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x95461b0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.651532: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0xc788aa0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.651993: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0xca93cd0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.652431: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0xc99fcc0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.653354: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0xcb24f30; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.654314: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0xc235f70; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.654747: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0xbe7b7b0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.657041: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0xcf48e20; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.658715: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0xcca2950; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.660567: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x7f5edc00d390; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.664437: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x7f5edcbeeb80; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.666870: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x7f5edca1e980; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.669193: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x7f5edd1cd1a0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.915199: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:763] failed to free device memory at 0x7f5eadf46400; result: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+2024-03-13 12:12:37.916013: E external/xla/xla/stream_executor/cuda/cuda_driver.cc:674] failed to unload module 0x7f5edd66ffc0; leaking: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
