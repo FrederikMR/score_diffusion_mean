@@ -40,5 +40,6 @@ from .nHyperbolicSpace import nHyperbolicSpace
 from .Grassmanian import Grassmanian
 from .SOn import SO
 from .Stiefel import Stiefel
+from .LearnedManifold import LearnedManifold
 
 #%% Code

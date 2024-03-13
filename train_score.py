@@ -13,6 +13,11 @@ Created on Tue Sep 12 15:11:07 2023
 #jax
 import jax.numpy as jnp
 import jax.random as jran
+from jax import Array
+
+from scipy import ndimage
+
+from gp.gp import RM_EG
 
 #haiku
 import haiku as hk
@@ -23,6 +28,8 @@ import argparse
 #scores
 from models import models
 
+from typing import NamedTuple
+
 #os
 import os
 
@@ -31,15 +38,16 @@ from jaxgeometry.manifolds import *
 from jaxgeometry.statistics.score_matching import train_s1, train_s2, train_s1s2, TMSampling, LocalSampling, \
     EmbeddedSampling, ProjectionSampling
 from jaxgeometry.statistics.score_matching.model_loader import load_model
+from ManLearn.train_MNIST import load_dataset as load_mnist
 
 #%% Args Parser
 
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SPDN",
+    parser.add_argument('--manifold', default="gp_mnist",
                         type=str)
-    parser.add_argument('--dim', default=10,
+    parser.add_argument('--dim', default=2,
                         type=int)
     parser.add_argument('--loss_type', default="dsmvr",
                         type=str)
@@ -173,6 +181,48 @@ def train_score()->None:
         M = HypParaboloid()
         generator_dim = M.dim
         x0 = M.coords([0.]*2)
+    elif args.manifold == 'gp_mnist':
+        
+        default_omega = 500.
+        
+        def k_fun(x,y, beta=1.0, omega=default_omega):
+    
+            x_diff = x-y
+            
+            return beta*jnp.exp(-omega*jnp.dot(x_diff, x_diff)/2)
+
+        def Dk_fun(x,y, beta=1.0, omega=default_omega):
+            
+            x_diff = y-x
+            
+            return omega*x_diff*k_fun(x,y,beta,omega)
+        
+        def DDk_fun(x,y, beta=1.0, omega=default_omega):
+            
+            N = len(x)
+            x_diff = (x-y).reshape(1,-1)
+            
+            return -omega*k_fun(x,y,beta,omega)*(x_diff.T.dot(x_diff)*omega-jnp.eye(N))
+        
+        rot = jnp.load('Data/MNIST/rot.npy')
+        num_rotate = len(rot)
+
+        theta = jnp.linspace(0,2*jnp.pi,num_rotate)
+        x1 = jnp.cos(theta)
+        x2 = jnp.sin(theta)
+        
+        sigman = 0.0
+        X_training = jnp.vstack((x1,x2))
+        y_training = rot.reshape(num_rotate, -1).T
+        RMEG = RM_EG(X_training, y_training, sigman=sigman, k_fun=k_fun, 
+                     Dk_fun = Dk_fun, DDk_fun = DDk_fun, delta_stable=1e-10)
+
+        g = lambda x: RMEG.G(x[0])
+        
+        M = LearnedManifold(g,N=2)
+        generator_dim = M.dim
+        x0 = M.coords(jnp.array([jnp.cos(0.), jnp.sin(0.)]))
+        sampling_method = 'LocalSampling'
     else:
         return
         

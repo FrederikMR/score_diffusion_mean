@@ -63,7 +63,7 @@ def diffusion_mean(M:object,
         return gradx
     
     if method == "JAX":
-        M.sm_dmxt = lambda X_obs, x0, t, max_iter=1000: JointJaxOpt(x0,
+        M.sm_dmxt = lambda X_obs, x0, t,step_size=0.1, max_iter=1000: JointJaxOpt(x0,
                                                      jnp.array(t),
                                                      M,
                                                      grad_fn_rm = lambda y,t: gradx_loss(X_obs, y, t),
@@ -72,12 +72,12 @@ def diffusion_mean(M:object,
                                                      bnds_euc=(0.0+1e-3,1.0 ),
                                                      )
         
-        M.sm_dmx = lambda X_obs, x0, t, max_iter=1000: RMJaxOpt(x0,
+        M.sm_dmx = lambda X_obs, x0, t, step_size=0.1, max_iter=1000: RMJaxOpt(x0,
                                                  M,
                                                  grad_fn=lambda y: gradx_loss(X_obs, y, t),
                                                  max_iter=max_iter,
                                                  )
-        M.sm_dmt = lambda X_obs, x0, t, max_iter=1000: JaxOpt(t,
+        M.sm_dmt = lambda X_obs, x0, t, step_size=0.1, max_iter=1000: JaxOpt(t,
                                                M,
                                                grad_fn = lambda t: gradt_loss(X_obs, x0, t),
                                                max_iter=max_iter,

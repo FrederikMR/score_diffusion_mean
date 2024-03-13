@@ -67,8 +67,8 @@ def load_dataset(split: str, batch_size: int, seed: int) -> Iterator[Batch]:
       .repeat()
       .as_numpy_iterator()
   )
-  N_data = len(tfds.load("mnist", split=split))
-  return map(lambda x: Batch(x["image"]/255), ds), N_data//batch_size
+
+  return map(lambda x: Batch(x["image"]/255), ds)
     
 #%% Main
 

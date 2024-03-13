@@ -54,9 +54,9 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SPDN",
+    parser.add_argument('--manifold', default="Sym",
                         type=str)
-    parser.add_argument('--dim', default=[10],
+    parser.add_argument('--dim', default=[20],
                         type=List)
     parser.add_argument('--loss_type', default="dsmvr",
                         type=str)
@@ -65,6 +65,8 @@ def parse_args():
     parser.add_argument('--fixed_time', default=0,
                         type=int)
     parser.add_argument('--s2_type', default="s2",
+                        type=str)
+    parser.add_argument('--method', default="JAX",
                         type=str)
     parser.add_argument('--data_path', default='../data/',
                         type=str)
@@ -193,6 +195,48 @@ def load_manifold(dim:int)->None:
         generator_dim = M.dim
         x0 = M.coords([0.]*2)
         opt_val = "x0"
+    elif args.manifold == 'gp_mnist':
+        
+        default_omega = 500.
+        
+        def k_fun(x,y, beta=1.0, omega=default_omega):
+    
+            x_diff = x-y
+            
+            return beta*jnp.exp(-omega*jnp.dot(x_diff, x_diff)/2)
+
+        def Dk_fun(x,y, beta=1.0, omega=default_omega):
+            
+            x_diff = y-x
+            
+            return omega*x_diff*k_fun(x,y,beta,omega)
+        
+        def DDk_fun(x,y, beta=1.0, omega=default_omega):
+            
+            N = len(x)
+            x_diff = (x-y).reshape(1,-1)
+            
+            return -omega*k_fun(x,y,beta,omega)*(x_diff.T.dot(x_diff)*omega-jnp.eye(N))
+        
+        rot = jnp.load('Data/MNIST/rot.npy')
+        num_rotate = len(rot)
+
+        theta = jnp.linspace(0,2*jnp.pi,num_rotate)
+        x1 = jnp.cos(theta)
+        x2 = jnp.sin(theta)
+        
+        sigman = 0.0
+        X_training = jnp.vstack((x1,x2))
+        y_training = rot.reshape(num_rotate, -1).T
+        RMEG = RM_EG(X_training, y_training, sigman=sigman, k_fun=k_fun, 
+                     Dk_fun = Dk_fun, DDk_fun = DDk_fun, delta_stable=1e-10)
+
+        g = lambda x: RMEG.G(x[0])
+        
+        M = LearnedManifold(g,N=2)
+        generator_dim = M.dim
+        x0 = M.coords(jnp.array([jnp.cos(0.), jnp.sin(0.)]))
+        sampling_method = 'LocalSampling'
     else:
         return
     
@@ -295,7 +339,7 @@ def evaluate_diffusion_mean():
             mu_opt, T_opt = M.mlxt_hk(X_obs)
         elif opt_val == "gradient":
             dm_score(M, s1_model=lambda x,y,t: M.grady_log_hk(x,y,t)[0], 
-                     s2_model = M.gradt_log_hk, method="Gradient")
+                     s2_model = M.gradt_log_hk, method=args.method)
             if args.fixed_time:
                 mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                        step_size=args.step_size, max_iter=args.max_iter)
@@ -309,7 +353,7 @@ def evaluate_diffusion_mean():
             mu_opt, T_opt = x0, 0.5
         
         
-        dm_score(M, s1_model=ScoreEval.grady_log, s2_model = ScoreEval.gradt_log, method="Gradient")
+        dm_score(M, s1_model=ScoreEval.grady_log, s2_model = ScoreEval.gradt_log, method=args.method)
         if args.fixed_time:
             mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                    step_size=args.step_size, max_iter=args.max_iter)
@@ -324,6 +368,7 @@ def evaluate_diffusion_mean():
                                                    step_size=args.step_size, max_iter=args.max_iter)
             print(T_sm[-1])
             print(mu_sm[0][-1])
+            print(mu_sm[1][-1])
             time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                                  number=1, globals=locals(), repeat=args.repeats)
@@ -362,7 +407,7 @@ def evaluate_diffusion_mean():
             
             bridge_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_bridgechart[-1])/D)
             bridge_t_error.append(jnp.linalg.norm(T_opt-T_bridge[-1]))
-
+    print(score_mu_error)
     error = {'score_mu_error': jnp.stack(score_mu_error),
              'bridge_mu_error': jnp.stack(bridge_mu_error),
              'score_t_error': jnp.stack(score_t_error),

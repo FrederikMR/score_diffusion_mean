@@ -15,6 +15,10 @@ import jax.numpy as jnp
 
 import numpy as np
 
+from scipy import ndimage
+
+from gp.gp import RM_EG
+
 import os
 
 #argparse
@@ -24,13 +28,14 @@ import argparse
 from jaxgeometry.manifolds import *
 from jaxgeometry.statistics.score_matching import TMSampling, LocalSampling, \
     EmbeddedSampling, ProjectionSampling
+from ManLearn.train_MNIST import load_dataset as load_mnist
 
 #%% Args Parser
 
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="HypParaboloid",
+    parser.add_argument('--manifold', default="gp_mnist",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
@@ -121,6 +126,46 @@ def train_score()->None:
         sampling_method = 'LocalSampling'
         M = HypParaboloid()
         x0 = M.coords([0.]*2)
+    elif args.manifold == 'gp_mnist':
+        
+        default_omega = 500.
+        
+        def k_fun(x,y, beta=1.0, omega=default_omega):
+    
+            x_diff = x-y
+            
+            return beta*jnp.exp(-omega*jnp.dot(x_diff, x_diff)/2)
+
+        def Dk_fun(x,y, beta=1.0, omega=default_omega):
+            
+            x_diff = y-x
+            
+            return omega*x_diff*k_fun(x,y,beta,omega)
+        
+        def DDk_fun(x,y, beta=1.0, omega=default_omega):
+            
+            N = len(x)
+            x_diff = (x-y).reshape(1,-1)
+            
+            return -omega*k_fun(x,y,beta,omega)*(x_diff.T.dot(x_diff)*omega-jnp.eye(N))
+        
+        data_generator = load_mnist('train[:80%]', 100, 2712)
+        img_base = next(data_generator).image[0]
+        
+        num_rotate = 200
+        theta = jnp.linspace(0,2*jnp.pi,num_rotate)
+        x1 = jnp.cos(theta)
+        x2 = jnp.sin(theta)
+        
+        theta_degrees = theta*180/jnp.pi
+        
+        rot = []
+        for v in theta_degrees:
+            rot.append(ndimage.rotate(img_base, v, reshape=False))
+        rot = jnp.stack(rot)/255
+        
+        jnp.save('Data/MNIST/rot.npy', rot)
+        return
     else:
         return
         
