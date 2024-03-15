@@ -98,12 +98,55 @@ class MLP_s2(hk.Module):
         hess_rn = -jnp.einsum('ij,...i->...ij', jnp.eye(self.dim), 1/t)
         
         return diag.squeeze()+hess_rn.squeeze()+jnp.einsum('...ik,...jk->...ij', beta, beta).squeeze()
+    
+@dataclasses.dataclass
+class MLP_diags2(hk.Module):
+    
+    layers_alpha:list
+    layers_beta:list
+    dim:int = 2
+    r:int = max(dim // 2,1)
+    
+    def model_alpha(self)->object:
+        
+        model = []
+        for l in self.layers_alpha:
+            model.append(hk.Linear(l))
+            model.append(tanh)
+            
+        model.append(hk.Linear(self.dim))
+        
+        return hk.Sequential(model)
+
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        
+        alpha = self.model_alpha()(x).reshape(-1,self.dim)
+        
+        shape = list(x.shape)
+        shape[-1] = 1
+        t = x.T[-1].reshape(shape)
+        
+        diag = vmap(lambda x: jnp.diag(x))(alpha)
+
+        hess_rn = -jnp.einsum('ij,...i->...ij', jnp.eye(self.dim), 1/t)
+        
+        return diag.squeeze()+hess_rn.squeeze()
             
 @dataclasses.dataclass
 class MLP_s1s2(hk.Module):
     
     s1_model:MLP_s1
     s2_model:MLP_s2
+
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        
+        return self.s1_model(x), self.s2_model(x)
+    
+@dataclasses.dataclass
+class MLP_diags1s2(hk.Module):
+    
+    s1_model:MLP_s1
+    s2_model:MLP_diags2
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         

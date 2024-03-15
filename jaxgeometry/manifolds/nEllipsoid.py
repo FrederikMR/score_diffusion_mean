@@ -184,11 +184,12 @@ class nEllipsoid(EmbeddedManifold):
     def ExpEmbedded(self, Fx:Array,Fv:Array,t:float=1.0):
 
         Fx /= self.params # from ellipsoid to S^n
+        Fx = Fx/jnp.linalg.norm(Fx)
         Fv /= self.params
         
         normv = jnp.linalg.norm(Fv*t,2)
-        y = jnp.cos(normv)*Fx+Fv*jnp.sin(normv)/jnp.linalg.norm(Fv, 2)
-        
+        y = jnp.cos(t*normv)*Fx+Fv*jnp.sin(t*normv)/jnp.linalg.norm(Fv, 2)
+        y = y/jnp.linalg.norm(y)
         y *= self.params
         
         return y

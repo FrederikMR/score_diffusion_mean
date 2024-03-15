@@ -24,6 +24,8 @@ import os
 #argparse
 import argparse
 
+from load_manifold import load_manifold
+
 #jaxgeometry
 from jaxgeometry.manifolds import *
 from jaxgeometry.statistics.score_matching import TMSampling, LocalSampling, \
@@ -35,11 +37,11 @@ from ManLearn.train_MNIST import load_dataset as load_mnist
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="gp_mnist",
+    parser.add_argument('--manifold', default="Euclidean",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
-    parser.add_argument('--N_sim', default=100,
+    parser.add_argument('--N_sim', default=1000,
                         type=int)
     parser.add_argument('--save_path', default='../data/',
                         type=str)
@@ -61,72 +63,7 @@ def train_score()->None:
     
     save_path = f"{args.save_path}{args.manifold}{args.dim}/"
     
-    if args.manifold == "Euclidean":
-        sampling_method = 'LocalSampling'
-        M = Euclidean(N=args.dim)
-        x0 = M.coords([0.]*args.dim)
-    elif args.manifold == "Circle":
-        sampling_method = 'TMSampling'
-        M = S1()
-        x0 = M.coords([0.])
-    elif args.manifold == "Sphere":
-        sampling_method = 'TMSampling'
-        M = nSphere(N=args.dim)
-        x0 = M.coords([0.]*args.dim)
-    elif args.manifold == "HyperbolicSpace":
-        sampling_method = 'TMSampling'
-        M = nHyperbolicSpace(N=args.dim)
-        x0 = (jnp.concatenate((jnp.zeros(args.dim-1), -1.*jnp.ones(1))),)*2
-    elif args.manifold == "Grassmanian":
-        sampling_method = 'TMSampling'
-        M = Grassmanian(N=2*args.dim,K=args.dim)
-        x0 = (jnp.eye(2*args.dim)[:,:args.dim].reshape(-1),)*2
-    elif args.manifold == "SO":
-        sampling_method = 'TMSampling'
-        M = SO(N=args.dim)
-        x0 = (jnp.eye(args.dim).reshape(-1),)*2
-    elif args.manifold == "Stiefel":
-        sampling_method = 'TMSampling'
-        M = Stiefel(N=args.dim, K=2)
-        x0 = (jnp.block([jnp.eye(2), jnp.zeros((2,args.dim-2))]).T.reshape(-1),)*2
-    elif args.manifold == "Ellipsoid":
-        sampling_method = 'TMSampling'
-        M = nEllipsoid(N=args.dim, params = jnp.linspace(0.5,1.0,args.dim+1))
-        x0 = M.coords([0.]*args.dim)
-    elif args.manifold == "Cylinder":
-        sampling_method = 'EmbeddedSampling'
-        M = Cylinder(params=(1.,jnp.array([0.,0.,1.]),jnp.pi/2.))
-        x0 = M.coords([0.]*2)
-    elif args.manifold == "Torus":
-        sampling_method = 'EmbeddedSampling'
-        M = Torus()        
-        x0 = M.coords([0.]*2)
-    elif args.manifold == "Landmarks":
-        sampling_method = 'LocalSampling'
-        M = Landmarks(N=args.dim,m=2)        
-        x0 = M.coords(jnp.vstack((jnp.linspace(-5.0,0.0,M.N),jnp.linspace(5.0,0.0,M.N))).T.flatten())
-        if args.dim >=10:
-            with open('../../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt', 'r') as the_file:
-                all_data = [line.strip() for line in the_file.readlines()]
-                
-                x1 = jnp.array([float(x) for x in all_data[0].split()[2:]])
-                x2 = jnp.array([float(x) for x in all_data[1].split()[2:]])
-                
-                idx = jnp.round(jnp.linspace(0, len(x1) - 1, args.dim)).astype(int)
-                x0 = M.coords(jnp.vstack((x1[idx],x2[idx])).T.flatten())
-    elif args.manifold == "SPDN":
-        sampling_method = 'LocalSampling'
-        M = SPDN(N=args.dim)
-        x0 = M.coords([10.]*(args.dim*(args.dim+1)//2))
-    elif args.manifold == "Sym":
-        sampling_method = 'LocalSampling'
-        M = Sym(N=args.dim)
-        x0 = M.coords([1.]*(args.dim*(args.dim+1)//2))
-    elif args.manifold == "HypParaboloid":
-        sampling_method = 'LocalSampling'
-        M = HypParaboloid()
-        x0 = M.coords([0.]*2)
-    elif args.manifold == 'gp_mnist':
+    if args.manifold == 'gp_mnist':
         
         default_omega = 500.
         
@@ -167,7 +104,8 @@ def train_score()->None:
         jnp.save('Data/MNIST/rot.npy', rot)
         return
     else:
-        return
+        M, x0, sampling_method, generator_dim, layers, opt_val = load_manifold(args.manifold,
+                                                                               args.dim)
         
     if sampling_method == 'LocalSampling':
         generator_dim = M.dim

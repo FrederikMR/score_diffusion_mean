@@ -93,7 +93,7 @@ def diffusion_mean(M:object,
                                                                                             step_size_rm=step_size,
                                                                                             step_size_euc=step_size,
                                                                                             max_iter = max_iter,
-                                                                                            bnds_euc = (1e-3,1.0)
+                                                                                            bnds_euc = (1e-3,1.0),
                                                                                             )
         
         M.sm_dmx = lambda X_obs, x0, t, step_size=0.1, max_iter=1000: RMGradientDescent(x0,
@@ -103,7 +103,7 @@ def diffusion_mean(M:object,
                                                                                         max_iter = max_iter
                                                                                         )
         
-        M.sm_dmt = lambda X_obs, t, y, step_size=0.1, max_iter=1000: GradientDescent(t,
+        M.sm_dmt = lambda X_obs, y, t, step_size=0.1, max_iter=1000: GradientDescent(t,
                                                                                      grad_fn = lambda t: gradt_loss(X_obs, y, t),
                                                                                      step_size=step_size,
                                                                                      max_iter = max_iter,

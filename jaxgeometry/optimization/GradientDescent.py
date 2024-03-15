@@ -108,7 +108,7 @@ def JointGradientDescent(mu_rm:Array,
                          max_iter:int=100,
                          bnds_rm:Tuple[Array, Array]=(None,None),
                          bnds_euc:Tuple[Array, Array]=(None,None),
-                         max_step:Array=0.1
+                         max_step:Array=0.1,
                          )->Tuple[Array, Array, Array, Array]:
     
     @jit
