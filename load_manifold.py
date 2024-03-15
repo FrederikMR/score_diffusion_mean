@@ -190,6 +190,7 @@ def load_manifold(manifold:str, dim:int=None)->None:
         x0 = M.coords(jnp.array([jnp.cos(0.), jnp.sin(0.)]))
         sampling_method = 'LocalSampling'
         layers = [50,100,200,400,800,800,400,200,100,50]
+        opt_val = 'x0'
     else:
         return
     

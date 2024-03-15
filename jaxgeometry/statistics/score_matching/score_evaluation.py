@@ -68,6 +68,37 @@ class ScoreEvaluation(object):
         
         return val1+val3
     
+    def grady_eval(self, 
+                  x:Tuple[Array, Array], 
+                  y:Tuple[Array, Array], 
+                  t:Array,
+                  )->Array:
+        
+        if self.method == 'Embedded':
+            return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
+        else:
+            return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
+        
+    def ggrady_eval(self, 
+                  x:Tuple[Array, Array], 
+                  y:Tuple[Array, Array], 
+                  t:Array,
+                  )->Array:
+        
+        if self.s2_approx:
+            if self.method == 'Embedded':
+                return self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((self.M.F(x), self.M.F(y), t)))
+            else:
+                return self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
+        else:
+            if self.method == 'Embedded':
+                return jacfwd(lambda y: \
+                              self.s1_model.apply(self.s1_state.params,self.rng_key, 
+                                                  jnp.hstack((self.M.F(x), self.M.F(y), t))))(self.M.F(y))
+            else:
+                return jacfwd(lambda y: \
+                              self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t))))(y[0])
+    
     def grady_val(self, 
                   x:Tuple[Array, Array], 
                   y:Tuple[Array, Array], 
@@ -135,17 +166,16 @@ class ScoreEvaluation(object):
                   t:Array, 
                   )->Array:
 
-        if ((self.method == "Embedded") and (self.s2_approx)):
+        if self.method == "Embedded":
             Fx = self.M.F(x)
             Fy = self.M.F(y)
-            s1_val = self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((Fx, Fy, t)))
+            s1_val = self.grady_eval(x,y,t)#self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((Fx, Fy, t)))
             s1_val = self.M.proj(Fx,s1_val)
-            s2_val = self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((Fx, Fy, t)))
+            s2_val = self.ggrady_eval(x,y,t)#self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((Fx, Fy, t)))
             s2_val = self.hess_EmbeddedTM(Fx, s1_val, s2_val)
             div = jnp.trace(s2_val)
         else:
             s1_val = self.grady_log(x,y,t)
-            #s1_val = self.grady_val(x,y,t)
             s2_val = self.ggrady_log(x,y,t)
             s2_val = jnp.linalg.solve(self.M.g(x), s2_val)
             div = jnp.trace(s2_val)+.5*jnp.dot(s1_val,jacfwdx(self.M.logAbsDet)(y).squeeze())
