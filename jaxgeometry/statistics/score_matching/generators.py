@@ -693,4 +693,154 @@ class ProjectionSampling(object):
         
         return dW
 
+#%% VAE Sampling
+
+class VAESampling(object):
+    
+    def __init__(self,
+                 M:object,
+                 x0:Tuple[Array, Array],
+                 repeats:int=2**3,
+                 x_samples:int=2**5,
+                 t_samples:int=2**7,
+                 N_sim:int=2**8,
+                 max_T:float=1.0,
+                 dt_steps:int=1000,
+                 T_sample:bool = False,
+                 t:float = 0.1
+                 )->None:
+        
+        self.M = M
+        self.x_samples=x_samples
+        self.t_samples = t_samples
+        self.N_sim = N_sim
+        self.max_T = max_T
+        self.dt_steps = dt_steps
+        self.T_sample = T_sample
+        self.t = t
+        self.repeats = repeats
+        self.x0s = tile(x0, repeats)
+        self.x0s_default = tile(x0, repeats)
+        self._dts = dts(T=self.max_T, n_steps=self.dt_steps)
+        self.counter = 0
+        
+        Brownian_coords(M)
+        (product, sde_product, chart_update_product) = product_sde(M, 
+                                                                   M.sde_Brownian_coords, 
+                                                                   M.chart_update_Brownian_coords)
+        
+        self.product = product
+        
+    def __str__(self)->str:
+        
+        return "Generating Samples for Brownian Motion on Manifolds in Local Coordinates"
+    
+    def sim_diffusion_mean(self, 
+                           x0:Tuple[Array, Array],
+                           N_sim:int
+                           )->Tuple[Array, Array]:
+        
+        x0s = tile(x0, N_sim)
+        dW = dWs(N_sim*self.M.dim,self._dts).reshape(-1,N_sim,self.M.dim)
+        (ts,xss,chartss,*_) = self.product(x0s,self._dts,dW,jnp.repeat(1.,N_sim))
+        
+        return (xss[-1], chartss[-1])
+        
+    def __call__(self)->Tuple[Array, Array, Array, Array, Array]:
+        
+        while True:
+          #  self.counter += 1
+          #  print(self.counter)
+          #  if self.counter > 100:
+          #      self.counter = 0
+          #      self.x0s = self.x0s_default
+            
+            dW = dWs(self.N_sim*self.M.dim,self._dts).reshape(-1,self.N_sim,self.M.dim)
+            (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
+                                                jnp.repeat(self.x0s[1],self.x_samples,axis=0)),
+                                          self._dts,dW,jnp.repeat(1.,self.N_sim))
+            
+            Fx0s = self.x0s[0]
+            self.x0s = (xss[-1,::self.x_samples],chartss[-1,::self.x_samples])
+            
+            if jnp.isnan(jnp.sum(xss)):
+                self.x0s = self.x0s_default
+            
+            if not self.T_sample:
+                inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
+                ts = ts[inds]
+                samples = xss[inds]
+                
+                yield jnp.hstack((jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.t_samples,1)),
+                                  samples.reshape(-1,self.M.dim),
+                                  jnp.repeat(ts,self.N_sim).reshape((-1,1)),
+                                  dW[inds].reshape(-1,self.M.dim),
+                                  jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
+                                  ))
+            
+            else:
+                inds = jnp.argmin(jnp.abs(ts-self.t))
+                ts = ts[inds]
+                samples = xss[inds]
+                yield jnp.hstack((jnp.repeat(Fx0s,self.x_samples,axis=0),
+                                  samples.reshape(-1,self.M.dim),
+                                  jnp.repeat(ts,self.N_sim).reshape((-1,1)),
+                                  dW[inds].reshape(-1,self.M.dim),
+                                  jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
+                                  ))
+            
+    def update_coords(self, Fx:Array)->Tuple[Array,Array]:
+        
+        chart = self.M.centered_chart(Fx)
+        
+        return (Fx,chart)
+    
+    def grad_TM(self,
+                  s1_model:Callable[[Array, Array, Array], Array], 
+                  x0:Array, 
+                  x:Array, 
+                  t:Array
+                  )->Array:
+        
+        return s1_model(x0, x, t)
+    
+    def grad_local(self,
+                   s1_model:Callable[[Array, Array, Array], Array], 
+                   x0:Array, 
+                   x:Tuple[Array,Array], 
+                   t:Array
+                   )->Array:
+        
+        return s1_model(x0, x[0], t)
+    
+    def proj_hess(self,s1_model:Callable[[Array, Array, Array], Array], 
+                   s2_model:Callable[[Array, Array, Array], Array],
+                   x0:Array, 
+                   x:Array, 
+                   t:Array
+                   )->Array:
+        
+        return s2_model(x0,x,t)
+    
+    def dW_TM(self,
+                x:Array,
+                dW:Array
+                )->Array:
+    
+        return dW
+    
+    def dW_local(self,
+                x:Array,
+                dW:Array
+                )->Array:
+    
+        return dW
+    
+    def dW_embedded(self,
+                x:Array,
+                dW:Array
+                )->Array:
+        
+        return dW
+
 

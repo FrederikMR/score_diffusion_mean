@@ -75,7 +75,7 @@ class ScoreEvaluation(object):
                   )->Array:
         
         if self.method == 'Embedded':
-            return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
+            return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((self.M.F(x), self.M.F(y), t)))
         else:
             return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
         
@@ -92,9 +92,11 @@ class ScoreEvaluation(object):
                 return self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
         else:
             if self.method == 'Embedded':
-                return jacfwd(lambda y: \
+                Fx = self.M.F(x)
+                Fy = self.M.F(y)
+                return jacfwd(lambda Fy: \
                               self.s1_model.apply(self.s1_state.params,self.rng_key, 
-                                                  jnp.hstack((self.M.F(x), self.M.F(y), t))))(self.M.F(y))
+                                                  jnp.hstack((Fx, Fy, t))))(Fy)
             else:
                 return jacfwd(lambda y: \
                               self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t))))(y[0])

@@ -15,10 +15,9 @@ from jaxgeometry.setup import *
 from jaxgeometry.manifolds import Latent
 
 #jaxgeometry
-from jaxgeometry.integration import dts, dWs
 from jaxgeometry.stochastics import product_sde, Brownian_coords
 
-from jax.nn import elu, sigmoid, swish
+from jax.nn import elu, sigmoid, swish, tanh
 
 #%% VAE Output
 
@@ -92,12 +91,14 @@ class Decoder(hk.Module):
 class VAE(hk.Module):
     def __init__(self,
                  encoder:Encoder,
-                 decoder:Decoder
+                 decoder:Decoder,
+                 seed:int=2712
                  ):
         super(VAEBM, self).__init__()
 
         self.encoder = encoder
         self.decoder = decoder
+        self.key = jrandom.key(seed)
 
     def __call__(self, x: Array) -> VAEOutput:
       """Forward pass of the variational autoencoder."""
@@ -114,12 +115,14 @@ class VAE(hk.Module):
 class VAEBM(hk.Module):
     def __init__(self,
                  encoder:Encoder,
-                 decoder:Decoder
+                 decoder:Decoder,
+                 seed:int=2712
                  ):
         super(VAEBM, self).__init__()
 
         self.encoder = encoder
         self.decoder = decoder
+        self.key = jrandom.key(seed)
         
         F = lambda z: decoder(z[0].reshape(-1,2))        
         M = Latent(dim=2, emb_dim=3, F=F, invF=None)
@@ -127,9 +130,28 @@ class VAEBM(hk.Module):
         
         self.M = M
         
+    def dts(self, T:float=1.0,n_steps:int=n_steps)->Array:
+        """time increments, deterministic"""
+        return jnp.array([T/n_steps]*n_steps)
+
+    def dWs(self,d:int,_dts:Array=None,num:int=1)->Array:
+        """
+        standard noise realisations
+        time increments, stochastic
+        """
+        keys = jrandom.split(self.key,num=num+1)
+        self.key = keys[0]
+        subkeys = keys[1:]
+        if _dts == None:
+            _dts = self.dts()
+        if num == 1:
+            return jnp.sqrt(_dts)[:,None]*jrandom.normal(subkeys[0],(_dts.shape[0],d))
+        else:
+            return vmap(lambda subkey: jnp.sqrt(_dts)[:,None]*jrandom.normal(subkey,(_dts.shape[0],d)))(subkeys) 
+        
     def Jf(self,z):
         
-        return jacfwd(self.decoder(z.reshape(-1,2)))(z)
+        return jacfwd(lambda z: self.decoder(z.reshape(-1,2)).reshape(-1))(z)
         
     def G(self,z):
         
@@ -143,7 +165,7 @@ class VAEBM(hk.Module):
     
     def Ginv(self,z):
         
-        return jnp.linalg.inv(G(z))
+        return jnp.linalg.inv(self.G(z))
     
     def Chris(self,z):
         
@@ -159,7 +181,7 @@ class VAEBM(hk.Module):
     
     def taylor_sample(self, mu:Array, t:Array):
         
-        def step(carry, step):
+        def sample(carry, step):
             
             t,z = carry
             dt, dW = step
@@ -173,20 +195,22 @@ class VAEBM(hk.Module):
             
             return ((t,z),)*2
         
-        dt = vmap(lambda t: dts(t,100))(t).squeeze()
+        dt = hk.vmap(lambda t: self.dts(t,100), split_rng=False)(t).squeeze()
         N_data = mu.shape[0]
-        dW = vmap(lambda dt: dWs(self.encoder.latent_dim,dt))(dt).reshape(-1,N_data,self.encoder.latent_dim)
+        dW = hk.vmap(lambda dt: self.dWs(self.encoder.latent_dim,dt),
+                     split_rng=False)(dt).reshape(-1,N_data,self.encoder.latent_dim)
         
         #vmap(lambda mu,dt,dW: lax.scan(step, init=(mu,0.0), xs=(dt,dW)))(mu,dt,jnp.transpose(dW, axis=(1,0,2)))
-        val, _ =lax.scan(lambda carry, step: vmap(lambda t,z,dt,dW: step((t,z),(dt,dW)))(carry[0],carry[1],step[0],step[1]),
-                         init=(mu,t), xs=(dt,dW)
+        val, _ =hk.scan(lambda carry, step: hk.vmap(lambda t,z,dt,dW: sample((t,z),(dt,dW)),
+                                                        split_rng=False)(carry[0],carry[1],step[0],step[1]),
+                         init=(t,mu), xs=(dt,dW)
                          )
 
         return val[1]
   
     def local_sample(self, mu:Array, t:Array)->Array:
         
-        def step(carry, step):
+        def sample(carry, step):
             
             t,z = carry
             dt, dW = step
@@ -196,19 +220,23 @@ class VAEBM(hk.Module):
             Chris = self.Chris(z)
             
             stoch = jnp.dot(ginv, dW)
-            det = 0.5*jnp.einsum('jk,ijk->i', ginv, chris)
+            det = 0.5*jnp.einsum('jk,ijk->i', ginv, Chris)
             
             z += det+stoch
             
+            t = t.astype(jnp.float32)
+            z = z.astype(jnp.float32)
+            
             return ((t,z),)*2
         
-        dt = vmap(lambda t: dts(t,100))(t).squeeze()
+        dt = hk.vmap(lambda t: self.dts(t,100), split_rng=False)(t).squeeze()
         N_data = mu.shape[0]
-        dW = vmap(lambda dt: dWs(self.encoder.latent_dim,dt))(dt).reshape(-1,N_data,self.encoder.latent_dim)
-        
-        #vmap(lambda mu,dt,dW: lax.scan(step, init=(mu,0.0), xs=(dt,dW)))(mu,dt,jnp.transpose(dW, axis=(1,0,2)))
-        val, _ =lax.scan(lambda carry, step: vmap(lambda t,z,dt,dW: step((t,z),(dt,dW)))(carry[0],carry[1],step[0],step[1]),
-                         init=(mu,t), xs=(dt,dW)
+        dW = hk.vmap(lambda dt: self.dWs(self.encoder.latent_dim,dt),
+                     split_rng=False)(dt).reshape(-1,N_data,self.encoder.latent_dim)
+
+        val, _ =hk.scan(lambda carry, step: hk.vmap(lambda t,z,dt,dW: sample((t,z),(dt,dW)), 
+                                                        split_rng=False)(carry[0],carry[1],step[0],step[1]),
+                         init=(t,mu), xs=(dt,dW)
                          )
 
         return val[1]
@@ -234,7 +262,7 @@ class VAEBM(hk.Module):
 #%% Transformed model
     
 @hk.transform
-def model(x):
+def vae_model(x):
     
     vae = VAEBM(
     encoder=Encoder(latent_dim=2),
@@ -268,11 +296,11 @@ def model_decoder(z):
     return vae.decoder(z)
 
 @hk.transform
-def score_model(z):
+def score_model(x):
     
     score = ScoreNet(
     dim=2,
     layers=[50,100,200,200,100,50],
     )
   
-    return vae.decoder(z)
+    return score(x)

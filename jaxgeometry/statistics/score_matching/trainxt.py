@@ -107,12 +107,11 @@ def train_s1(M:object,
     for step in range(epochs):
         data = next(train_dataset)
         if ((jnp.isnan(jnp.sum(data)))):
-            continue
-        else:
             generator.x0s = generator.x0s_default
             train_dataset = tf.data.Dataset.from_generator(generator,output_types=tf.float32,
                                                            output_shapes=([batch_size,2*N_dim+dW_dim+2]))
             train_dataset = iter(tfds.as_numpy(train_dataset))
+            continue
         new_state, loss_val = update(state, data)
         if ((not any(jnp.sum(jnp.isnan(val))>0 for val in new_state.params[list(new_state.params.keys())[0]].values())) \
                 and (loss_val<1e12)):
@@ -227,12 +226,11 @@ def train_s2(M:object,
     for step in range(epochs):
         data = next(train_dataset)
         if ((jnp.isnan(jnp.sum(data)))):
-            continue
-        else:
             generator.x0s = generator.x0s_default
             train_dataset = tf.data.Dataset.from_generator(generator,output_types=tf.float32,
                                                            output_shapes=([batch_size,2*N_dim+dW_dim+2]))
             train_dataset = iter(tfds.as_numpy(train_dataset))
+            continue
         new_state, loss_val = update(state, data)
         if ((not any(jnp.sum(jnp.isnan(val))>0 for val in new_state.params[list(new_state.params.keys())[0]].values())) \
                 and (loss_val<1e12)):
@@ -367,12 +365,11 @@ def train_s1s2(M:object,
     for step in range(epochs):
         data = next(train_dataset)
         if ((jnp.isnan(jnp.sum(data)))):
-            continue
-        else:
             generator.x0s = generator.x0s_default
             train_dataset = tf.data.Dataset.from_generator(generator,output_types=tf.float32,
                                                            output_shapes=([batch_size,2*N_dim+dW_dim+2]))
             train_dataset = iter(tfds.as_numpy(train_dataset))
+            continue
         new_state, loss_val = update(state, data)
         if ((not any(jnp.sum(jnp.isnan(val))>0 for val in new_state.params[list(new_state.params.keys())[0]].values())) \
                 and (loss_val<1e12)):

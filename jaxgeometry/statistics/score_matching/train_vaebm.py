@@ -35,7 +35,6 @@ def train_vaebm(vae_model:object,
                 t0:Array,
                 dim:int,
                 emb_dim:int,
-                batch_size:int,
                 vae_state:TrainingState = None,
                 score_state:TrainingState = None,
                 lr_rate:float = 0.001,
@@ -69,18 +68,28 @@ def train_vaebm(vae_model:object,
             return z
                 
         z, x_hat, mu, t = vae_apply_fn(params, x, rng_key, state_val)
-        z_grad = grad(kl1_fun)(params)
+        z_grad = jacfwd(kl1_fun)(params)
         rec_grad = grad(gaussian_likelihood)(params)
-        
         
         s_logqzx = vmap(lambda mu,z,t: score_apply_fn(score_state.params, jnp.hstack((mu,z,t)), 
                                   score_state.rng_key, score_state.state_val))(mu,z,t)
         s_logpz = vmap(lambda z: score_apply_fn(score_state.params, jnp.hstack((mu0,z,t0)), 
                                  rng_key, score_state.state_val))(z)
-        
-        kl_grad = jnp.mean(jnp.einsum('...i,...ij->....j', s_logqzx-s_logpz, z_grad), axis=0)
+        diff = s_logqzx-s_logpz
 
-        return kl_grad-rec_grad
+        if x.ndim == 1:
+            kl_grad = {layer: {name: jnp.einsum('i,i...->...', diff, w) for name,w in val.items()} \
+                       for layer,val in z_grad.items()}
+        else:
+            kl_grad = {layer: {name: jnp.einsum('ki,ki...->k...', diff, w) for name,w in val.items()} \
+                       for layer,val in z_grad.items()}
+        #z_grad.update((x, jnp.einsum('...i,...ij->...j')) for v,w in x for x, y in my_dict.items())
+        #kl_grad = jnp.mean(jnp.einsum('...i,...ij->...j', s_logqzx-s_logpz, z_grad), axis=0)
+        
+        res = {layer: {name: kl_grad[layer][name]-rec_grad[layer][name] for name,w in val.items()} \
+                   for layer,val in z_grad.items()}
+
+        return res
     
     @jit
     def vae_loss_fn(params:hk.Params, state_val:dict, rng_key:Array, x)->Array:
@@ -122,8 +131,9 @@ def train_vaebm(vae_model:object,
     @jit
     def update_vae_grad(state:TrainingState, data:Array):
         
+        rng_key, next_rng_key = jrandom.split(state.rng_key)
         gradients = vae_loss_grad(state.params, state.state_val, state.rng_key, data)
-        updates, new_opt_state = optimizer.update(gradients, state.opt_state)
+        updates, new_opt_state = vae_optimizer.update(gradients, state.opt_state)
         new_params = optax.apply_updates(state.params, updates)
         
         return TrainingState(new_params, state.state_val, new_opt_state, rng_key)
@@ -131,8 +141,9 @@ def train_vaebm(vae_model:object,
     @jit
     def update_vae_fun(state:TrainingState, data:Array):
         
-        gradients = vae_loss_fun(state.params, state.state_val, state.rng_key, data)
-        updates, new_opt_state = optimizer.update(gradients, state.opt_state)
+        rng_key, next_rng_key = jrandom.split(state.rng_key)
+        gradients = grad(vae_loss_fn)(state.params, state.state_val, state.rng_key, data)
+        updates, new_opt_state = vae_optimizer.update(gradients, state.opt_state)
         new_params = optax.apply_updates(state.params, updates)
         
         return TrainingState(new_params, state.state_val, new_opt_state, rng_key)
@@ -141,8 +152,8 @@ def train_vaebm(vae_model:object,
     def update_score(state:TrainingState, data:Array):
         
         rng_key, next_rng_key = jrandom.split(state.rng_key)
-        gradients = grad(score_loss_fn)(state.params, state.state_val, rng_key, data)
-        updates, new_opt_state = vae_optimizer.update(gradients, state.opt_state)
+        loss, gradients = value_and_grad(score_loss_fn)(state.params, state.state_val, rng_key, data)
+        updates, new_opt_state = score_optimizer.update(gradients, state.opt_state)
         new_params = optax.apply_updates(state.params, updates)
         
         return TrainingState(new_params, state.state_val, new_opt_state, rng_key), loss
@@ -185,10 +196,11 @@ def train_vaebm(vae_model:object,
                                     t_samples=2**7,
                                     N_sim=2**8,
                                     max_T=1.0,
-                                    dt_steps=100,
+                                    dt_steps=1000,
                                     T_sample=0,
                                     t=0.1
                                     )
+    batch_size = (2**5)*(2**3)*(2**7)
     score_datasets = tf.data.Dataset.from_generator(score_generator,output_types=tf.float32,
                                                    output_shapes=([batch_size,3*dim+2]))
     score_datasets = iter(tfds.as_numpy(score_datasets))
@@ -197,13 +209,13 @@ def train_vaebm(vae_model:object,
     if type(vae_model) == hk.Transformed:
         if vae_state is None:
             initial_params = vae_model.init(jrandom.PRNGKey(seed), next(vae_datasets))
-            initial_opt_state = optimizer.init(initial_params)
+            initial_opt_state = vae_optimizer.init(initial_params)
             vae_state = TrainingState(initial_params, None, initial_opt_state, initial_rng_key)
         vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, rng_key, data)
     elif type(vae_model) == hk.TransformedWithState:
         if vae_state is None:
             initial_params, init_state = vae_model.init(jrandom.PRNGKey(seed), next(vae_datasets))
-            initial_opt_state = optimizer.init(initial_params)
+            initial_opt_state = vae_optimizer.init(initial_params)
             vae_state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
         vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, state_val, rng_key, data)[0]
         
@@ -212,13 +224,13 @@ def train_vaebm(vae_model:object,
     if type(score_model) == hk.Transformed:
         if score_state is None:
             initial_params = score_model.init(jrandom.PRNGKey(seed), next(score_datasets)[:,:(2*dim+1)])
-            initial_opt_state = optimizer.init(initial_params)
+            initial_opt_state = score_optimizer.init(initial_params)
             score_state = TrainingState(initial_params, None, initial_opt_state, initial_rng_key)
         score_apply_fn = lambda params, data, rng_key, state_val: score_model.apply(params, rng_key, data)
     elif type(score_model) == hk.TransformedWithState:
         if score_state is None:
             initial_params, init_state = score_model.init(jrandom.PRNGKey(seed), next(score_datasets)[:,:(2*dim+1)])
-            initial_opt_state = optimizer.init(initial_params)
+            initial_opt_state = score_optimizer.init(initial_params)
             score_state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
         score_apply_fn = lambda params, data, rng_key, state_val: score_model.apply(params, state_val, rng_key, data)[0]
     
@@ -233,7 +245,7 @@ def train_vaebm(vae_model:object,
                                     t_samples=2**7,
                                     N_sim=2**8,
                                     max_T=1.0,
-                                    dt_steps=100,
+                                    dt_steps=1000,
                                     T_sample=0,
                                     t=0.1
                                     )
@@ -242,7 +254,7 @@ def train_vaebm(vae_model:object,
     score_datasets = iter(tfds.as_numpy(score_datasets))
     
     for step in range(burnin_epochs):
-        for i in range(10):
+        for i in range(repeats):
             ds = next(vae_datasets)
             vae_state = update_vae_fun(vae_state, ds)
         if (step+1) % save_step == 0:
@@ -250,7 +262,7 @@ def train_vaebm(vae_model:object,
             print("Epoch: {}".format(step+1))
             
     F = lambda z: decoder_apply_fn(vae_state.params, z[0].reshape(-1,2), vae_state.rng_key, 
-                                   vae_state.state_val)[0].reshape(-1)
+                                   vae_state.state_val).reshape(-1)
     M = Latent(dim=dim, emb_dim=emb_dim, F = F)
     x0 = (jnp.zeros(dim), jnp.zeros(1))
     score_generator = LocalSampling(M=M,
@@ -260,7 +272,7 @@ def train_vaebm(vae_model:object,
                                     t_samples=2**7,
                                     N_sim=2**8,
                                     max_T=1.0,
-                                    dt_steps=100,
+                                    dt_steps=1000,
                                     T_sample=0,
                                     t=0.1
                                     )
@@ -270,9 +282,12 @@ def train_vaebm(vae_model:object,
             
     for step in range(burnin_epochs):
         data = next(score_datasets)
+        print("hallo")
         if jnp.isnan(jnp.sum(data)):
+            print("Hallo")
             continue
-        score_state = update_score(score_state, data)
+        score_state,loss = update_score(score_state, data)
+        print(loss)
         if (step+1) % save_step == 0:            
             save_model(score_save_path, score_state)
             print("Epoch: {}".format(step+1))
@@ -283,9 +298,9 @@ def train_vaebm(vae_model:object,
             ds = next(vae_datasets)
             vae_state = update_vae_grad(vae_state, ds)
         F = lambda z: decoder_apply_fn(vae_state.params, z[0].reshape(-1,2), vae_state.rng_key, 
-                                       vae_state.state_val)[0].reshape(-1)
+                                   vae_state.state_val).reshape(-1)
         M = Latent(dim=dim, emb_dim=emb_dim, F = F)
-        x0 = (jnp.zeros(dim), jnp.zeros(1))
+        x0 = (data[0], jnp.zeros(1))
         score_generator = LocalSampling(M=M,
                                         x0=x0,
                                         repeats=8,
@@ -304,6 +319,8 @@ def train_vaebm(vae_model:object,
             data = next(score_datasets)
             if jnp.isnan(jnp.sum(data)):
                 continue
+            score_state,loss = update_score(score_state, data)
+            print(loss)
         if (step+1) % save_step == 0:
             
             save_model(vae_save_path, vae_state)
