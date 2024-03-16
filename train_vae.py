@@ -71,8 +71,6 @@ def train():
                 decoder_model = decoder_model,
                 score_model = score_model,
                 vae_datasets = vae_datasets,
-                mu0 = 0.0*jnp.zeros(2),
-                t0 = 1.0*jnp.ones(1),
                 dim = 2,
                 emb_dim = 3,
                 vae_state=None,

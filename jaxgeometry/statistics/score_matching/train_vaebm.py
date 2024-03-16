@@ -31,8 +31,6 @@ def train_vaebm(vae_model:object,
                 decoder_model:object,
                 score_model:object,
                 vae_datasets:object,
-                mu0:Array,
-                t0:Array,
                 dim:int,
                 emb_dim:int,
                 vae_state:TrainingState = None,
@@ -56,25 +54,25 @@ def train_vaebm(vae_model:object,
         @jit
         def gaussian_likelihood(params:hk.Params):
             
-            z, x_hat, mu, std = vae_apply_fn(params, x, rng_key, state_val)
+            z, x_hat, *_ = vae_apply_fn(params, x, rng_key, state_val)
             
             return jnp.mean(jnp.square(x-x_hat))
         
         @jit
         def kl1_fun(params:hk.Params):
             
-            z, x_hat, mu, std = vae_apply_fn(params, x, rng_key, state_val)
+            z, *_ = vae_apply_fn(params, x, rng_key, state_val)
 
             return z
                 
-        z, x_hat, mu, t = vae_apply_fn(params, x, rng_key, state_val)
+        z, x_hat, mu, t, mu0, t0 = vae_apply_fn(params, x, rng_key, state_val)
         z_grad = jacfwd(kl1_fun)(params)
         rec_grad = grad(gaussian_likelihood)(params)
         
         s_logqzx = vmap(lambda mu,z,t: score_apply_fn(score_state.params, jnp.hstack((mu,z,t)), 
                                   score_state.rng_key, score_state.state_val))(mu,z,t)
-        s_logpz = vmap(lambda z: score_apply_fn(score_state.params, jnp.hstack((mu0,z,t0)), 
-                                 rng_key, score_state.state_val))(z)
+        s_logpz = vmap(lambda mu0,z,t0: score_apply_fn(score_state.params, jnp.hstack((mu0,z,t0)), 
+                                 rng_key, score_state.state_val))(mu0,z,t0)
         diff = s_logqzx-s_logpz
 
         if x.ndim == 1:
@@ -104,7 +102,7 @@ def train_vaebm(vae_model:object,
             
             return -0.5*jnp.mean(jnp.sum(1+2.0*std-mu**2-jnp.exp(2.0*std), axis=-1))
         
-        z, x_hat, mu, t = vae_apply_fn(params, x, rng_key, state_val)
+        z, x_hat, mu, t, mu0, t0 = vae_apply_fn(params, x, rng_key, state_val)
         std = t*jnp.ones(z.shape)
         
         rec_loss = gaussian_likelihood(x, x_hat)
@@ -282,12 +280,21 @@ def train_vaebm(vae_model:object,
             
     for step in range(burnin_epochs):
         data = next(score_datasets)
-        print("hallo")
         if jnp.isnan(jnp.sum(data)):
-            print("Hallo")
+            score_generator.x0s = score_generator.x0s_default
+            score_datasets = tf.data.Dataset.from_generator(score_generator,output_types=tf.float32,
+                                                           output_shapes=([batch_size,3*dim+2]))
+            score_datasets = iter(tfds.as_numpy(score_datasets))
             continue
-        score_state,loss = update_score(score_state, data)
-        print(loss)
+        score_new_state,loss = update_score(score_state, data)
+        if ((not any(jnp.sum(jnp.isnan(val))>0 for val in score_new_state.params[list(score_new_state.params.keys())[0]].values())) \
+                and (loss<1e12)):
+            score_state = score_new_state
+        else:
+            score_generator.x0s = score_generator.x0s_default
+            score_datasets = tf.data.Dataset.from_generator(score_generator,output_types=tf.float32,
+                                                           output_shapes=([batch_size,3*dim+2]))
+            score_datasets = iter(tfds.as_numpy(score_datasets))
         if (step+1) % save_step == 0:            
             save_model(score_save_path, score_state)
             print("Epoch: {}".format(step+1))

@@ -98,8 +98,10 @@ class ScoreEvaluation(object):
                               self.s1_model.apply(self.s1_state.params,self.rng_key, 
                                                   jnp.hstack((Fx, Fy, t))))(Fy)
             else:
+                x = x[0]
+                y = y[0]
                 return jacfwd(lambda y: \
-                              self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t))))(y[0])
+                              self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x, y, t))))(y)
     
     def grady_val(self, 
                   x:Tuple[Array, Array], 
@@ -178,7 +180,9 @@ class ScoreEvaluation(object):
             div = jnp.trace(s2_val)
         else:
             s1_val = self.grady_log(x,y,t)
+            #s1_val = self.grady_eval(x,y,t)
             s2_val = self.ggrady_log(x,y,t)
+            #s2_val = self.ggrady_eval(x,y,t)
             s2_val = jnp.linalg.solve(self.M.g(x), s2_val)
             div = jnp.trace(s2_val)+.5*jnp.dot(s1_val,jacfwdx(self.M.logAbsDet)(y).squeeze())
 

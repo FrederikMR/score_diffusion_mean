@@ -26,6 +26,8 @@ class VAEOutput(NamedTuple):
   x_hat: Array
   mean: Array
   t: Array
+  mu0: Array
+  t0: Array
 
 #%% Other
 
@@ -65,6 +67,14 @@ class ScoreNet(hk.Module):
 class Encoder(hk.Module):
         
     latent_dim : int = 2
+    
+    def mu_layer(self, z:Array)->Array:
+        
+        return hk.Linear(output_size=self.latent_dim)(z)
+    
+    def t_layer(self, z:Array)->Array:
+        
+        return sigmoid(hk.Linear(output_size=1)(z))
 
     def __call__(self, x:Array) -> Tuple[Array, Array]:
 
@@ -72,8 +82,8 @@ class Encoder(hk.Module):
         z = swish(hk.Linear(output_size=100)(x))
         z = swish(hk.Linear(output_size=100)(z))
         
-        mu = hk.Linear(output_size=self.latent_dim)(z)
-        t = sigmoid(hk.Linear(output_size=1)(z))
+        mu = self.mu_layer(z)
+        t = self.t_layer(z)
 
         return mu, t
 
@@ -130,6 +140,20 @@ class VAEBM(hk.Module):
         
         self.M = M
         
+    def mu0(self, z:Array)->Array:
+        
+        z = swish(hk.Linear(output_size=100)(z))
+        mu0 = hk.Linear(output_size=2)(z)
+        
+        return mu0
+    
+    def t0(self, z:Array)->Array:
+        
+        z = swish(hk.Linear(output_size=100)(z))
+        t0 = hk.Linear(output_size=1)(z)
+        
+        return t0
+        
     def dts(self, T:float=1.0,n_steps:int=n_steps)->Array:
         """time increments, deterministic"""
         return jnp.array([T/n_steps]*n_steps)
@@ -175,9 +199,9 @@ class VAEBM(hk.Module):
                    +jnp.einsum('im,lmk->ikl',gsharpx,Dgx)
                    -jnp.einsum('im,klm->ikl',gsharpx,Dgx))
     
-    def euclidean_sample(self, mu:Array, t:Array):
+    def normal_sample(self, mu:Array, t:Array):
         
-        return mu+t*jran.normal(hk.next_rng_key(), mu.shape)
+        return mu+t*jrandom.normal(hk.next_rng_key(), mu.shape)
     
     def taylor_sample(self, mu:Array, t:Array):
         
@@ -208,6 +232,39 @@ class VAEBM(hk.Module):
 
         return val[1]
   
+    def euclidean_sample(self, mu:Array, t:Array)->Array:
+        
+        def sample(carry, step):
+            
+            t,z = carry
+            dt, dW = step
+            
+            t += dt
+            ginv = self.Ginv(z)
+            Chris = self.Chris(z)
+            
+            stoch = jnp.dot(ginv, dW)
+            det = 0.5*jnp.einsum('jk,ijk->i', ginv, Chris)
+            
+            z += det+stoch
+            
+            t = t.astype(jnp.float32)
+            z = z.astype(jnp.float32)
+            
+            return ((t,z),)*2
+        
+        dt = hk.vmap(lambda t: self.dts(t,100), split_rng=False)(t).squeeze()
+        N_data = mu.shape[0]
+        dW = hk.vmap(lambda dt: self.dWs(self.encoder.latent_dim,dt),
+                     split_rng=False)(dt).reshape(-1,N_data,self.encoder.latent_dim)
+
+        val, _ =hk.scan(lambda carry, step: hk.vmap(lambda t,z,dt,dW: sample((t,z),(dt,dW)), 
+                                                        split_rng=False)(carry[0],carry[1],step[0],step[1]),
+                         init=(t,mu), xs=(dt,dW)
+                         )
+
+        return val[1]
+    
     def local_sample(self, mu:Array, t:Array)->Array:
         
         def sample(carry, step):
@@ -241,7 +298,7 @@ class VAEBM(hk.Module):
 
         return val[1]
 
-    def __call__(self, x: Array, sample_method='Local') -> VAEOutput:
+    def __call__(self, x: Array, sample_method='Euclidean') -> VAEOutput:
         """Forward pass of the variational autoencoder."""
         x = x.astype(jnp.float32)
         mu, t = self.encoder(x)
@@ -253,11 +310,13 @@ class VAEBM(hk.Module):
         elif sample_method == 'Euclidean':
             z = self.euclidean_sample(mu, t)
         else:
-            raise ValueError("Invalid sampling method. Choose either: Local, Taylor, Euclidean")          
+            raise ValueError("Invalid sampling method. Choose either: Local, Taylor, Euclidean")
+            
+        mu0, t0 = self.mu0(z), self.t0(z)
 
         x_hat = self.decoder(z)
           
-        return VAEOutput(z, x_hat, mu, t)
+        return VAEOutput(z, x_hat, mu, t, mu0, t0)
 
 #%% Transformed model
     
