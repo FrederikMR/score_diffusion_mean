@@ -6,3 +6,9 @@ Switching from python3/3.8.2 to python3/3.10.12
 2024-03-15 21:19:43.938533: E tensorflow/compiler/xla/stream_executor/cuda/cuda_dnn.cc:9342] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
 2024-03-15 21:19:43.938573: E tensorflow/compiler/xla/stream_executor/cuda/cuda_fft.cc:609] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
 2024-03-15 21:19:43.960261: E tensorflow/compiler/xla/stream_executor/cuda/cuda_blas.cc:1518] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+Exception ignored in: <function WeakKeyDictionary.__init__.<locals>.remove at 0x7fab87ecd240>
+Traceback (most recent call last):
+  File "/appl/python/3.10.12/lib/python3.10/weakref.py", line 370, in remove
+    def remove(k, selfref=ref(self)):
+KeyboardInterrupt: 
+Terminated
