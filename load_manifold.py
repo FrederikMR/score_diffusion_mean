@@ -193,11 +193,5 @@ def load_manifold(manifold:str, dim:int=None)->None:
         opt_val = 'x0'
     else:
         return
-    
-    print(M)
-    print(x0)
-    print(sampling_method)
-    print(generator_dim)
-    print(layers)
-    print(opt_val)
+
     return M, x0, sampling_method, generator_dim, layers, opt_val
