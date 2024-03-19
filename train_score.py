@@ -47,11 +47,11 @@ from ManLearn.train_MNIST import load_dataset as load_mnist
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Euclidean",
+    parser.add_argument('--manifold', default="Sphere",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
-    parser.add_argument('--loss_type', default="dsmvr",
+    parser.add_argument('--loss_type', default="dsmdiagvr",
                         type=str)
     parser.add_argument('--load_model', default=0,
                         type=int)
@@ -210,6 +210,8 @@ def train_score()->None:
         state = load_model(s1_path)
         rng_key = jran.PRNGKey(2712)
         s1 = lambda x,y,t: s1_model.apply(state.params,rng_key, jnp.hstack((x, y, t)))
+        if args.manifold == "Sphere":
+            s1 = lambda x,y,t: M.grady_log_hk((0.0, x), (0.0, y), t)[1]
         
         if args.load_model:
             state_s2 = load_model(s1_path)

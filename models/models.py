@@ -27,12 +27,13 @@ class MLP_s1(hk.Module):
     
     dim:int
     layers:list
+    init:hk.initializers.Initializer = hk.initializers.RandomNormal(stddev=0.1, mean=0.)
     
     def model(self)->object:
         
         model = []
         for l in self.layers:
-            model.append(hk.Linear(l))
+            model.append(hk.Linear(l, w_init=self.init, b_init=self.init))
             model.append(tanh)
             
         model.append(hk.Linear(self.dim))
@@ -61,12 +62,13 @@ class MLP_s2(hk.Module):
     layers_beta:list
     dim:int = 2
     r:int = max(dim // 2,1)
+    init:hk.initializers.Initializer = hk.initializers.RandomNormal(stddev=0.1, mean=0.)
     
     def model_alpha(self)->object:
         
         model = []
         for l in self.layers_alpha:
-            model.append(hk.Linear(l))
+            model.append(hk.Linear(l, w_init=self.init, b_init=self.init))
             model.append(tanh)
             
         model.append(hk.Linear(self.dim))
@@ -77,7 +79,7 @@ class MLP_s2(hk.Module):
         
         model = []
         for l in self.layers_beta:
-            model.append(hk.Linear(l))
+            model.append(hk.Linear(l, w_init=self.init, b_init=self.init))
             model.append(tanh)
             
         model.append(lambda x: hk.Linear(self.dim*self.r)(x).reshape(-1,self.dim,self.r))
@@ -106,12 +108,13 @@ class MLP_diags2(hk.Module):
     layers_beta:list
     dim:int = 2
     r:int = max(dim // 2,1)
+    init:hk.initializers.Initializer = hk.initializers.RandomNormal(stddev=0.1, mean=0.)
     
     def model_alpha(self)->object:
         
         model = []
         for l in self.layers_alpha:
-            model.append(hk.Linear(l))
+            model.append(hk.Linear(l, w_init=self.init, b_init=self.init))
             model.append(tanh)
             
         model.append(hk.Linear(self.dim))
