@@ -109,6 +109,7 @@ def JointGradientDescent(mu_rm:Array,
                          bnds_rm:Tuple[Array, Array]=(None,None),
                          bnds_euc:Tuple[Array, Array]=(None,None),
                          max_step:Array=0.1,
+                         Exp = None,
                          )->Tuple[Array, Array, Array, Array]:
     
     @jit
@@ -121,7 +122,7 @@ def JointGradientDescent(mu_rm:Array,
         grad_rm = grad_rm #jnp.clip(grad_rm, min_step, max_step)
         grad_euc = jnp.clip(grad_euc, min_step/step_size_euc, max_step/step_size_euc)
         
-        mu_rm = M.Exp(mu_rm, -step_size_rm*grad_rm)
+        mu_rm = Exp(mu_rm, -step_size_rm*grad_rm)
         #mu_rm[0] = jnp.clip(mu_rm[0], lb_rm, ub_rm)
         
         #grad_euc = grad_euc/jnp.linalg.norm(grad_euc)
@@ -142,7 +143,10 @@ def JointGradientDescent(mu_rm:Array,
         min_step = None
     else:
         min_step = -max_step
-        
+    
+    if Exp is None:
+        Exp = M.Exp
+    
     lb_euc = bnds_euc[0]
     ub_euc = bnds_euc[1]
     lb_rm = bnds_rm[0]

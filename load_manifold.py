@@ -130,7 +130,7 @@ def load_manifold(manifold:str, dim:int=None)->None:
         sampling_method = 'LocalSampling'
         M = SPDN(N=dim)
         generator_dim = M.dim
-        x0 = M.coords([10.]*(dim*(dim+1)//2))
+        x0 = M.coords([1.]*(dim*(dim+1)//2))
         opt_val = "x0"
         layers = get_generator_dim(generator_dim)
     elif manifold == "Sym":

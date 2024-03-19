@@ -45,7 +45,10 @@ class LocalSampling(object):
         self.T_sample = T_sample
         self.t = t
         self.repeats = repeats
-        self.x0s = tile(x0, repeats)
+        if x0[0].ndim == 1:
+            self.x0s = tile(x0, repeats)
+        else:
+            self.x0s = x0
         self.x0s_default = tile(x0, repeats)
         self._dts = dts(T=self.max_T, n_steps=self.dt_steps)
         self.counter = 0
@@ -698,42 +701,144 @@ class ProjectionSampling(object):
 class VAESampling(object):
     
     def __init__(self,
-                 M:object,
-                 x0:Tuple[Array, Array],
+                 F:Callable[[Array],Array],
+                 x0:Array,
+                 dim:int,
+                 method:str='Local',
                  repeats:int=2**3,
                  x_samples:int=2**5,
                  t_samples:int=2**7,
                  N_sim:int=2**8,
                  max_T:float=1.0,
                  dt_steps:int=1000,
-                 T_sample:bool = False,
-                 t:float = 0.1
                  )->None:
         
-        self.M = M
+        self.F = F
         self.x_samples=x_samples
+        self.dim = dim
         self.t_samples = t_samples
         self.N_sim = N_sim
         self.max_T = max_T
         self.dt_steps = dt_steps
-        self.T_sample = T_sample
-        self.t = t
         self.repeats = repeats
-        self.x0s = tile(x0, repeats)
-        self.x0s_default = tile(x0, repeats)
-        self._dts = dts(T=self.max_T, n_steps=self.dt_steps)
-        self.counter = 0
+        if x0.ndim == 1:
+            self.x0s = jnp.tile(x0, repeats)
+        else:
+            self.x0s = x0
+        self.x0s_default = self.x0s
+        dt = self.dts(T=self.max_T, n_steps=self.dt_steps)
+        self.dt = dt
+        self.dt_tile = jnp.tile(dt, (self.N_sim,1))
         
-        Brownian_coords(M)
-        (product, sde_product, chart_update_product) = product_sde(M, 
-                                                                   M.sde_Brownian_coords, 
-                                                                   M.chart_update_Brownian_coords)
-        
-        self.product = product
+        return
         
     def __str__(self)->str:
         
         return "Generating Samples for Brownian Motion on Manifolds in Local Coordinates for VAE"
+    
+    def dts(self, T:float=1.0,n_steps:int=n_steps)->Array:
+        """time increments, deterministic"""
+        return jnp.array([T/n_steps]*n_steps)
+
+    def dWs(self,d:int,_dts:Array=None,num:int=1)->Array:
+        """
+        standard noise realisations
+        time increments, stochastic
+        """
+        keys = jrandom.split(self.key,num=num+1)
+        self.key = keys[0]
+        subkeys = keys[1:]
+        if _dts == None:
+            _dts = self.dts()
+        if num == 1:
+            return jnp.sqrt(_dts)[:,None]*jrandom.normal(subkeys[0],(_dts.shape[0],d))
+        else:
+            return vmap(lambda subkey: jnp.sqrt(_dts)[:,None]*jrandom.normal(subkey,(_dts.shape[0],d)))(subkeys) 
+        
+    def Jf(self,z):
+        
+        return jacfwd(lambda z: self.F(z))(z)
+        
+    def G(self,z):
+        
+        Jf = self.Jf(z)
+        
+        return jnp.dot(Jf.T,Jf)
+    
+    def DG(self,z):
+        
+        return jacfwd(self.G)(z)
+    
+    def Ginv(self,z):
+        
+        return jnp.linalg.inv(self.G(z))
+    
+    def Chris(self,z):
+        
+        Dgx = self.DG(z)
+        gsharpx = self.Ginv(z)
+        return 0.5*(jnp.einsum('im,kml->ikl',gsharpx,Dgx)
+                   +jnp.einsum('im,lmk->ikl',gsharpx,Dgx)
+                   -jnp.einsum('im,klm->ikl',gsharpx,Dgx))
+    
+    def taylor_sample(self):
+        
+        def sample(carry, step):
+            
+            t,z = carry
+            dt, dW = step
+            
+            t += dt
+            ginv = self.Ginv(z)
+            
+            stoch = jnp.dot(ginv, dW)
+            
+            z += stoch
+            
+            return ((t,z),)*2
+
+        dW = dWs(self.N_sim*self.M.dim,self.dt).reshape(-1,self.dt_steps,self.M.dim)
+        x0 = jnp.repeat(self.x0s, self.x_samples, axis=0)
+        
+        _, val =lax.scan(lambda carry, step: vmap(lambda t,z,dt,dW: sample((t,z),(dt,dW)))\
+                         (carry[0],carry[1],step[0],step[1]),
+                         init=(jnp.zeros(self.N_sim),x0), xs=(self.dt,dW)
+                         )
+        t,z = val
+
+        return t, z, dW
+    
+    def local_sample(self)->Array:
+        
+        def sample(carry, step):
+            
+            t,z = carry
+            dt, dW = step
+            
+            t += dt
+            ginv = self.Ginv(z)
+            Chris = self.Chris(z)
+            
+            stoch = jnp.dot(ginv, dW)
+            det = 0.5*jnp.einsum('jk,ijk->i', ginv, Chris)
+            
+            z += det+stoch
+            
+            t = t.astype(jnp.float32)
+            z = z.astype(jnp.float32)
+            
+            return ((t,z),)*2
+        
+        dW = dWs(self.N_sim*self.M.dim,self.dt).reshape(-1,self.dt_steps,self.M.dim)
+        x0 = jnp.repeat(self.x0s, self.x_samples, axis=0)
+        
+        _, val =lax.scan(lambda carry, step: vmap(lambda t,z,dt,dW: sample((t,z),(dt,dW)))\
+                         (carry[0],carry[1],step[0],step[1]),
+                         init=(jnp.zeros(self.N_sim),x0), xs=(self.dt,dW)
+                         )
+        t,z = val
+
+        return t, z, dW
     
     def dts(self, T:float=1.0,n_steps:int=n_steps)->Array:
         """time increments, deterministic"""
@@ -779,122 +884,32 @@ class VAESampling(object):
         return 0.5*(jnp.einsum('im,kml->ikl',gsharpx,Dgx)
                    +jnp.einsum('im,lmk->ikl',gsharpx,Dgx)
                    -jnp.einsum('im,klm->ikl',gsharpx,Dgx))
-    
-    def euclidean_sample(self, mu:Array, t:Array):
-        
-        return mu+t*jran.normal(hk.next_rng_key(), mu.shape)
-    
-    def taylor_sample(self, mu:Array, t:Array):
-        
-        def sample(carry, step):
-            
-            t,z = carry
-            dt, dW = step
-            
-            t += dt
-            ginv = self.Ginv(z)
-            
-            stoch = jnp.dot(ginv, dW)
-            
-            z += stoch
-            
-            return ((t,z),)*2
-        
-        dt = hk.vmap(lambda t: self.dts(t,100), split_rng=False)(t).squeeze()
-        N_data = mu.shape[0]
-        dW = hk.vmap(lambda dt: self.dWs(self.encoder.latent_dim,dt),
-                     split_rng=False)(dt).reshape(-1,N_data,self.encoder.latent_dim)
-        
-        #vmap(lambda mu,dt,dW: lax.scan(step, init=(mu,0.0), xs=(dt,dW)))(mu,dt,jnp.transpose(dW, axis=(1,0,2)))
-        val, _ =hk.scan(lambda carry, step: hk.vmap(lambda t,z,dt,dW: sample((t,z),(dt,dW)),
-                                                        split_rng=False)(carry[0],carry[1],step[0],step[1]),
-                         init=(t,mu), xs=(dt,dW)
-                         )
-
-        return val[1]
-  
-    def local_sample(self, mu:Array, t:Array)->Array:
-        
-        def sample(carry, step):
-            
-            t,z = carry
-            dt, dW = step
-            
-            t += dt
-            ginv = self.Ginv(z)
-            Chris = self.Chris(z)
-            
-            stoch = jnp.dot(ginv, dW)
-            det = 0.5*jnp.einsum('jk,ijk->i', ginv, Chris)
-            
-            z += det+stoch
-            
-            t = t.astype(jnp.float32)
-            z = z.astype(jnp.float32)
-            
-            return ((t,z),)*2
-        
-        dt = hk.vmap(lambda t: self.dts(t,self.dt_steps), split_rng=False)(t).squeeze()
-        N_data = mu.shape[0]
-        dW = hk.vmap(lambda dt: self.dWs(self.encoder.latent_dim,dt),
-                     split_rng=False)(dt).reshape(-1,N_data,self.encoder.latent_dim)
-
-        _, val =hk.scan(lambda carry, step: hk.vmap(lambda t,z,dt,dW: sample((t,z),(dt,dW)), 
-                                                        split_rng=False)(carry[0],carry[1],step[0],step[1]),
-                         init=(t,mu), xs=(dt,dW)
-                         )
-        
-        t,z = val
-
-        return t,z,dW
         
     def __call__(self)->Tuple[Array, Array, Array, Array, Array]:
         
         while True:
-          #  self.counter += 1
-          #  print(self.counter)
-          #  if self.counter > 100:
-          #      self.counter = 0
-          #      self.x0s = self.x0s_default
             
-            t = self.max_T*jnp.ones(self.N_sim*self.M.dim)
-            t,z,dW = self.local_sample(x0s, t)
-            
-            
-            dW = self.dWs(self.N_sim*self.M.dim,self._dts).reshape(-1,self.N_sim,self.M.dim)
-            (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
-                                                jnp.repeat(self.x0s[1],self.x_samples,axis=0)),
-                                          self._dts,dW,jnp.repeat(1.,self.N_sim))
-            
-            Fx0s = self.x0s[0]
-            self.x0s = (xss[-1,::self.x_samples],chartss[-1,::self.x_samples])
-            
-            if jnp.isnan(jnp.sum(xss)):
-                self.x0s = self.x0s_default
-            
-            if not self.T_sample:
-                inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
-                ts = ts[inds]
-                samples = xss[inds]
-                
-                yield jnp.hstack((jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.t_samples,1)),
-                                  samples.reshape(-1,self.M.dim),
-                                  jnp.repeat(ts,self.N_sim).reshape((-1,1)),
-                                  dW[inds].reshape(-1,self.M.dim),
-                                  jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
-                                  ))
-            
+            if self.method == 'Taylor':
+                t,x,dW = self.taylor_sample()
             else:
-                inds = jnp.argmin(jnp.abs(ts-self.t))
-                ts = ts[inds]
-                samples = xss[inds]
-                yield jnp.hstack((jnp.repeat(Fx0s,self.x_samples,axis=0),
-                                  samples.reshape(-1,self.M.dim),
-                                  jnp.repeat(ts,self.N_sim).reshape((-1,1)),
-                                  dW[inds].reshape(-1,self.M.dim),
-                                  jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
-                                  ))
+                t,x,dW = self.local_sample()
+
+            self.x0s = x[-1,::self.x_sampels]
             
+            if jnp.isnan(jnp.sum(x)):
+                self.x0s = self.x0s_default
+
+            inds = jnp.array(random.sample(range(self.dt.shape[0]), self.t_samples))
+            ts = ts[inds]
+            samples = xss[inds]
+            
+            yield jnp.hstack((jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.t_samples,1)),
+                              samples.reshape(-1,self.M.dim),
+                              jnp.repeat(ts,self.N_sim).reshape((-1,1)),
+                              dW[inds].reshape(-1,self.M.dim),
+                              jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
+                              ))
+
     def update_coords(self, Fx:Array)->Tuple[Array,Array]:
         
         chart = self.M.centered_chart(Fx)

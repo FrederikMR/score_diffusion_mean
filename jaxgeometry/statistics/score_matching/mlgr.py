@@ -49,30 +49,30 @@ class MLGeodesicRegression(object):
     
     def gradp(self, X_obs:Tuple[Array, Array], mu:Tuple[Array, Array], sigma:Array, v:Array, X:Array):
         
-        w = jnp.dot(X,v)
+        w = X.reshape(-1,1)*v
         exp_val = vmap(lambda w: self.Exp(mu,w))(w)
-        val1 = -vmap(lambda x,chart,exp: self.grady_log((x,chart),exp,sigma**2))(X_obs[0], X_obs[1],exp_val)
+        val1 = vmap(lambda x,chart,exp: self.grady_log((x,chart),exp,sigma**2))(X_obs[0], X_obs[1],exp_val)
         val2 = vmap(lambda w: self.gradp_exp(mu, w))(w)
-        
+
         val = jnp.einsum('...i,...ij->...j', val1, val2)
         
-        return jnp.mean(val, axis=0)
+        return -jnp.mean(val, axis=0)
     
     def gradv(self, X_obs:Tuple[Array, Array], mu:Tuple[Array, Array], sigma:Array, v:Array, X:Array):
         
-        w = jnp.dot(X,v)
+        w = X.reshape(-1,1)*v
         exp_val = vmap(lambda w: self.Exp(mu,w))(w)
         val1 = -vmap(lambda x,chart,exp: self.grady_log((x,chart),exp,sigma**2))(X_obs[0], X_obs[1],exp_val)
         val2 = vmap(lambda w: self.gradv_exp(mu, w))(w)
         
-        term1 = jnp.einsum('...ij,...jk->...ik', val2, X)
+        term1 =jnp.einsum('kij,k->kij', val2, X)
         term2 = jnp.einsum('...j,...jk->...k', val1, term1)
         
         return jnp.mean(term2, axis=0)
     
     def gradt(self, X_obs:Tuple[Array, Array], mu:Tuple[Array, Array], sigma:Array, v:Array, X:Array):
         
-        w = jnp.dot(X,v)
+        w = X.reshape(-1,1)*v
         exp_val = vmap(lambda w: self.Exp(mu,w))(w)
         val1 = -vmap(lambda x,chart, exp: self.gradt_log((x,chart),exp,sigma**2))(X_obs[0], X_obs[1], exp_val)
         
@@ -82,8 +82,8 @@ class MLGeodesicRegression(object):
             sigma:Array, method="JAX", opt="Joint")->None:
         
         gradv = lambda mu,y: self.gradv(X_obs, mu, y[0], y[1:], X)
-        gradt = lambda mu,y: self.gradv(X_obs, mu, y[0], y[1:], X)
-        grad_euc = lambda mu,y: jnp.concatenate((gradt(mu,y), gradv(mu,y)))
+        gradt = lambda mu,y: self.gradt(X_obs, mu, y[0], y[1:], X)
+        grad_euc = lambda mu,y: jnp.concatenate((gradt(mu,y).reshape(-1), gradv(mu,y)))
         grad_rm = lambda mu,y: self.gradp(X_obs, mu, y[0], y[1:], X)
         
         if method == "JAX":
@@ -97,7 +97,7 @@ class MLGeodesicRegression(object):
             mu, euc, _, _ = JointGradientDescent(mu,x0_euc,self. M,grad_fn_rm = grad_rm,
                                         grad_fn_euc = grad_euc,step_size_rm=self.lr_rm,
                                         step_size_euc=self.lr_euc,
-                                        max_iter=self.max_iter)
+                                        max_iter=self.max_iter, Exp=self.Exp)
             mu = (mu[0][-1], mu[1][-1])
             sigma, v = euc[-1][0], euc[-1][1:]
             

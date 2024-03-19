@@ -140,7 +140,7 @@ def train_score()->None:
                               dim=generator_dim,
                               r = max(generator_dim//2,1))
                 )
-            
+             
             return s1s2(x)
     
     if not os.path.exists('scores/output/'):

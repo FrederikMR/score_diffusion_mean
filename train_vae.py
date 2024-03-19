@@ -27,6 +27,7 @@ def train():
     @hk.transform
     def vae_model(x):
         
+        
         vae = VAEBM(
         encoder=Encoder(latent_dim=2),
         decoder=Decoder(),
@@ -76,9 +77,9 @@ def train():
                 vae_state=None,
                 score_state=None,
                 lr_rate = 0.0002,
-                burnin_epochs=100,
+                burnin_epochs=1000,
                 joint_epochs=100,
-                repeats=1,
+                repeats=100,
                 save_step=100,
                 vae_optimizer=None,
                 score_optimizer=None,

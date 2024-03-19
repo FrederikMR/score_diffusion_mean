@@ -40,6 +40,12 @@ def train_vaebm(vae_model:object,
                 joint_epochs:int=100,
                 repeats:int=1,
                 save_step:int=100,
+                score_repeats:int=8,
+                x_samples:int=2**5,
+                t_samples:int=2**7,
+                N_sim:int=2**8,
+                max_T:float=1.0,
+                dt_steps:int=1000,
                 vae_optimizer:object=None,
                 score_optimizer:object=None,
                 vae_save_path:str = "",
@@ -79,7 +85,7 @@ def train_vaebm(vae_model:object,
             kl_grad = {layer: {name: jnp.einsum('i,i...->...', diff, w) for name,w in val.items()} \
                        for layer,val in z_grad.items()}
         else:
-            kl_grad = {layer: {name: jnp.einsum('ki,ki...->k...', diff, w) for name,w in val.items()} \
+            kl_grad = {layer: {name: jnp.mean(jnp.einsum('ki,ki...->k...', diff, w), axis=0) for name,w in val.items()} \
                        for layer,val in z_grad.items()}
         #z_grad.update((x, jnp.einsum('...i,...ij->...j')) for v,w in x for x, y in my_dict.items())
         #kl_grad = jnp.mean(jnp.einsum('...i,...ij->...j', s_logqzx-s_logpz, z_grad), axis=0)
@@ -183,7 +189,7 @@ def train_vaebm(vae_model:object,
                                      mu_dtype=None)
         
         
-    F = lambda z: decoder_apply_fn(vae_state.params, z[0].reshape(-1,2), vae_state.rng_key, 
+    F = lambda z: decoder_apply_fn(vae_state.params, z[0].reshape(-1,dim), vae_state.rng_key, 
                                    vae_state.state_val)[0].reshape(-1)
     M = Latent(dim=dim, emb_dim=emb_dim, F = F)
     x0 = (jnp.zeros(dim), jnp.zeros(1))
@@ -232,7 +238,7 @@ def train_vaebm(vae_model:object,
             score_state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
         score_apply_fn = lambda params, data, rng_key, state_val: score_model.apply(params, state_val, rng_key, data)[0]
     
-    F = lambda z: decoder_apply_fn(vae_state.params, z[0].reshape(-1,2), vae_state.rng_key, 
+    F = lambda z: decoder_apply_fn(vae_state.params, z[0].reshape(-1,dim), vae_state.rng_key, 
                                    vae_state.state_val)[0].reshape(-1)
     M = Latent(dim=dim, emb_dim=emb_dim, F = F)
     x0 = (jnp.zeros(dim), jnp.zeros(1))
@@ -252,17 +258,17 @@ def train_vaebm(vae_model:object,
     score_datasets = iter(tfds.as_numpy(score_datasets))
     
     for step in range(burnin_epochs):
-        for i in range(repeats):
-            ds = next(vae_datasets)
-            vae_state = update_vae_fun(vae_state, ds)
+        ds = next(vae_datasets)
+        vae_state = update_vae_fun(vae_state, ds)
         if (step+1) % save_step == 0:
             save_model(vae_save_path, vae_state)
             print("Epoch: {}".format(step+1))
             
-    F = lambda z: decoder_apply_fn(vae_state.params, z[0].reshape(-1,2), vae_state.rng_key, 
+    F = lambda z: decoder_apply_fn(vae_state.params, z[0].reshape(-1,dim), vae_state.rng_key, 
                                    vae_state.state_val).reshape(-1)
     M = Latent(dim=dim, emb_dim=emb_dim, F = F)
-    x0 = (jnp.zeros(dim), jnp.zeros(1))
+    z, *_ = vae_apply_fn(vae_state.params, ds, vae_state.rng_key, vae_state.state_val)
+    x0 = (z[::repeats], jnp.zeros(repeats))
     score_generator = LocalSampling(M=M,
                                     x0=x0,
                                     repeats=8,
@@ -279,6 +285,7 @@ def train_vaebm(vae_model:object,
     score_datasets = iter(tfds.as_numpy(score_datasets))
             
     for step in range(burnin_epochs):
+        print(step)
         data = next(score_datasets)
         if jnp.isnan(jnp.sum(data)):
             score_generator.x0s = score_generator.x0s_default
@@ -304,10 +311,11 @@ def train_vaebm(vae_model:object,
         for i in range(repeats):
             ds = next(vae_datasets)
             vae_state = update_vae_grad(vae_state, ds)
-        F = lambda z: decoder_apply_fn(vae_state.params, z[0].reshape(-1,2), vae_state.rng_key, 
-                                   vae_state.state_val).reshape(-1)
+        F = lambda z: decoder_apply_fn(vae_state.params, z[0].reshape(-1,dim), vae_state.rng_key, 
+                                       vae_state.state_val).reshape(-1)
         M = Latent(dim=dim, emb_dim=emb_dim, F = F)
-        x0 = (data[0], jnp.zeros(1))
+        z, *_ = vae_apply_fn(vae_state.params, ds, vae_state.rng_key, vae_state.state_val)
+        x0 = (z[0], jnp.zeros(1))
         score_generator = LocalSampling(M=M,
                                         x0=x0,
                                         repeats=8,
@@ -315,7 +323,7 @@ def train_vaebm(vae_model:object,
                                         t_samples=2**7,
                                         N_sim=2**8,
                                         max_T=1.0,
-                                        dt_steps=100,
+                                        dt_steps=1000,
                                         T_sample=0,
                                         t=0.1
                                         )

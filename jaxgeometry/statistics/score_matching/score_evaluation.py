@@ -79,6 +79,19 @@ class ScoreEvaluation(object):
         else:
             return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
         
+    def grady_proj(self, 
+                  x:Tuple[Array, Array], 
+                  y:Tuple[Array, Array], 
+                  t:Array,
+                  )->Array:
+        
+        if self.method == 'Embedded':
+            return self.M.proj(x[1],
+                               self.s1_model.apply(self.s1_state.params,self.rng_key, 
+                                                   jnp.hstack((x[1], y[1], t))))
+        else:
+            return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
+        
     def ggrady_eval(self, 
                   x:Tuple[Array, Array], 
                   y:Tuple[Array, Array], 
@@ -179,11 +192,11 @@ class ScoreEvaluation(object):
             s2_val = self.hess_EmbeddedTM(Fx, s1_val, s2_val)
             div = jnp.trace(s2_val)
         else:
-            s1_val = self.grady_log(x,y,t)
+            s1_val = self.grady_log(y,x,t)
             #s1_val = self.grady_eval(x,y,t)
-            s2_val = self.ggrady_log(x,y,t)
-            #s2_val = self.ggrady_eval(x,y,t)
-            s2_val = jnp.linalg.solve(self.M.g(x), s2_val)
-            div = jnp.trace(s2_val)+.5*jnp.dot(s1_val,jacfwdx(self.M.logAbsDet)(y).squeeze())
+            #s2_val = self.ggrady_log(x,y,t)
+            s2_val = self.ggrady_eval(y,x,t)
+            s2_val = -jnp.linalg.solve(self.M.g(y), s2_val)
+            div = jnp.trace(s2_val)+.5*jnp.dot(s1_val,jacfwdx(self.M.logAbsDet)(x).squeeze())
 
         return 0.5*(jnp.dot(s1_val, s1_val)+div)

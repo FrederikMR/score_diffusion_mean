@@ -227,40 +227,7 @@ class VAEBM(hk.Module):
         #vmap(lambda mu,dt,dW: lax.scan(step, init=(mu,0.0), xs=(dt,dW)))(mu,dt,jnp.transpose(dW, axis=(1,0,2)))
         val, _ =hk.scan(lambda carry, step: hk.vmap(lambda t,z,dt,dW: sample((t,z),(dt,dW)),
                                                         split_rng=False)(carry[0],carry[1],step[0],step[1]),
-                         init=(t,mu), xs=(dt,dW)
-                         )
-
-        return val[1]
-  
-    def euclidean_sample(self, mu:Array, t:Array)->Array:
-        
-        def sample(carry, step):
-            
-            t,z = carry
-            dt, dW = step
-            
-            t += dt
-            ginv = self.Ginv(z)
-            Chris = self.Chris(z)
-            
-            stoch = jnp.dot(ginv, dW)
-            det = 0.5*jnp.einsum('jk,ijk->i', ginv, Chris)
-            
-            z += det+stoch
-            
-            t = t.astype(jnp.float32)
-            z = z.astype(jnp.float32)
-            
-            return ((t,z),)*2
-        
-        dt = hk.vmap(lambda t: self.dts(t,100), split_rng=False)(t).squeeze()
-        N_data = mu.shape[0]
-        dW = hk.vmap(lambda dt: self.dWs(self.encoder.latent_dim,dt),
-                     split_rng=False)(dt).reshape(-1,N_data,self.encoder.latent_dim)
-
-        val, _ =hk.scan(lambda carry, step: hk.vmap(lambda t,z,dt,dW: sample((t,z),(dt,dW)), 
-                                                        split_rng=False)(carry[0],carry[1],step[0],step[1]),
-                         init=(t,mu), xs=(dt,dW)
+                         init=(jnp.zeros_like(t),mu), xs=(dt,dW)
                          )
 
         return val[1]
@@ -293,7 +260,7 @@ class VAEBM(hk.Module):
 
         val, _ =hk.scan(lambda carry, step: hk.vmap(lambda t,z,dt,dW: sample((t,z),(dt,dW)), 
                                                         split_rng=False)(carry[0],carry[1],step[0],step[1]),
-                         init=(t,mu), xs=(dt,dW)
+                         init=(jnp.zeors_like(t),mu), xs=(dt,dW)
                          )
 
         return val[1]

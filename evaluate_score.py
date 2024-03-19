@@ -52,13 +52,13 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SPDN",
+    parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=[3],
+    parser.add_argument('--dim', default=[2],
                         type=List)
     parser.add_argument('--loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--s2_approx', default=0,
+    parser.add_argument('--s2_approx', default=1,
                         type=int)
     parser.add_argument('--fixed_time', default=0,
                         type=int)
