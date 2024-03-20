@@ -20,7 +20,8 @@ module swap python3/3.10.12
 python3 train_score.py \
     --manifold Sphere \
     --dim 5 \
-    --loss_type dsmdiag \
+    --s1_loss_type dsm \
+    --s2_loss_type dsmdiagvr \
     --load_model 0 \
     --T_sample 0 \
     --t 0.01 \
