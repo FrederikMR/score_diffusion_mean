@@ -167,7 +167,7 @@ def dsmdiag_s2fun(generator:object,
         s1 = s1_model(x0,xt,t)#generator.grad_TM(s1_model, x0, xt, t)
         s2 = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
 
-        loss_s2 = jnp.eye(s2)+s1*s1+(1-dW*dW/dt)/dt
+        loss_s2 = jnp.diag(s2)+s1*s1+(1-dW*dW/dt)/dt
         
         return jnp.sum(loss_s2*loss_s2)
     
