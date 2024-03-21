@@ -51,7 +51,9 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
-    parser.add_argument('--loss_type', default="dsmdiagvr",
+    parser.add_argument('--s1_loss_type', default="dsmvr",
+                        type=str)
+    parser.add_argument('--s2_loss_type', default="dsmdiagvr",
                         type=str)
     parser.add_argument('--load_model', default=0,
                         type=int)
@@ -95,20 +97,15 @@ def train_score()->None:
     
     N_sim = args.x_samples*args.repeats
     T_sample_name = (args.T_sample == 1)*"T"
-    if args.loss_type == "dsmdiagvr":
-        s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_dsmvr/"
-    elif args.loss_type == "dsmdiag":
-        s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_dsm/"
-    else:
-        s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_{args.loss_type}/"
-    s2_path = f"scores/{args.manifold}{args.dim}/s2{T_sample_name}_{args.loss_type}/"
-    s1s2_path = f"scores/{args.manifold}{args.dim}/s1s2{T_sample_name}_{args.loss_type}/"
+    s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_{args.s1_loss_type}/"
+    s2_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_{args.s2_loss_type}/"
+    s1s2_path = f"scores/{args.manifold}{args.dim}/s1s2{T_sample_name}_{args.s2_loss_type}/"
     
     M, x0, sampling_method, generator_dim, layers, opt_val = load_manifold(args.manifold,
                                                                            args.dim)
     
     s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-    if "diag" in args.loss_type:
+    if "diag" in args.s2_loss_type:
         s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers, layers_beta=layers,
                                                         dim=generator_dim, 
                                                         r = max(generator_dim//2,1))(x))
@@ -234,7 +231,7 @@ def train_score()->None:
                  save_step=args.save_step,
                  save_path=s2_path,
                  seed=args.seed,
-                 loss_type = args.loss_type
+                 loss_type = args.s2_loss_type
                  )
     elif args.train_net == "s1s2":
         state = load_model(s1_path)
@@ -264,7 +261,7 @@ def train_score()->None:
                  gamma=args.gamma,
                  save_path=s1s2_path,
                  seed=args.seed,
-                 loss_type = args.loss_type
+                 loss_type = args.s2_loss_type
                  )
     else:
         if args.load_model:
@@ -286,7 +283,7 @@ def train_score()->None:
                  epochs=args.epochs,
                  save_step=args.save_step,
                  save_path=s1_path,
-                 loss_type=args.loss_type,
+                 loss_type=args.s1_loss_type,
                  seed=args.seed
                  )
     

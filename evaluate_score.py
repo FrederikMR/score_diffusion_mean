@@ -54,9 +54,11 @@ def parse_args():
     # File-paths
     parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=[2],
+    parser.add_argument('--dim', default=[3],
                         type=List)
-    parser.add_argument('--loss_type', default="dsmvr",
+    parser.add_argument('--s1_loss_type', default="dsm",
+                        type=str)
+    parser.add_argument('--s2_loss_type', default="dsmdiag",
                         type=str)
     parser.add_argument('--s2_approx', default=1,
                         type=int)
@@ -122,14 +124,8 @@ def evaluate_diffusion_mean():
         Brownian_coords(M)
         dm_bridge(M)
         
-        
-        if args.loss_type == "dsmdiagvr":
-            s1_path = f"{args.score_path}{args.manifold}{N}/s1_dsmvr/"
-        elif args.loss_type == "dsmdiag":
-            s1_path = f"{args.score_path}{args.manifold}{N}/s1_dsm/"
-        else:
-            s1_path = f"{args.score_path}{args.manifold}{N}/s1_{args.loss_type}/"
-        s2_path = f"{args.score_path}{args.manifold}{N}/{args.s2_type}_{args.loss_type}/"
+        s1_path = f"{args.score_path}{args.manifold}{N}/s1_{args.s1_loss_type}/"
+        s2_path = f"{args.score_path}{args.manifold}{N}/{args.s2_type}_{args.s2_loss_type}/"
         data_path = f"{args.data_path}{args.manifold}{N}/"
         
         s1_state = load_model(s1_path)
@@ -143,7 +139,7 @@ def evaluate_diffusion_mean():
             
         s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
         
-        if "diag" in args.loss_type:
+        if "diag" in args.s2_loss_type:
             s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers, layers_beta=layers,
                                                             dim=generator_dim, 
                                                             r = max(generator_dim//2,1))(x))
@@ -306,13 +302,8 @@ def evaluate_frechet_mean():
     frechet_std_time = []
     for N in args.dim:
         M, x0, method, generator_dim, opt_val = load_manifold(N)
-        if args.loss_type == "dsmdiagvr":
-            s1_path = f"../scores/{args.manifold}{N}/s1T_dsmvr/"
-        elif args.loss_type == "dsmdiag":
-            s1_path = f"../scores/{args.manifold}{N}/s1T_dsm/"
-        else:
-            s1_path = f"../scores/{args.manifold}{N}/s1T_{args.loss_type}/"
-        s2_path = f"../scores/{args.manifold}{N}/{args.s2_type}_{args.loss_type}/"
+        s1_path = f"../scores/{args.manifold}{N}/s1T_{args.s1_loss_type}/"
+        s2_path = f"../scores/{args.manifold}{N}/{args.s2_type}_{args.s2_loss_type}/"
         data_path = f"{args.data_path}{args.manifold}{N}/"
 
         if generator_dim<10:
