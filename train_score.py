@@ -213,7 +213,7 @@ def train_score()->None:
         if args.load_model:
             state_s2 = load_model(s1_path)
         else:
-            state_s2 = None            
+            state_s2 = None
 
         if not os.path.exists(s2_path):
             os.makedirs(s2_path)
@@ -234,13 +234,14 @@ def train_score()->None:
                  loss_type = args.s2_loss_type
                  )
     elif args.train_net == "s1s2":
-        state = load_model(s1_path)
         rng_key = jran.PRNGKey(2712)
-            
+        
+        if not os.path.exists(s1_path):
+            state_s1_params = load_model(s1_path).params
+        else:
+            state_s1_params=None
         if not os.path.exists(s1s2_path):
-            os.makedirs(s1s2_path)#s1s2 = hk.transform(lambda x: models.MLP_s1s2(models.MLP_s1(dim=M.dim, layers=layers), 
-#                                              models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-#                                                dim=M.dim, r = max(M.dim//2,1)))(x))
+            os.makedirs(s1s2_path)
             
         if args.load_model:
             state_s1s2 = load_model(s1s2_path)
@@ -254,7 +255,7 @@ def train_score()->None:
                  dW_dim=generator_dim,
                  batch_size=batch_size,
                  state=state_s1s2,
-                 s1_params=state.params,
+                 s1_params=state_s1_params,
                  lr_rate=args.lr_rate,
                  epochs=args.epochs,
                  save_step=args.save_step,

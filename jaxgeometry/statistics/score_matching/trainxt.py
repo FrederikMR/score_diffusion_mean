@@ -155,7 +155,7 @@ def train_s2(M:object,
              optimizer:object=None,
              save_path:str = "",
              seed:int=2712,
-             loss_type = "dsmvr",
+             loss_type:str = "dsmvr",
              )->None:
     
     @jit
