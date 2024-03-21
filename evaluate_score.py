@@ -54,7 +54,7 @@ def parse_args():
     # File-paths
     parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=[2],
+    parser.add_argument('--dim', default=[5],
                         type=List)
     parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
@@ -136,9 +136,8 @@ def evaluate_diffusion_mean():
         else:
             s2_state = None
             s2_ntrain.append(jnp.nan)
-            
+
         s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        
         if "diag" in args.s2_loss_type:
             s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers, layers_beta=layers,
                                                             dim=generator_dim, 

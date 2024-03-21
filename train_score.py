@@ -98,7 +98,7 @@ def train_score()->None:
     N_sim = args.x_samples*args.repeats
     T_sample_name = (args.T_sample == 1)*"T"
     s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_{args.s1_loss_type}/"
-    s2_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_{args.s2_loss_type}/"
+    s2_path = f"scores/{args.manifold}{args.dim}/s2{T_sample_name}_{args.s2_loss_type}/"
     s1s2_path = f"scores/{args.manifold}{args.dim}/s1s2{T_sample_name}_{args.s2_loss_type}/"
     
     M, x0, sampling_method, generator_dim, layers, opt_val = load_manifold(args.manifold,
