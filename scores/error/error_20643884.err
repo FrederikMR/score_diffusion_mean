@@ -33,3 +33,4 @@ TypeError: Shapes must be 1D sequences of concrete values of integer type, got (
 If using `jit`, try using `static_argnums` or applying `jit` to smaller subfunctions.
 This BatchTracer with object id 140543279870128 was created on line:
   /zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/models/models.py:136 (__call__)
+User defined signal 2
