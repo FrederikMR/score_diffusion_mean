@@ -54,7 +54,7 @@ def parse_args():
     # File-paths
     parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=[5],
+    parser.add_argument('--dim', default=[2,3,5],
                         type=List)
     parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
@@ -203,12 +203,14 @@ def evaluate_diffusion_mean():
         else:
             mu_opt, T_opt = x0, 0.5
         
-        if ((method == "Embedded") and (args.s2_approx)):
-            dm_score(M, s1_model=ScoreEval.grady_log, 
-                     s2_model = lambda x,y,t: ScoreEval.gradt_log(y,x,t), 
-                     method=args.method)
-        else:
-            dm_score(M, s1_model=ScoreEval.grady_log, s2_model = ScoreEval.gradt_log, method=args.method)
+        #if ((method == "Embedded") and (args.s2_approx)):
+        #    dm_score(M, s1_model=ScoreEval.grady_log, 
+        #             s2_model = lambda x,y,t: ScoreEval.gradt_log(y,x,t), 
+        #             method=args.method)
+        #else:
+        dm_score(M, 
+                 s1_model=lambda x,y,t: M.grady_log_hk(x,y,t)[0], #s1_model=ScoreEval.grady_log, 
+                 s2_model = ScoreEval.gradt_log, method=args.method)
         if args.fixed_time:
             mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                    step_size=args.step_size, max_iter=args.max_iter)
@@ -219,11 +221,13 @@ def evaluate_diffusion_mean():
             score_mu_time.append(jnp.mean(jnp.array(time)))
             score_std_time.append(jnp.std(jnp.array(time)))
         else:
-            mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
+            mu_sm, T_sm, gradx_sm, gradt_sm = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                    step_size=args.step_size, max_iter=args.max_iter)
             print(T_sm[-1])
+            print(gradt_sm[-1])
             print(mu_sm[1][-1])
             print(mu_sm[0][-1])
+            print(gradx_sm[-1])
             time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                                  number=1, globals=locals(), repeat=args.repeats)

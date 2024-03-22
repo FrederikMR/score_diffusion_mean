@@ -189,7 +189,7 @@ class ScoreEvaluation(object):
             s1_val = self.grady_eval(x,y,t)#self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((Fx, Fy, t)))
             s1_val = self.M.proj(Fx,s1_val)
             s2_val = self.ggrady_eval(x,y,t)#self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((Fx, Fy, t)))
-            s2_val = self.hess_EmbeddedTM(Fx, s1_val, s2_val)
+            #s2_val = self.hess_EmbeddedTM(Fx, s1_val, s2_val)
             div = jnp.trace(s2_val)
         else:
             s1_val = self.grady_log(y,x,t)
