@@ -63,7 +63,7 @@ def parse_args():
                         type=float)
     parser.add_argument('--gamma', default=1.0,
                         type=float)
-    parser.add_argument('--train_net', default="s2",
+    parser.add_argument('--train_net', default="s1",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
@@ -207,8 +207,6 @@ def train_score()->None:
         state = load_model(s1_path)
         rng_key = jran.PRNGKey(2712)
         s1 = lambda x,y,t: s1_model.apply(state.params,rng_key, jnp.hstack((x, y, t)))
-        if args.manifold == "Sphere":
-            s1 = lambda x,y,t: M.grady_log_hk((0.0, x), (0.0, y), t)[1]
         
         if args.load_model:
             state_s2 = load_model(s1_path)

@@ -55,9 +55,9 @@ def load_manifold(manifold:str, dim:int=None)->None:
         opt_val = "gradient"
         layers = get_generator_dim(generator_dim)
     elif manifold == "Sphere":
-        sampling_method = 'TMSampling'
+        sampling_method = 'LocalSampling'#'TMSampling'
         M = nSphere(N=dim)
-        generator_dim = M.emb_dim
+        generator_dim = M.dim#M.emb_dim
         x0 = M.coords([0.]*dim)
         opt_val = "gradient"
         layers = get_generator_dim(generator_dim)

@@ -54,9 +54,9 @@ def parse_args():
     # File-paths
     parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=[2,3,5],
+    parser.add_argument('--dim', default=[2],
                         type=List)
-    parser.add_argument('--s1_loss_type', default="dsm",
+    parser.add_argument('--s1_loss_type', default="dsmvr",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsmdiagvr",
                         type=str)
@@ -172,15 +172,6 @@ def evaluate_diffusion_mean():
                     )
                 
                 return s1s2(x)
-            
-        ScoreEval = ScoreEvaluation(M, 
-                                    s1_model=s1_model, 
-                                    s1_state=s1_state, 
-                                    s2_model=s2_model, 
-                                    s2_state=s2_state,
-                                    s2_approx=args.s2_approx, 
-                                    method=method, 
-                                    seed=args.seed)
 
         xs = pd.read_csv(''.join((data_path, 'xs.csv')), header=None)
         charts = pd.read_csv(''.join((data_path, 'chart.csv')), header=None)
@@ -203,13 +194,43 @@ def evaluate_diffusion_mean():
         else:
             mu_opt, T_opt = x0, 0.5
         
+        from jaxgeometry.autodiff import hessianx, jacfwdx
+        from jax import jacfwd, jacrev, vmap
+        
+        def s1_model(x,y,t):
+            
+            if args.manifold == "Euclidean":
+                return jacfwd(lambda y1: jnp.log(M.hk_embedded(x[0],y1[0],t)).squeeze())(y)[0]
+            else:
+                return jacfwd(lambda y1: jnp.log(M.hk_embedded(M.F(x),M.F(y1),t)).squeeze())(y)[0]
+        
+        def s2_model(x,y,t):
+            
+            return jacfwd(lambda y1: s1_model(x,y1,t))(y)[0]
+
+        #s1_model= lambda x,y,t: M.grady_log_hk(x,y,t)[1]
+        ScoreEval = ScoreEvaluation(M, 
+                                    s1_model= s1_model,#s1_model, 
+                                    s1_state=None,#s1_state, 
+                                    s2_model=s2_model, 
+                                    s2_state=None,#s2_state,
+                                    s2_approx=args.s2_approx, 
+                                    method='Local', 
+                                    seed=args.seed
+                                    )
+        s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: ScoreEval.gradt_log((x,chart),y,t))(X_obs[0], X_obs[1]), axis=0)
+        print("hallo")
+        print(s1(x0,0.5))
+        s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: M.gradt_log_hk((x,chart),y,t))(X_obs[0], X_obs[1]), axis=0)
+        print(s1(x0,0.5))
+        #return
         #if ((method == "Embedded") and (args.s2_approx)):
         #    dm_score(M, s1_model=ScoreEval.grady_log, 
         #             s2_model = lambda x,y,t: ScoreEval.gradt_log(y,x,t), 
         #             method=args.method)
         #else:
         dm_score(M, 
-                 s1_model=lambda x,y,t: M.grady_log_hk(x,y,t)[0], #s1_model=ScoreEval.grady_log, 
+                 s1_model=ScoreEval.grady_log,#lambda x,y,t: M.grady_log_hk(x,y,t)[0], #s1_model=ScoreEval.grady_log, 
                  s2_model = ScoreEval.gradt_log, method=args.method)
         if args.fixed_time:
             mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
@@ -223,6 +244,7 @@ def evaluate_diffusion_mean():
         else:
             mu_sm, T_sm, gradx_sm, gradt_sm = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                    step_size=args.step_size, max_iter=args.max_iter)
+            print(T_opt)
             print(T_sm[-1])
             print(gradt_sm[-1])
             print(mu_sm[1][-1])

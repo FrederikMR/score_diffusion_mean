@@ -129,14 +129,13 @@ def JointGradientDescent(mu_rm:Array,
         mu_euc -= step_size_euc*grad_euc
         if bool_val:
             mu_euc = jnp.clip(mu_euc, lb_euc, ub_euc)
-    
         new_chart = M.centered_chart(mu_rm)
         mu_rm = M.update_coords(mu_rm,new_chart)
         
         grad_rm = grad_fn_rm(mu_rm, mu_euc)
         grad_euc = grad_fn_euc(mu_rm, mu_euc)
         out = (mu_rm, mu_euc, grad_rm, grad_euc)
-    
+
         return out, out
         
     if max_step is None:

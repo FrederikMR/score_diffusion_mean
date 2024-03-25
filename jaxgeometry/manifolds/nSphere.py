@@ -42,6 +42,7 @@ class nSphere(nEllipsoid):
                            use_spherical_coords=use_spherical_coords)
         
         self.hk = jit(lambda x,y,t, N_terms=100: hk(self, x,y, t, N_terms))
+        self.hk_embedded = jit(lambda x,y,t, N_terms=100: hk_embedded(self, x,y, t, N_terms))
         self.log_hk = jit(lambda x,y,t, N_terms=100: log_hk(self, x, y, t, N_terms))
         self.gradx_log_hk = jit(lambda x,y,t, N_terms=100: gradx_log_hk(self, x, y, t, N_terms))
         self.grady_log_hk = jit(lambda x,y,t, N_terms=100: grady_log_hk(self, x, y, t, N_terms))
@@ -91,9 +92,47 @@ def hk(M:object, x:Array,y:Array,t:float, N_terms=100) -> float:
         
     return val[0]*Am_inv/m1
 
+def hk_embedded(M:object, x:Array,y:Array,t:float, N_terms=100) -> float:
+    
+    def sum_term(l:int, C_l:float) -> float:
+    
+        return jnp.exp(-0.5*l*(l+m1)*t)*(2*l+m1)*C_l
+    
+    def update_cl(l:int, Cl1:float, Cl2:float) -> float:
+        
+        return (2*(l-1+alpha)*xy_dot*Cl1-(l+2*alpha-2)*Cl2)/l
+    
+    def step(carry:Tuple[float,float,float], l:int) -> Tuple[Tuple[float, float, float], None]:
+
+        val, Cl1, Cl2 = carry
+
+        C_l = update_cl(l, Cl1, Cl2)
+
+        val += sum_term(l, C_l)
+
+        return (val, C_l, Cl1), None
+
+    x1 = x
+    y1 = y
+    xy_dot = jnp.dot(x1,y1)
+    m1 = M.dim-1
+    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5)))
+    
+    alpha = m1*0.5
+    C_0 = 1.0
+    C_1 = 2*alpha*xy_dot
+    
+    val = sum_term(0, C_0) + sum_term(1, C_1)
+    
+    grid = jnp.arange(2,N_terms,1)
+    
+    val, _ = lax.scan(step, (val, C_1, C_0), xs=grid)
+        
+    return val[0]*Am_inv/m1
+
 def log_hk(M:object, x:Array,y:Array,t:float, N_terms=100) -> float:
     
-    return jnp.log(hk(x,y,t, N_terms))
+    return jnp.log(hk(M,x,y,t, N_terms))
 
 def gradx_log_hk(M:object, x:Array, y:Array, t:float, N_terms=100) -> float:
     

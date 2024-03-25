@@ -88,6 +88,7 @@ class Euclidean(Manifold):
         
         #ADD HEAT KERNEL
         self.hk = jit(lambda x,y,t: hk(self, x,y, t))
+        self.hk_embedded = jit(lambda x,y,t: hk_embedded(self, x,y, t))
         self.log_hk = jit(lambda x,y,t: log_hk(self, x, y, t))
         self.gradx_log_hk = jit(lambda x,y,t: gradx_log_hk(self, x, y, t))
         self.grady_log_hk = jit(lambda x,y,t: grady_log_hk(self, x, y, t))
@@ -187,6 +188,12 @@ def hk(M:Euclidean, x:Array,y:Array,t:Array)->Array:
     const = 1/((2*jnp.pi*t)**(M.dim*0.5))
     
     return jnp.exp(-0.5*jnp.sum((x[0]-y[0])**2)/t)*const
+
+def hk_embedded(M:Euclidean, x:Array,y:Array,t:Array)->Array:
+    
+    const = 1/((2*jnp.pi*t)**(M.dim*0.5))
+    
+    return jnp.exp(-0.5*jnp.sum((x-y)**2)/t)*const
 
 def log_hk(M:Euclidean, x:Array,y:Array,t:Array)->Array:
     

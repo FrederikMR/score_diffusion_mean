@@ -74,10 +74,13 @@ class ScoreEvaluation(object):
                   t:Array,
                   )->Array:
         
-        if self.method == 'Embedded':
-            return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((self.M.F(x), self.M.F(y), t)))
+        if self.s1_state == None:
+            return self.s1_model(x,y,t)
         else:
-            return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
+            if self.method == 'Embedded':
+                return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[1], y[1], t)))
+            else:
+                return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
         
     def grady_proj(self, 
                   x:Tuple[Array, Array], 
@@ -86,11 +89,10 @@ class ScoreEvaluation(object):
                   )->Array:
         
         if self.method == 'Embedded':
-            return self.M.proj(x[1],
-                               self.s1_model.apply(self.s1_state.params,self.rng_key, 
-                                                   jnp.hstack((x[1], y[1], t))))
+            s1 = self.grady_eval(x,y,t)
+            return self.M.proj(x[1],s1)
         else:
-            return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
+            return self.grady_eval(x,y,t)
         
     def ggrady_eval(self, 
                   x:Tuple[Array, Array], 
@@ -98,23 +100,24 @@ class ScoreEvaluation(object):
                   t:Array,
                   )->Array:
         
-        if self.s2_approx:
-            if self.method == 'Embedded':
-                return self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((self.M.F(x), self.M.F(y), t)))
-            else:
-                return self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
+        if self.s2_state == None:
+            return self.s2_model(x,y,t)
         else:
-            if self.method == 'Embedded':
-                Fx = self.M.F(x)
-                Fy = self.M.F(y)
-                return jacfwd(lambda Fy: \
-                              self.s1_model.apply(self.s1_state.params,self.rng_key, 
-                                                  jnp.hstack((Fx, Fy, t))))(Fy)
+            if self.s2_approx:
+                if self.method == 'Embedded':
+                    return self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((x[1], y[1], t)))
+                else:
+                    return self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
             else:
-                x = x[0]
-                y = y[0]
-                return jacfwd(lambda y: \
-                              self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x, y, t))))(y)
+                if self.method == 'Embedded':
+                    return jacfwd(lambda Fy: \
+                                  self.s1_model.apply(self.s1_state.params,self.rng_key, 
+                                                      jnp.hstack((x[1], Fy, t))))(y[1])
+                else:
+                    x = x[0]
+                    y = y[0]
+                    return jacfwd(lambda y: \
+                                  self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x, y, t))))(y)
     
     def grady_val(self, 
                   x:Tuple[Array, Array], 
@@ -123,11 +126,9 @@ class ScoreEvaluation(object):
                   )->Array:
         
         if self.method == 'Embedded':
-            return self.grad_TM(self.M.F(y), 
-                                self.s1_model.apply(self.s1_state.params,self.rng_key, 
-                                                    jnp.hstack((self.M.F(x), self.M.F(y), t))))
+            return self.grad_TM(y[1],self.grady_eval(x,y,t))
         else:
-            return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
+            return self.grady_eval(x,y,t)
         
     def grady_log(self, 
                   x:Tuple[Array, Array], 
@@ -136,11 +137,9 @@ class ScoreEvaluation(object):
                   )->Array:
         
         if self.method == 'Embedded':
-            s1 = self.grad_TM(self.M.F(y), 
-                                self.s1_model.apply(self.s1_state.params,self.rng_key, 
-                                                    jnp.hstack((self.M.F(x), self.M.F(y), t))))
+            s1 = self.grad_TM(y[1], self.grady_eval(x,y,t))
         else:
-            s1 = self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
+            s1 = self.grady_eval(x,y,t)
 
         return jnp.linalg.solve(self.M.g(y), s1)#jnp.dot(self.M.gsharp(y), s1)
         
@@ -152,28 +151,22 @@ class ScoreEvaluation(object):
         
         if self.method == 'Embedded':
             if self.s2_approx:
-                s2 = self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((self.M.F(x), self.M.F(y), t)))
+                s2 = self.ggrady_eval(x,y,t)
                 
-                s1 = self.s1_model.apply(self.s1_state.params,self.rng_key, 
-                                    jnp.hstack((self.M.F(x), self.M.F(y), t)))
-                #s1 = self.M.proj(self.M.F(x),s1)
-                #s2 = self.hess_EmbeddedTM(self.M.F(x), s1, s2)
-                s2 = -self.hess_TM(self.M.F(y), s1, s2)
+                s1 = self.grady_eval(x,y,t)
+                s1 = self.M.proj(x[1],s1)
+                #s2 = self.hess_EmbeddedTM(x[1], s1, s2)
+                s2 = self.hess_TM(y[1], s1, s2)
                 return s2
             else:
-                s2 = jacfwdx(lambda y: jnp.dot(self.M.invJF((self.M.F(y), y[1])), 
-                                               self.s1_model.apply(self.s1_state.params,
-                                                                   self.rng_key, 
-                                                                   jnp.hstack((self.M.F(x), self.M.F(y), t)))))(y)
+                s2 = jacfwdx(lambda y: jnp.dot(self.M.invJF((y[1], y[1])), self.grady_eval(x,y,t)))(y)
 
             return s2#(s2-jnp.einsum('mij,m->ij',self.M.Gamma_g(x),self.grady_val(x,y,t)))
         else:
             if self.s2_approx:
-                s2 = self.s2_model.apply(self.s2_state.params, self.rng_key, jnp.hstack((x[0],y[0],t)))
+                s2 = self.ggrady_eval(x,y,t)
             else:
-                s2 = jacfwdx(lambda y: self.s1_model.apply(self.s1_state.params,
-                                                           self.rng_key, 
-                                                           jnp.hstack((x[0], y[0], t))))(y)
+                s2 = jacfwdx(lambda y: self.grady_eval(x,y,t))(y)
     
             return s2#(s2-jnp.einsum('mij,m->ij',self.M.Gamma_g(y), self.grady_val(x,y,t)))
         
@@ -184,19 +177,17 @@ class ScoreEvaluation(object):
                   )->Array:
 
         if self.method == "Embedded":
-            Fx = self.M.F(x)
-            Fy = self.M.F(y)
             s1_val = self.grady_eval(x,y,t)#self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((Fx, Fy, t)))
-            s1_val = self.M.proj(Fx,s1_val)
+            s1_val = self.M.proj(x[1],s1_val)
             s2_val = self.ggrady_eval(x,y,t)#self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((Fx, Fy, t)))
-            #s2_val = self.hess_EmbeddedTM(Fx, s1_val, s2_val)
+            #s2_val = self.hess_EmbeddedTM(x[1], s1_val, s2_val)
             div = jnp.trace(s2_val)
         else:
-            s1_val = self.grady_log(y,x,t)
-            #s1_val = self.grady_eval(x,y,t)
+            #s1_val = self.grady_log(y,x,t)
+            s1_val = self.grady_eval(x,y,t)
             #s2_val = self.ggrady_log(x,y,t)
             s2_val = self.ggrady_eval(y,x,t)
-            s2_val = -jnp.linalg.solve(self.M.g(y), s2_val)
+            #s2_val = jnp.linalg.solve(self.M.g(y), s2_val)
             div = jnp.trace(s2_val)+.5*jnp.dot(s1_val,jacfwdx(self.M.logAbsDet)(x).squeeze())
 
         return 0.5*(jnp.dot(s1_val, s1_val)+div)
