@@ -41,22 +41,25 @@ class ScoreEvaluation(object):
         chart = self.M.centered_chart(Fx)
         return (self.M.invF((Fx,chart)),chart)
     
-    def grad_TM(self, Fx:Array, v:Array)->Array:
-        
-        x = self.get_coords(Fx)
+    def grad_TM(self, x:Array, v:Array)->Array:
 
-        return jnp.dot(self.M.invJF((Fx,x[1])),v)
+        Jf = self.M.JF(x)
+        #return jnp.dot(self.M.invJF((Fx,x[1])),v)
+        return jnp.einsum('ij,i->j', Jf, v)
     
-    def hess_TM(self, Fx:Array, v:Array, h:Array)->Array:
+    def hess_TM(self, x:Array, v:Array, h:Array)->Array:
+        #val1 = jacfwd(lambda x1: self.M.invJF((x1, x1)))(self.M.F(x))
+        #val2 = self.M.invJF((x[1], self.M.F(x)))
+        #val3 = self.M.JF(x)
         
-        x = self.get_coords(Fx)
-        
-        val1 = jacfwdx(lambda x: self.M.invJF((self.M.F(x), self.M.F(x))))(x)
-        val2 = self.M.invJF((self.M.F(x), self.M.F(x)))
-        val3 = self.M.JF(x)
-        
-        term1 = jnp.einsum('ijk,j->ik', val1, v)
-        term2 = val2.dot(h).dot(val3)
+        #term1 = jnp.einsum('ikj,jl->ikl', val1, val3)
+        #term1 = jnp.einsum('ikl,k->il', term1, v)
+        #term1 = jnp.einsum('ijk,j->ik', val1, v)
+        #term2 = val2.dot(h).dot(val3)
+        val1 = self.M.JF(x)
+        val2 = jacfwdx(lambda x1: self.M.JF(x1))(x)
+        term1 = jnp.einsum('jl,li,jk->ik', h, val1, val1)
+        term2 = jnp.einsum('j,jik', v, val2)
         
         return term1+term2
     
@@ -90,7 +93,7 @@ class ScoreEvaluation(object):
         
         if self.method == 'Embedded':
             s1 = self.grady_eval(x,y,t)
-            return self.M.proj(x[1],s1)
+            return self.M.proj(y,s1)
         else:
             return self.grady_eval(x,y,t)
         
@@ -105,7 +108,10 @@ class ScoreEvaluation(object):
         else:
             if self.s2_approx:
                 if self.method == 'Embedded':
-                    return self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((x[1], y[1], t)))
+                    #s1 = self.grady_eval(x,y,t)
+                    s2 = self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((x[1], y[1], t)))
+                    #s2 = self.hess_EmbeddedTM(y[1], s1, s2)
+                    return s2
                 else:
                     return self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
             else:
@@ -126,7 +132,8 @@ class ScoreEvaluation(object):
                   )->Array:
         
         if self.method == 'Embedded':
-            return self.grad_TM(y[1],self.grady_eval(x,y,t))
+            s1 = self.M.proj(y[1],self.grady_eval(x,y,t))
+            return self.grad_TM(y,s1)
         else:
             return self.grady_eval(x,y,t)
         
@@ -137,7 +144,7 @@ class ScoreEvaluation(object):
                   )->Array:
         
         if self.method == 'Embedded':
-            s1 = self.grad_TM(y[1], self.grady_eval(x,y,t))
+            s1 = self.grad_TM(y, self.grady_eval(x,y,t))
         else:
             s1 = self.grady_eval(x,y,t)
 
@@ -148,20 +155,18 @@ class ScoreEvaluation(object):
                    y:Tuple[Array, Array],
                    t:Array
                    )->Array:
-        
         if self.method == 'Embedded':
             if self.s2_approx:
                 s2 = self.ggrady_eval(x,y,t)
-                
                 s1 = self.grady_eval(x,y,t)
-                s1 = self.M.proj(x[1],s1)
-                #s2 = self.hess_EmbeddedTM(x[1], s1, s2)
-                s2 = self.hess_TM(y[1], s1, s2)
+                #s1 = self.M.proj(y[1],s1)
+                #s2 = self.hess_EmbeddedTM(y[1], s1, s2)
+                s2 = self.hess_TM(y, s1, s2)
                 return s2
             else:
                 s2 = jacfwdx(lambda y: jnp.dot(self.M.invJF((y[1], y[1])), self.grady_eval(x,y,t)))(y)
 
-            return s2#(s2-jnp.einsum('mij,m->ij',self.M.Gamma_g(x),self.grady_val(x,y,t)))
+            return #(s2-jnp.einsum('mij,m->ij',self.M.Gamma_g(x),self.grady_val(x,y,t)))
         else:
             if self.s2_approx:
                 s2 = self.ggrady_eval(x,y,t)
@@ -170,24 +175,33 @@ class ScoreEvaluation(object):
     
             return s2#(s2-jnp.einsum('mij,m->ij',self.M.Gamma_g(y), self.grady_val(x,y,t)))
         
+    def grad_debugging_log(self, 
+                      x:Array,
+                      y:Array,
+                      t:Array, 
+                      )->Array:
+        
+        s1_val = self.grady_log(x,y,t)
+        s2_val = self.ggrady_log(x,y,t)
+        s2_val = jnp.linalg.solve(self.M.g(y), s2_val)
+        div = jnp.trace(s2_val)+.5*jnp.dot(s1_val,jacfwdx(self.M.logAbsDet)(x).squeeze())
+
+        return s1_val, s2_val, div, .5*jnp.dot(s1_val,jacfwdx(self.M.logAbsDet)(x).squeeze()), jnp.dot(s1_val, s1_val), self.ggrady_log(x,y,t)
+        
     def gradt_log(self, 
                   x:Array,
                   y:Array,
                   t:Array, 
                   )->Array:
 
-        if self.method == "Embedded":
-            s1_val = self.grady_eval(x,y,t)#self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((Fx, Fy, t)))
-            s1_val = self.M.proj(x[1],s1_val)
-            s2_val = self.ggrady_eval(x,y,t)#self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((Fx, Fy, t)))
-            #s2_val = self.hess_EmbeddedTM(x[1], s1_val, s2_val)
-            div = jnp.trace(s2_val)
-        else:
-            #s1_val = self.grady_log(y,x,t)
-            s1_val = self.grady_eval(x,y,t)
-            #s2_val = self.ggrady_log(x,y,t)
-            s2_val = self.ggrady_eval(y,x,t)
-            #s2_val = jnp.linalg.solve(self.M.g(y), s2_val)
-            div = jnp.trace(s2_val)+.5*jnp.dot(s1_val,jacfwdx(self.M.logAbsDet)(x).squeeze())
-
+        s1_val = self.grady_val(x,y,t)
+        #s1_val = self.grady_eval(x,y,t)
+        s2_val = self.ggrady_log(x,y,t)
+        #s2_val = self.ggrady_eval(x,y,t)
+        #s2_val = jnp.linalg.solve(self.M.g(y), s2_val)
+        #gamma= self.M.Gamma_g(y)
+        #ginv = self.M.gsharp(y)
+        #div = jnp.einsum('jk,jk->', ginv, s2_val)-jnp.einsum('jk,ljk,l->', ginv, gamma, s1_val)
+        div = jnp.trace(s2_val)+.5*jnp.dot(s1_val,jacfwdx(self.M.logAbsDet)(y).squeeze())
+        
         return 0.5*(jnp.dot(s1_val, s1_val)+div)

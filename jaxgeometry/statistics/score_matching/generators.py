@@ -125,52 +125,34 @@ class LocalSampling(object):
         return (Fx,chart)
     
     def grad_TM(self,
-                  s1_model:Callable[[Array, Array, Array], Array], 
-                  x0:Array, 
-                  x:Array, 
-                  t:Array
-                  )->Array:
+                x:Array,
+                v:Array,
+                )->Array:
         
-        return s1_model(x0, x, t)
+        return v
     
     def grad_local(self,
-                   s1_model:Callable[[Array, Array, Array], Array], 
-                   x0:Array, 
-                   x:Tuple[Array,Array], 
-                   t:Array
+                   x:Array,
+                   v:Array,
                    )->Array:
         
-        return s1_model(x0, x[0], t)
+        return v
     
-    def proj_hess(self,s1_model:Callable[[Array, Array, Array], Array], 
-                   s2_model:Callable[[Array, Array, Array], Array],
-                   x0:Array, 
-                   x:Array, 
-                   t:Array
+    def hess_TM(self,
+                x:Array,
+                v:Array,
+                h:Array
+                )->Array:
+        
+        return h
+    
+    def hess_local(self,
+                   x:Array,
+                   v:Array,
+                   h:Array
                    )->Array:
         
-        return s2_model(x0,x,t)
-    
-    def dW_TM(self,
-                x:Array,
-                dW:Array
-                )->Array:
-    
-        return dW
-    
-    def dW_local(self,
-                x:Array,
-                dW:Array
-                )->Array:
-    
-        return dW
-    
-    def dW_embedded(self,
-                x:Array,
-                dW:Array
-                )->Array:
-        
-        return dW
+        return h
 
 #%% Projection from Chart
 
@@ -269,95 +251,55 @@ class EmbeddedSampling(object):
         
         return (self.M.invF((Fx,chart)),chart)
 
-    def grad_TM(self, 
-                  s1_model:Callable[[Array, Array, Array], Array],
-                  x0:Array, 
-                  x:Array, 
-                  t:Array):
+    def grad_TM(self,
+                x:Array,
+                v:Array
+                )->Array:
 
         x = self.update_coords(x)
 
-        Fx = self.M.F(x)
         JFx = self.M.JF(x)
         Q, _ = jnp.linalg.qr(JFx)
         
-        return jnp.dot(jnp.dot(Q,Q.T), s1_model(x0,Fx,t))
+        return jnp.dot(jnp.dot(Q,Q.T), v)
     
     def grad_local(self, 
-                  s1_model:Callable[[Array, Array, Array], Array],
-                  x0:Array, 
-                  x:Tuple[Array,Array], 
-                  t:Array):
-
-        Fx = self.M.F(x)
-        invJFx = self.M.invJF((x[1],x[1]))
-        
-        return jnp.tensordot(invJFx,s1_model(x0,Fx,t),(1,0))
-
-    def proj_hess(self,
-                  s1_model:Callable[[Array, Array, Array], Array], 
-                  s2_model:Callable[[Array, Array, Array], Array],
-                  x0:Array, 
-                  x:Array, 
-                  t:Array
-                  )->Array:
-        
-        #x = self.update_coords(x)
-        
-        #Fx = self.M.F(x)
-        #JFx = self.M.JF(x)
-        #Q, _ = jnp.linalg.qr(JFx)
-        
-        
-        #return jnp.dot(jnp.dot(Q,Q.T), s2_model(x0,Fx,t))
-        
-        #return s2_model(x0,Fx,t)
-        
-        #Fx = self.M.F(x)
-        #invJFx = self.M.invJF((x[1],x[1]))
-        
-        #return jnp.tensordot(invJFx,s2_model(x0,Fx,t),(1,0))
+                   x:Array,
+                   v:Array
+                   )->Array:
         
         x = self.update_coords(x)
 
-        Fx = self.M.F(x)
-        JFx = self.M.JF(x)        
-        
-        val1 = self.M.proj(x0, s2_model(x0,Fx,t))
-        val2 = s1_model(x0,Fx,t)-self.M.proj(x0, s1_model(x0,Fx,t))
-        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x0)
-        
-        
-        return val1+val3#jnp.einsum('i,j->ij', M.proj(x0, s1_model(x0,Fx,t)), x)
-        
-        #return jnp.dot(jnp.dot(Q,Q.T), s2_model(x0,Fx,t))
+        Jf = self.M.JF(x)
+
+        return jnp.einsum('ij,i->j', Jf, v)
     
-    def dW_TM(self,
-              x:Array,
-              dW:Array
-              )->Array:
+    def hess_local(self,
+                   x:Array,
+                   v:Array,
+                   h:Array
+                   )->Array:
         
         x = self.update_coords(x)
         
-        return jnp.dot(self.M.JF(x), dW)
-    
-    def dW_local(self,
+        val1 = self.M.JF(x)
+        val2 = jacfwdx(lambda x1: self.M.JF(x1))(x)
+        term1 = jnp.einsum('jl,li,jk->ik', h, val1, val1)
+        term2 = jnp.einsum('j,jik', v, val2)
+        
+        return term1+term2
+
+    def hess_TM(self,
                 x:Array,
-                dW:Array
+                v:Array,
+                h:Array
                 )->Array:
         
-        return jnp.dot(self.M.invJF((x[1],x[1])), dW)
-    
-    def dW_embedded(self,
-                x:Array,
-                dW:Array
-                )->Array:
+        val1 = self.M.proj(x, h)
+        val2 = v-self.M.proj(x, v)
+        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x)
         
-        x = self.update_coords(x)
-        
-        JFx = self.M.JF(x)
-        
-        return jnp.dot(JFx, dW)
+        return val1+val3
 
 #%% Sampling in Tangent Space
 
@@ -470,62 +412,49 @@ class TMSampling(object):
         return (self.M.invF((Fx,chart)), Fx)
     
     def grad_TM(self,
-                  s1_model:Callable[[Array, Array, Array], Array], 
-                  x0:Array, 
-                  x:Array, 
-                  t:Array
-                  )->Array:
+                x:Array,
+                v:Array
+                )->Array:
         
-        return self.M.proj(x, s1_model(x0, x, t))
+        return self.M.proj(x, v)
     
-    def grad_local(self,
-                  s1_model:Callable[[Array, Array, Array], Array], 
-                  x0:Array, 
-                  x:Array, 
-                  t:Array
-                  )->Array:
-        
-        return jnp.dot(self.M.invJF((x[1],x[1])), s1_model(x0, x[1], t))
+    def grad_local(self, 
+                   x:Array,
+                   v:Array
+                   )->Array:
+
+        x = self.update_coords(x)
+
+        Jf = self.M.JF(x)
+
+        return jnp.einsum('ij,i->j', Jf, v)
     
-    def proj_hess(self,s1_model:Callable[[Array, Array, Array], Array], 
-                   s2_model:Callable[[Array, Array, Array], Array],
-                   x0:Array, 
-                   x:Array, 
-                   t:Array
+    def hess_local(self,
+                   x:Array,
+                   v:Array,
+                   h:Array
                    )->Array:
         
         x = self.update_coords(x)
+        
+        val1 = self.M.JF(x)
+        val2 = jacfwdx(lambda x1: self.M.JF(x1))(x)
+        term1 = jnp.einsum('jl,li,jk->ik', h, val1, val1)
+        term2 = jnp.einsum('j,jik', v, val2)
+        
+        return term1+term2
 
-        Fx = self.M.F(x)
+    def hess_TM(self,
+                  x:Array,
+                  v:Array,
+                  h:Array
+                  )->Array:
+
+        val1 = self.M.proj(x, h)
+        val2 = v-self.M.proj(x, v)
+        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x)
         
-        JFx = self.M.JF(x)        
-        
-        val1 = self.M.proj(x0, s2_model(x0,Fx,t))
-        val2 = s1_model(x0,Fx,t)-self.M.proj(x0, s1_model(x0,Fx,t))
-        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x0)
-        
-        return val1+val3#jnp.einsum('i,j->ij', M.proj(x0, s1_model(x0,Fx,t)), x)
-    
-    def dW_TM(self,
-              x:Array,
-              dW:Array
-              )->Array:
-        
-        return dW#self.M.proj(x,dW)
-    
-    def dW_local(self,
-                x:Array,
-                dW:Array
-                )->Array:
-        
-        return jnp.dot(self.M.invJF((x[1],x[1])), dW)
-    
-    def dW_embedded(self,
-                x:Array,
-                dW:Array
-                )->Array:
-        
-        return dW
+        return val1+val3
 
 #%% Sampling in using Projection
 
@@ -639,62 +568,49 @@ class ProjectionSampling(object):
         return (self.M.invF((Fx,chart)), Fx)
     
     def grad_TM(self,
-                  s1_model:Callable[[Array, Array, Array], Array], 
-                  x0:Array, 
-                  x:Array, 
-                  t:Array
-                  )->Array:
+                x:Array,
+                v:Array
+                )->Array:
         
-        return self.M.proj(x, s1_model(x0, x, t))
+        return self.M.proj(x, v)
     
-    def grad_local(self,
-                  s1_model:Callable[[Array, Array, Array], Array], 
-                  x0:Array, 
-                  x:Tuple[Array,Array], 
-                  t:Array
-                  )->Array:
-        
-        return jnp.dot(self.M.invJF((x[1],x[1])), s1_model(x0, x[1], t))
-    
-    def proj_hess(self,s1_model:Callable[[Array, Array, Array], Array], 
-                   s2_model:Callable[[Array, Array, Array], Array],
-                   x0:Array, 
-                   x:Array, 
-                   t:Array
+    def grad_local(self, 
+                   x:Array,
+                   v:Array
                    )->Array:
         
         x = self.update_coords(x)
 
-        Fx = self.M.F(x)
-        JFx = self.M.JF(x)        
-        
-        val1 = self.M.proj(x0, s2_model(x0,Fx,t))
-        val2 = s1_model(x0,Fx,t)-self.M.proj(x0, s1_model(x0,Fx,t))
-        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x0)
-        
-        
-        return val1+val3#jnp.einsum('i,j->ij', M.proj(x0, s1_model(x0,Fx,t)), x)
+        Jf = self.M.JF(x)
+
+        return jnp.einsum('ij,i->j', Jf, v)
     
-    def dW_TM(self,
-              x:Array,
-              dW:Array
-              )->Array:
+    def hess_local(self,
+                   x:Array,
+                   v:Array,
+                   h:Array
+                   )->Array:
         
-        return dW#self.M.proj(x,dW)
-    
-    def dW_local(self,
-                x:Tuple[Array, Array],
-                dW:Array
-                )->Array:
+        x = self.update_coords(x)
         
-        return jnp.dot(self.M.invJF(x), dW)
-    
-    def dW_embedded(self,
-                x:Array,
-                dW:Array
-                )->Array:
+        val1 = self.M.JF(x)
+        val2 = jacfwdx(lambda x1: self.M.JF(x1))(x)
+        term1 = jnp.einsum('jl,li,jk->ik', h, val1, val1)
+        term2 = jnp.einsum('j,jik', v, val2)
         
-        return dW
+        return term1+term2
+
+    def hess_TM(self,
+                  x:Array,
+                  v:Array,
+                  h:Array
+                  )->Array:
+        
+        val1 = self.M.proj(x, h)
+        val2 = v-self.M.proj(x, v)
+        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x)
+        
+        return val1+val3
 
 #%% VAE Sampling
 
