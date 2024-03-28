@@ -54,9 +54,9 @@ def dsm_s1fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        v = s1_model(x0,xt,t)
-        s1 = generator.grad_local(xt,v)
-        dW = generator.grad_local(xt,dW)
+        s1 = s1_model(x0,xt,t)
+        #s1 = generator.grad_TM(xt,v)
+        dW = generator.grad_TM(xt,dW)
 
         loss = dW/dt+s1
         
@@ -80,12 +80,12 @@ def dsmvr_s1fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        dW = generator.grad_local(xt,dW)
+        dW = generator.grad_TM(xt,dW)
         
         s1 = s1_model(x0,xt,t)
-        s1 = generator.grad_local(xt,s1)
+        #s1 = generator.grad_TM(xt,s1)
         s1p = s1_model(x0,x0,t)
-        s1p = generator.grad_local(x0,s1p)
+        #s1p = generator.grad_TM(x0,s1p)
         
         l1_loss = dW/dt+s1
         l1_loss = 0.5*jnp.dot(l1_loss,l1_loss)
@@ -112,12 +112,12 @@ def dsm_s2fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        dW = generator.grad_local(xt,dW)    
+        dW = generator.grad_TM(xt,dW)    
         
-        s1_emb = s1_model(x0,xt,t)
-        s1 = generator.grad_local(xt,s1_emb)
+        s1 = s1_model(x0,xt,t)
+        #s1 = generator.grad_TM(xt,s1_emb)
         s2 = s2_model(x0,xt,t)
-        s2 = generator.hess_local(xt,s1_emb,s2)
+        #s2 = generator.hess_local(xt,s1_emb,s2)
 
         loss_s2 = s2+jnp.einsum('i,j->ij', s1, s1)+(jnp.eye(len(dW))-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
         
@@ -142,12 +142,12 @@ def dsmdiag_s2fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        dW = generator.grad_local(xt,dW)    
+        dW = generator.grad_TM(xt,dW)    
         
-        s1_emb = s1_model(x0,xt,t)
-        s1 = generator.grad_local(xt,s1_emb)
+        s1 = s1_model(x0,xt,t)
+        s1 = generator.grad_TM(xt,s1)
         s2 = s2_model(x0,xt,t)
-        s2 = generator.hess_local(xt,s1_emb,s2)
+        #s2 = generator.hess_local(xt,s1_emb,s2)
 
         loss_s2 = jnp.diag(s2)+s1*s1+(1-dW*dW/dt)/dt
         
@@ -172,17 +172,17 @@ def dsmvr_s2fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        dW = generator.grad_local(xt,dW)
+        dW = generator.grad_TM(xt,dW)
                 
-        s1_emb = s1_model(x0,x0,t)
-        s1 = generator.grad_local(x0,s1_emb)
+        s1 = s1_model(x0,x0,t)
+        s1 = generator.grad_TM(x0,s1)
         s2 = s2_model(x0,x0,t)
-        s2 = generator.hess_local(x0,s1_emb,s2)
+        #s2 = generator.hess_local(x0,s1_emb,s2)
 
-        s1p_emb = s1_model(x0,xt,t)
-        s1p = generator.grad_local(xt,s1p_emb)
+        s1p = s1_model(x0,xt,t)
+        s1p = generator.grad_TM(xt,s1p)
         s2p = s2_model(x0,xt,t)
-        s2p = generator.hess_local(xt,s1p_emb,s2p)
+        #s2p = generator.hess_local(xt,s1p_emb,s2p)
 
         psi = s2+jnp.einsum('i,j->ij', s1, s1)
         psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
@@ -214,17 +214,17 @@ def dsmdiagvr_s2fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        dW = generator.grad_local(xt,dW)
+        dW = generator.grad_TM(xt,dW)
                 
-        s1_emb = s1_model(x0,x0,t)
-        s1 = generator.grad_local(x0,s1_emb)
+        s1 = s1_model(x0,x0,t)
+        s1 = generator.grad_TM(x0,s1)
         s2 = s2_model(x0,x0,t)
-        s2 = generator.hess_local(x0,s1_emb,s2)
+        #s2 = generator.hess_local(x0,s1_emb,s2)
 
-        s1p_emb = s1_model(x0,xt,t)
-        s1p = generator.grad_local(xt,s1p_emb)
+        s1p = s1_model(x0,xt,t)
+        s1p = generator.grad_TM(xt,s1p)
         s2p = s2_model(x0,xt,t)
-        s2p = generator.hess_local(xt,s1p_emb,s2p)
+        #s2p = generator.hess_local(xt,s1p_emb,s2p)
 
         psi = jnp.diag(s2)+s1*s1
         psip = jnp.diag(s2p)+s1p*s1p

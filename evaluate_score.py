@@ -58,7 +58,7 @@ def parse_args():
                         type=List)
     parser.add_argument('--s1_loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--s2_loss_type', default="dsmvr",
+    parser.add_argument('--s2_loss_type', default="dsm",
                         type=str)
     parser.add_argument('--s2_approx', default=1,
                         type=int)
@@ -234,7 +234,7 @@ def evaluate_diffusion_mean():
                                     s1_state=s1_state,#None,#s1_state,#s1_state, 
                                     s2_model=s2_model,#s2_model_test2, 
                                     s2_state=s2_state,#None,#s2_state,#s2_state,
-                                    s2_approx=args.s2_approx, 
+                                    s2_approx=args.s2_approx,#args.s2_approx, 
                                     method=method, 
                                     seed=args.seed
                                     )

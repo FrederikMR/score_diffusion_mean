@@ -81,7 +81,7 @@ class ScoreEvaluation(object):
             return self.s1_model(x,y,t)
         else:
             if self.method == 'Embedded':
-                return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[1], y[1], t)))
+                return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((self.M.F(x), self.M.F(y), t)))
             else:
                 return self.s1_model.apply(self.s1_state.params,self.rng_key, jnp.hstack((x[0], y[0], t)))
         
@@ -109,7 +109,7 @@ class ScoreEvaluation(object):
             if self.s2_approx:
                 if self.method == 'Embedded':
                     #s1 = self.grady_eval(x,y,t)
-                    s2 = self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((x[1], y[1], t)))
+                    s2 = self.s2_model.apply(self.s2_state.params,self.rng_key, jnp.hstack((self.M.F(x), self.M.F(y), t)))
                     #s2 = self.hess_EmbeddedTM(y[1], s1, s2)
                     return s2
                 else:
@@ -118,7 +118,7 @@ class ScoreEvaluation(object):
                 if self.method == 'Embedded':
                     return jacfwd(lambda Fy: \
                                   self.s1_model.apply(self.s1_state.params,self.rng_key, 
-                                                      jnp.hstack((x[1], Fy, t))))(y[1])
+                                                      jnp.hstack((self.M.F(x), Fy, t))))(self.M.F(y))
                 else:
                     x = x[0]
                     y = y[0]
@@ -132,7 +132,7 @@ class ScoreEvaluation(object):
                   )->Array:
         
         if self.method == 'Embedded':
-            s1 = self.M.proj(y[1],self.grady_eval(x,y,t))
+            s1 = self.M.proj(self.M.F(y),self.grady_eval(x,y,t))
             return self.grad_TM(y,s1)
         else:
             return self.grady_eval(x,y,t)
@@ -164,9 +164,10 @@ class ScoreEvaluation(object):
                 s2 = self.hess_TM(y, s1, s2)
                 return s2
             else:
-                s2 = jacfwdx(lambda y: jnp.dot(self.M.invJF((y[1], y[1])), self.grady_eval(x,y,t)))(y)
+                s2 = jacfwdx(lambda y: jnp.dot(self.M.invJF((self.M.F(y), self.M.F(y))), self.grady_eval(x,y,t)))(y)
+                return s2
 
-            return #(s2-jnp.einsum('mij,m->ij',self.M.Gamma_g(x),self.grady_val(x,y,t)))
+            #(s2-jnp.einsum('mij,m->ij',self.M.Gamma_g(x),self.grady_val(x,y,t)))
         else:
             if self.s2_approx:
                 s2 = self.ggrady_eval(x,y,t)

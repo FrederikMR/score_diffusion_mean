@@ -53,7 +53,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--s1_loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--s2_loss_type', default="dsmvr",
+    parser.add_argument('--s2_loss_type', default="dsm",
                         type=str)
     parser.add_argument('--load_model', default=0,
                         type=int)
