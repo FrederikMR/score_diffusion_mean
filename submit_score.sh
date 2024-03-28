@@ -18,14 +18,14 @@ module swap cudnn/v8.9.1.23-prod-cuda-12.X
 module swap python3/3.10.12
 
 python3 train_score.py \
-    --manifold HypParaboloid \
+    --manifold Sphere \
     --dim 2 \
     --s1_loss_type dsmvr \
     --s2_loss_type dsmvr \
     --load_model 0 \
     --T_sample 0 \
     --t 0.01 \
-    --train_net s1 \
+    --train_net s2 \
     --max_T 1.0 \
     --lr_rate 0.0002 \
     --epochs 50000 \
