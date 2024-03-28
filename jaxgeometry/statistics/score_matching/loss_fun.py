@@ -55,7 +55,7 @@ def dsm_s1fun(generator:object,
     def f(x0,xt,t,dW,dt):
         
         dW = generator.grad_TM(xt,dW)
-        #s1 = s1_model(x0,xt,t)
+        s1 = s1_model(x0,xt,t)
         #s1 = generator.grad_TM(xt,v)
 
         loss = dW/dt+s1
@@ -82,7 +82,7 @@ def dsmvr_s1fun(generator:object,
         
         dW = generator.grad_TM(xt,dW)
         
-        s1 = s1_model(x0,xt,t)
+        s1 = s1_model(x0,x0,t)
         #s1 = generator.grad_TM(xt,s1)
         s1p = s1_model(x0,xt,t)
         #s1p = generator.grad_TM(x0,s1p)
