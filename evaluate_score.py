@@ -52,13 +52,13 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Sphere",
+    parser.add_argument('--manifold', default="HypParaboloid",
                         type=str)
     parser.add_argument('--dim', default=[2],
                         type=List)
     parser.add_argument('--s1_loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--s2_loss_type', default="dsm",
+    parser.add_argument('--s2_loss_type', default="dsmvr",
                         type=str)
     parser.add_argument('--s2_approx', default=1,
                         type=int)
@@ -238,20 +238,20 @@ def evaluate_diffusion_mean():
                                     method=method, 
                                     seed=args.seed
                                     )
-        print(ScoreEval.ggrady_eval(x0,x0,0.5))
-        print(ScoreEval.ggrady_log(x0,x0,0.5))
-        print(ScoreEval.grady_eval(x0,x0,0.5))
-        print(ScoreEval.grady_log(x0,x0,0.5))
-        print("hallo")
-        s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: ScoreEval.ggrady_log((x,chart),y,t))(X_obs[0], X_obs[1]), axis=0)
-        print(jnp.trace(s1(x0,0.5)))
-        s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: ScoreEval.ggrady_eval((x,chart),y,t))(X_obs[0], X_obs[1]), axis=0)
-        print(jnp.trace(s1(x0,0.5)))
-        s1 = lambda y,t: vmap(lambda x,chart: ScoreEval.gradt_log((x,chart),y,t))(X_obs[0], X_obs[1])
-        print("Test Here")
-        print(jnp.mean(s1(x0,0.5), axis=0))
-        s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: M.gradt_log_hk((x,chart),y,t))(X_obs[0], X_obs[1]), axis=0)
-        print(s1(x0,0.5))
+        #print(ScoreEval.ggrady_eval(x0,x0,0.5))
+        #print(ScoreEval.ggrady_log(x0,x0,0.5))
+        #print(ScoreEval.grady_eval(x0,x0,0.5))
+        #print(ScoreEval.grady_log(x0,x0,0.5))
+        #print("hallo")
+        #s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: ScoreEval.ggrady_log((x,chart),y,t))(X_obs[0], X_obs[1]), axis=0)
+        #print(jnp.trace(s1(x0,0.5)))
+        #s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: ScoreEval.ggrady_eval((x,chart),y,t))(X_obs[0], X_obs[1]), axis=0)
+        #print(jnp.trace(s1(x0,0.5)))
+        #s1 = lambda y,t: vmap(lambda x,chart: ScoreEval.gradt_log((x,chart),y,t))(X_obs[0], X_obs[1])
+        #print("Test Here")
+        #print(jnp.mean(s1(x0,0.5), axis=0))
+        #s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: M.gradt_log_hk((x,chart),y,t))(X_obs[0], X_obs[1]), axis=0)
+        #print(s1(x0,0.5))
 
         #return
         #return

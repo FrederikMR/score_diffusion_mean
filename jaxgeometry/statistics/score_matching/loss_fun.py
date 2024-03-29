@@ -54,7 +54,7 @@ def dsm_s1fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        dW = generator.grad_TM(xt,dW)
+        #dW = generator.grad_TM(xt,dW)
         s1 = s1_model(x0,xt,t)
         #s1 = generator.grad_TM(xt,v)
 
@@ -80,7 +80,7 @@ def dsmvr_s1fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        dW = generator.grad_TM(xt,dW)
+        #dW = generator.grad_TM(xt,dW)
         
         s1 = s1_model(x0,x0,t)
         #s1 = generator.grad_TM(xt,s1)
@@ -112,7 +112,7 @@ def dsm_s2fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        dW = generator.grad_TM(xt,dW)    
+        #dW = generator.grad_TM(xt,dW)    
         
         s1 = s1_model(x0,xt,t)
         #s1 = generator.grad_TM(xt,s1)
@@ -142,7 +142,7 @@ def dsmdiag_s2fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        dW = generator.grad_TM(xt,dW)    
+        #dW = generator.grad_TM(xt,dW)    
         
         s1 = s1_model(x0,xt,t)
         #s1 = generator.grad_TM(xt,s1)
@@ -172,7 +172,7 @@ def dsmvr_s2fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        dW = generator.grad_TM(xt,dW)
+        #dW = generator.grad_TM(xt,dW)
                 
         s1 = s1_model(x0,x0,t)
         #s1 = generator.grad_TM(x0,s1)
@@ -214,7 +214,7 @@ def dsmdiagvr_s2fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        dW = generator.grad_TM(xt,dW)
+        #dW = generator.grad_TM(xt,dW)
         
         s1 = s1_model(x0,x0,t)
         #s1 = generator.grad_TM(x0,s1)
