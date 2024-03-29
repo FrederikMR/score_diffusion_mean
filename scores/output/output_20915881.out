@@ -1,0 +1,14 @@
+using M.Exp for Logarithm
+Epoch: 100 	 loss = -993.2655
+Epoch: 200 	 loss = -990.8746
+Epoch: 300 	 loss = -991.1140
+Epoch: 400 	 loss = -987.3872
+Epoch: 500 	 loss = -989.8074
+Epoch: 600 	 loss = -988.6700
+Epoch: 700 	 loss = -990.1011
+Epoch: 800 	 loss = -989.0572
+Epoch: 900 	 loss = -986.3459
+Epoch: 1000 	 loss = -989.3494
+Epoch: 1100 	 loss = -986.6221
+Epoch: 1200 	 loss = -990.2891
+Epoch: 1300 	 loss = -995.5279
