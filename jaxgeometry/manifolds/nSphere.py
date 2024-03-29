@@ -78,7 +78,7 @@ def hk(M:object, x:Array,y:Array,t:float, N_terms=100) -> float:
     y1 = y[1]
     xy_dot = jnp.dot(x1,y1)
     m1 = M.dim-1
-    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5)))
+    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5))/(2*jnp.pi**((M.dim+1)*0.5))
     
     alpha = m1*0.5
     C_0 = 1.0
@@ -116,7 +116,7 @@ def hk_embedded(M:object, x:Array,y:Array,t:float, N_terms=100) -> float:
     y1 = y
     xy_dot = jnp.dot(x1,y1)
     m1 = M.dim-1
-    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5)))
+    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5))/(2*jnp.pi**((M.dim+1)*0.5))
     
     alpha = m1*0.5
     C_0 = 1.0
@@ -178,7 +178,7 @@ def gradx_log_hk(M:object, x:Array, y:Array, t:float, N_terms=100) -> float:
     xy_dot = jnp.dot(x1, y1)
     alpha = (M.dim+1)*0.5
     m1 = M.dim-1
-    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5)))
+    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5))/(2*jnp.pi**((M.dim+1)*0.5))
     
     C_0 = 1.0
     C_1 = 2*alpha*xy_dot
@@ -237,7 +237,7 @@ def grady_log_hk(M:object, x:Array, y:Array, t:float, N_terms=100) -> float:
     xy_dot = jnp.dot(x1, y1)
     alpha = (M.dim+1)*0.5
     m1 = M.dim-1
-    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5)))
+    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5))/(2*jnp.pi**((M.dim+1)*0.5))
     
     C_0 = 1.0
     C_1 = 2*alpha*xy_dot
@@ -277,7 +277,7 @@ def gradt_log_hk(M:object, x:Array, y:Array, t:float, N_terms=100) -> float:
     
     xy_dot = jnp.dot(x1,y1)
     m1 = M.dim-1
-    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5)/(2*jnp.pi**((M.dim+1)*0.5)))
+    Am_inv = jnp.exp(jscipy.special.gammaln((M.dim+1)*0.5))/(2*jnp.pi**((M.dim+1)*0.5))
     
     alpha = m1*0.5
     C_0 = 1.0
