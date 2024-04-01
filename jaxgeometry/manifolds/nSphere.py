@@ -42,7 +42,7 @@ class nSphere(nEllipsoid):
                            use_spherical_coords=use_spherical_coords)
         
         self.hk = jit(lambda x,y,t, N_terms=100: hk(self, x,y, t, N_terms))
-        self.hk_embedded = jit(lambda x,y,t, N_terms=100: hk_embedded(self, x,y, t, N_terms))
+        self.hk_embedded = lambda x,y,t, N_terms=100: hk_embedded(self, x,y, t, N_terms)
         self.log_hk = jit(lambda x,y,t, N_terms=100: log_hk(self, x, y, t, N_terms))
         self.gradx_log_hk = jit(lambda x,y,t, N_terms=100: gradx_log_hk(self, x, y, t, N_terms))
         self.grady_log_hk = jit(lambda x,y,t, N_terms=100: grady_log_hk(self, x, y, t, N_terms))
@@ -125,7 +125,6 @@ def hk_embedded(M:object, x:Array,y:Array,t:float, N_terms=100) -> float:
     val = sum_term(0, C_0) + sum_term(1, C_1)
     
     grid = jnp.arange(2,N_terms,1)
-    
     val, _ = lax.scan(step, (val, C_1, C_0), xs=grid)
         
     return val[0]*Am_inv/m1

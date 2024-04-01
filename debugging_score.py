@@ -193,17 +193,98 @@ def evaluate_diffusion_mean():
             mu_opt = (mu_sm[0][-1], mu_sm[1][-1])
         else:
             mu_opt, T_opt = x0, 0.5
+        
+        from jaxgeometry.autodiff import hessianx, jacfwdx
+        from jax import jacfwd, jacrev, vmap
+        
+        def s1_model_test2(x,y,t):
+            
+            if args.manifold == "Euclidean":
+                return jacfwd(lambda y1: jnp.log(M.hk_embedded(x[0],y1[0],t)).squeeze())(y)[0]
+            else:
+                return jacfwd(lambda y1: jnp.log(M.hk_embedded(x[1],y1,t)).squeeze())(y[1])
+        
+        def s2_model_test2(x,y,t):
+            
+            return jacfwd(lambda y1: s1_model_test2(x,y1,t))(y)[1]
+        
+        def s1_model_test1(x,y,t):
+            
+            if args.manifold == "Euclidean":
+                return jacfwd(lambda y1: jnp.log(M.hk_embedded(x[0],y1[0],t)).squeeze())(y)[0]
+            else:
+                return jacfwdx(lambda y1: jnp.log(M.hk_embedded(M.F(x),M.F(y1),t)).squeeze())(y)
+        
+        def s2_model_test1(x,y,t):
+            
+            return jacfwdx(lambda y1: s1_model_test1(x,y1,t))(y)
 
         ScoreEval = ScoreEvaluation(M, 
-                                    s1_model= s1_model,#s1_model_test2,#s1_model_test2,#s1_model, 
-                                    s1_state=s1_state,#None,#s1_state,#s1_state, 
-                                    s2_model=s2_model,#s2_model_test2, 
-                                    s2_state=s2_state,#None,#s2_state,#s2_state,
+                                    s1_model= s1_model_test2,#s1_model_test2,#s1_model_test2,#s1_model, 
+                                    s1_state=None,#None,#s1_state,#s1_state, 
+                                    s2_model=s2_model_test2,#s2_model_test2, 
+                                    s2_state=None,#None,#s2_state,#s2_state,
                                     s2_approx=args.s2_approx,#args.s2_approx, 
                                     method=method, 
                                     seed=args.seed
                                     )
-        
+        print("Test Point")
+        print(M.hk_embedded(x0[1],x0[1],0.5))
+        print(jnp.log(M.hk_embedded(x0[1],x0[1],0.5)))
+        print(M.gradt_log_hk(x0,x0,0.5))
+        print(ScoreEval.gradt_log(x0,x0,0.5))
+        test1 = ScoreEval.ggrady_eval(x0,x0,0.5)
+        test2 = ScoreEval.grady_eval(x0,x0,0.5)
+        print(ScoreEval.hess_EmbeddedTM(x0[1], test2, test1))
+        print(M.proj(x0[1], test2))
+        print(ScoreEval.ggrady_eval(x0,x0,0.5))
+        print(ScoreEval.grady_eval(x0,x0,0.5))
+        print("Test Data")
+        s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: ScoreEval.gradt_log((x,chart),
+                                                                            y,
+                                                                            t))(X_obs[0], 
+                                                                                X_obs[1]), axis=0)
+        print(s1(x0,0.5))
+        s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: M.gradt_log_hk((x,chart),
+                                                                            y,
+                                                                            t))(X_obs[0], 
+                                                                                X_obs[1]), axis=0)
+        print(s1(x0,0.5))
+        s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: ScoreEval.ggrady_eval((x,chart),
+                                                                            y,
+                                                                            t))(X_obs[0], 
+                                                                                X_obs[1]), axis=0)
+        ggrady = s1(x0,0.5)
+        s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: ScoreEval.grady_eval((x,chart),
+                                                                            y,
+                                                                            t))(X_obs[0], 
+                                                                                X_obs[1]), axis=0)
+        grady = s1(x0,0.5)
+        print(ScoreEval.hess_EmbeddedTM(x0[1],grady, ggrady))
+        print(M.proj(x0[1], grady))
+        print(grady)
+        print(ggrady)
+        print(0.5*jnp.dot(grady,grady))
+        print(0.5*jnp.dot(M.proj(x0[1],grady),M.proj(x0[1],grady)))
+        print(0.5*jnp.trace(ScoreEval.hess_EmbeddedTM(x0[1],grady, ggrady)))
+        print(0.5*jnp.trace(ggrady))
+        print(0.5*(jnp.dot(grady,grady)+jnp.trace(ScoreEval.hess_EmbeddedTM(x0[1],grady, ggrady))))
+        print(0.5*(jnp.trace(ggrady)+jnp.dot(grady,grady)))
+        s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: ScoreEval.ggrady_log((x,chart),
+                                                                            y,
+                                                                            t))(X_obs[0], 
+                                                                                X_obs[1]), axis=0)
+        print(s1(x0,0.5))
+        s1 = lambda y,t: jnp.mean(vmap(lambda x,chart: ScoreEval.grady_log((x,chart),
+                                                                            y,
+                                                                            t))(X_obs[0], 
+                                                                                X_obs[1]), axis=0)
+        print(s1(x0,0.5))
+        return
+
+        #return
+        #return
+        #return
         #if ((method == "Embedded") and (args.s2_approx)):
         #    dm_score(M, s1_model=ScoreEval.grady_log, 
         #             s2_model = lambda x,y,t: ScoreEval.gradt_log(y,x,t), 

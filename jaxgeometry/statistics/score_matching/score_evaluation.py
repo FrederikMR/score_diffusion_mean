@@ -194,6 +194,14 @@ class ScoreEvaluation(object):
                   y:Array,
                   t:Array, 
                   )->Array:
+        
+        #s1_val = self.grady_val(x,y,t)
+        #s1_val = self.grady_eval(x,y,t)
+        #s2_val = self.ggrady_log(x,y,t)
+        
+        #div = jnp.trace(s2_val)
+        
+        #return 0.5*(jnp.dot(s1_val, s1_val)+div)
 
         s1_val = self.grady_val(x,y,t)
         #s1_val = self.grady_eval(x,y,t)

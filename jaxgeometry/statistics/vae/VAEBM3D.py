@@ -23,11 +23,12 @@ from jax.nn import elu, sigmoid, swish, tanh
 
 class VAEOutput(NamedTuple):
   z: Array
-  x_hat: Array
-  mean: Array
-  t: Array
-  mu0: Array
-  t0: Array
+  mu_xz: Array
+  sigma_xz: Array
+  mu_zx: Array
+  t_zx: Array
+  mu_z: Array
+  t_z: Array
 
 #%% Other
 
@@ -82,10 +83,10 @@ class Encoder(hk.Module):
         z = swish(hk.Linear(output_size=100)(x))
         z = swish(hk.Linear(output_size=100)(z))
         
-        mu = self.mu_layer(z)
-        t = self.t_layer(z)
+        mu_zx = self.mu_layer(z)
+        t_zx = self.t_layer(z)
 
-        return mu, t
+        return mu_zx, t_zx
 
 @dataclasses.dataclass
 class Decoder(hk.Module):
@@ -94,33 +95,10 @@ class Decoder(hk.Module):
   def __call__(self, z: Array) -> Array:
 
         x_hat = swish(hk.Linear(output_size=100)(z))
-        x_hat = swish(hk.Linear(output_size=3)(x_hat))
+        mu_xz = swish(hk.Linear(output_size=3)(x_hat))
+        sigma_xz = swish(hk.Linear(output_size=3)(x_hat))
         
-        return x_hat
-    
-class VAE(hk.Module):
-    def __init__(self,
-                 encoder:Encoder,
-                 decoder:Decoder,
-                 seed:int=2712
-                 ):
-        super(VAEBM, self).__init__()
-
-        self.encoder = encoder
-        self.decoder = decoder
-        self.key = jrandom.key(seed)
-
-    def __call__(self, x: Array) -> VAEOutput:
-      """Forward pass of the variational autoencoder."""
-      x = x.astype(jnp.float32)
-      mu, log_std = self.encoder(x)
-      t = log_std.reshape(-1,1)
-      
-      std = t*jnp.ones((len(t), 1))
-      z = mu+std*jrandom.normal(hk.next_rng_key(), mu.shape)
-      x_hat = self.decoder(z)
-    
-      return VAEOutput(z, x_hat, mu, std, std)
+        return mu_xz, sigma_xz
 
 class VAEBM(hk.Module):
     def __init__(self,
@@ -134,25 +112,19 @@ class VAEBM(hk.Module):
         self.decoder = decoder
         self.key = jrandom.key(seed)
         
-        F = lambda z: decoder(z[0].reshape(-1,2))        
-        M = Latent(dim=2, emb_dim=3, F=F, invF=None)
-        Brownian_coords(M)
-        
-        self.M = M
-        
-    def mu0(self, z:Array)->Array:
+    def muz(self, z:Array)->Array:
         
         z = swish(hk.Linear(output_size=100)(z))
-        mu0 = hk.Linear(output_size=2)(z)
+        mu_z = hk.Linear(output_size=2)(z)
         
-        return mu0
+        return mu_z
     
-    def t0(self, z:Array)->Array:
+    def tz(self, z:Array)->Array:
         
         z = swish(hk.Linear(output_size=100)(z))
-        t0 = hk.Linear(output_size=1)(z)
+        t_z = hk.Linear(output_size=1)(z)
         
-        return t0
+        return t_z
         
     def dts(self, T:float=1.0,n_steps:int=n_steps)->Array:
         """time increments, deterministic"""
@@ -260,15 +232,15 @@ class VAEBM(hk.Module):
 
         val, _ =hk.scan(lambda carry, step: hk.vmap(lambda t,z,dt,dW: sample((t,z),(dt,dW)), 
                                                         split_rng=False)(carry[0],carry[1],step[0],step[1]),
-                         init=(jnp.zeors_like(t),mu), xs=(dt,dW)
+                         init=(jnp.zeros_like(t),mu), xs=(dt,dW)
                          )
 
         return val[1]
 
-    def __call__(self, x: Array, sample_method='Euclidean') -> VAEOutput:
+    def __call__(self, x: Array, sample_method='Local') -> VAEOutput:
         """Forward pass of the variational autoencoder."""
         x = x.astype(jnp.float32)
-        mu, t = self.encoder(x)
+        mu_zx, t_zx = self.encoder(x)
         
         if sample_method == 'Local':
             z = self.local_sample(mu, t)
@@ -279,11 +251,11 @@ class VAEBM(hk.Module):
         else:
             raise ValueError("Invalid sampling method. Choose either: Local, Taylor, Euclidean")
             
-        mu0, t0 = self.mu0(z), self.t0(z)
+        mu_z, t_z = self.muz(z), self.tz(z)
 
-        x_hat = self.decoder(z)
-          
-        return VAEOutput(z, x_hat, mu, t, mu0, t0)
+        mu_xz, sigma_xz = self.decoder(z)
+
+        return VAEOutput(z, mu_xz, sigma_xz, mu_zx, t_zx, mu_z, t_z)
 
 #%% Transformed model
     

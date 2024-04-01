@@ -711,6 +711,7 @@ class VAESampling(object):
                  N_sim:int=2**8,
                  max_T:float=1.0,
                  dt_steps:int=1000,
+                 seed:int=2712
                  )->None:
         
         self.F = F
@@ -722,7 +723,7 @@ class VAESampling(object):
         self.dt_steps = dt_steps
         self.repeats = repeats
         if x0.ndim == 1:
-            self.x0s = jnp.tile(x0, repeats)
+            self.x0s = jnp.tile(x0, (repeats,1))
         else:
             self.x0s = x0
         self.x0s_default = self.x0s
@@ -730,6 +731,8 @@ class VAESampling(object):
         self.dt = dt
         self.t_grid = jnp.cumsum(dt)
         self.dt_tile = jnp.tile(dt, (self.N_sim,1))
+        self.method = method
+        self.key = jrandom.key(seed)
         
         return
         
@@ -784,10 +787,9 @@ class VAESampling(object):
     
     def taylor_sample(self):
         
-        def sample(carry, step):
-            
-            t,z = carry
-            dt, dW = step
+        def sample(z, step):
+
+            dt, t, dW = step
             
             t += dt
             ginv = self.Ginv(z)
@@ -798,16 +800,19 @@ class VAESampling(object):
             
             return ((t,z),)*2
 
-        dW = dWs(self.N_sim*self.M.dim,self.dt).reshape(-1,self.dt_steps,self.M.dim)
+        dW = self.dWs(self.N_sim*self.dim,self.dt).reshape(-1,self.N_sim,self.dim)
         x0 = jnp.repeat(self.x0s, self.x_samples, axis=0)
+        dt = jnp.tile(self.dt,(self.N_sim,1)).T
+        t_grid = jnp.tile(self.t_grid,(self.N_sim,1))
         
-        _, val =lax.scan(lambda carry, step: vmap(lambda t,z,dt,dW: sample((t,z),(dt,dW)))\
-                         (carry[0],carry[1],step[0],step[1]),
-                         init=(jnp.zeros(self.N_sim),x0), xs=(self.dt,dW)
-                         )
-        t,z = val
+        x0 = x0.astype(jnp.float64)
 
-        return t, z, dW
+        _, z =lax.scan(lambda carry, step: vmap(lambda z,dW: sample(z,(step[0],step[1],dW)))\
+                         (carry,step[2]),
+                         init=x0, xs=(self.dt,self.t_grid, dW)
+                         )
+
+        return self.t_grid, x0, z, dW
     
     def local_sample(self)->Array:
         
@@ -824,22 +829,21 @@ class VAESampling(object):
             
             z += det+stoch
             
-            t = t.astype(jnp.float32)
-            z = z.astype(jnp.float32)
-            
             return (z,)*2
         
-        dW = self.dWs(self.N_sim*self.M.dim,self.dt).reshape(-1,self.dt_steps,self.M.dim)
+        dW = self.dWs(self.N_sim*self.dim,self.dt).reshape(-1,self.N_sim,self.dim)
         x0 = jnp.repeat(self.x0s, self.x_samples, axis=0)
+        dt = jnp.tile(self.dt,(self.N_sim,1)).T
+        t_grid = jnp.tile(self.t_grid,(self.N_sim,1))
         
-        _, z =lax.scan(lambda carry, step: vmap(lambda t,z,dt,dW: sample((t,z),(dt,dW)))\
-                         (carry[0],carry[1],step[0],step[1]),
-                         init=(jnp.zeros(self.N_sim),x0), xs=(self.dt,self.t_grid, dW)
+        x0 = x0.astype(jnp.float64)
+
+        _, z =lax.scan(lambda carry, step: vmap(lambda z,dW: sample(z,(step[0],step[1],dW)))\
+                         (carry,step[2]),
+                         init=x0, xs=(self.dt,self.t_grid, dW)
                          )
 
-        dW = jnp.transpose(dW, axis=(1,0,2))
-
-        return self.t_grid, z, dW
+        return self.t_grid, x0, z, dW
     
     def dts(self, T:float=1.0,n_steps:int=n_steps)->Array:
         """time increments, deterministic"""
@@ -862,7 +866,7 @@ class VAESampling(object):
         
     def Jf(self,z):
         
-        return jacfwd(lambda z: self.decoder(z.reshape(-1,2)).reshape(-1))(z)
+        return jacfwd(lambda z: self.F(z))(z)
         
     def G(self,z):
         
@@ -891,24 +895,24 @@ class VAESampling(object):
         while True:
             
             if self.method == 'Taylor':
-                t,x,dW = self.taylor_sample()
+                ts,x0s,xss,dW = self.taylor_sample()
             else:
-                t,x,dW = self.local_sample()
+                ts,x0s,xss,dW = self.local_sample()
 
-            self.x0s = x[-1,::self.x_sampels]
+            self.x0s = xss[-1,::self.x_samples]
             
-            if jnp.isnan(jnp.sum(x)):
+            if jnp.isnan(jnp.sum(xss)):
                 self.x0s = self.x0s_default
 
             inds = jnp.array(random.sample(range(self.dt.shape[0]), self.t_samples))
             ts = ts[inds]
             samples = xss[inds]
             
-            yield jnp.hstack((jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.t_samples,1)),
-                              samples.reshape(-1,self.M.dim),
+            yield jnp.hstack((jnp.tile(x0s,(self.t_samples,1)),
+                              samples.reshape(-1,self.dim),
                               jnp.repeat(ts,self.N_sim).reshape((-1,1)),
-                              dW[inds].reshape(-1,self.M.dim),
-                              jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
+                              dW[inds].reshape(-1,self.dim),
+                              jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1)),
                               ))
 
     def update_coords(self, Fx:Array)->Tuple[Array,Array]:
