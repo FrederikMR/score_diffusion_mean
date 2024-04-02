@@ -198,7 +198,7 @@ class VAEBM(hk.Module):
             
             return ((t,z),)*2
         
-        dt = hk.vmap(lambda t: self.dts(t,100), split_rng=False)(t).squeeze()
+        dt = hk.vmap(lambda t: self.dts(t,100), split_rng=False)(t).squeeze().T
         N_data = mu.shape[0]
         dW = hk.vmap(lambda dt: self.dWs(self.encoder.latent_dim,dt),
                      split_rng=False)(dt).reshape(-1,N_data,self.encoder.latent_dim)
@@ -231,7 +231,7 @@ class VAEBM(hk.Module):
             
             return ((t,z),)*2
         
-        dt = hk.vmap(lambda t: self.dts(t,100), split_rng=False)(t).squeeze()
+        dt = hk.vmap(lambda t: self.dts(t,100), split_rng=False)(t).squeeze().T
         N_data = mu.shape[0]
         dW = hk.vmap(lambda dt: self.dWs(self.encoder.latent_dim,dt),
                      split_rng=False)(dt).reshape(-1,N_data,self.encoder.latent_dim)
