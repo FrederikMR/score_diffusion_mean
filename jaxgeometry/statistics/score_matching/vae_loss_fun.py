@@ -15,7 +15,7 @@ from jaxgeometry.setup import *
 
 #%% VAE Loss Fun
 
-@jit
+#@jit
 def vae_euclidean_loss(params:hk.Params, state_val:dict, rng_key:Array, x, vae_apply_fn,
                        training_type="All")->Array:
     
@@ -23,27 +23,30 @@ def vae_euclidean_loss(params:hk.Params, state_val:dict, rng_key:Array, x, vae_a
     def gaussian_likelihood(x, mu_xz, sigma_xz):
         
         dim = mu_xz.shape[-1]
-        mu_term = jnp.einsum('...i,...i->...', x-mu_xz, (x-mu_xz)/sigma_xz)
-        var_term = dim*jnp.sum(jnp.log(sigma_xz), axis=-1)
+        diff = x-mu_xz
+        mu_term = jnp.sum((diff**2)/(sigma_xz**2), axis=-1)
+        var_term = dim*jnp.sum(jnp.log(sigma_xz**2), axis=-1)
         
-        return -0.5*(mu_term+var_term)
+        loss = -0.5*(mu_term+var_term)
+        
+        return jnp.mean(loss)
     
     @jit
     def kl_divergence(z, mu_zx, t_zx, mu_z, t_z):
         
-        d = mu_xz.shape[-1]
+        dim = mu_zx.shape[-1]
         diff = z-mu_zx
-        dist = jnp.einsum('...j,...j->...', diff, diff)
-        log_qzx = -0.5*(d*jnp.log(t_zx)+dist/t_zx)
+        dist = jnp.sum(diff**2/t_zx, axis=-1)
+        log_qzx = -0.5*(dim*jnp.log(t_zx)+dist)
         
         diff = z-mu_z
-        dist = jnp.einsum('...j,...j->...', diff, diff)
-        log_pz = -0.5*(d*jnp.log(t_z)+dist/t_z)
+        dist = jnp.sum(diff**2/t_z, axis=-1)
+        log_pz = -0.5*(dim*jnp.log(t_z)+dist)
         
         return jnp.mean(log_qzx-log_pz)
-    
+
     z, mu_xz, sigma_xz, mu_zx, t_zx, mu_z, t_z = vae_apply_fn(params, x, rng_key, state_val)
-    
+
     if training_type == "Encoder":
         sigma_xz = lax.stop_gradient(sigma_xz)
         mu_z = lax.stop_gradient(mu_z)
@@ -55,11 +58,9 @@ def vae_euclidean_loss(params:hk.Params, state_val:dict, rng_key:Array, x, vae_a
 
     rec_loss = gaussian_likelihood(x, mu_xz, sigma_xz)
     kld = kl_divergence(z, mu_zx, t_zx, mu_z, t_z)
-    
-    elbo = rec_loss+kld
+    elbo = kld-rec_loss
     
     return elbo
-
 #%% VAE Riemannian Fun
 
 @jit
@@ -96,7 +97,7 @@ def vae_riemannian_loss(params:hk.Params, state_val:dict, rng_key:Array, x:Array
         mu_zx = lax.stop_gradient(mu_zx)
     
     z_grad = jacfwd(encoder_fun)(params)
-    rec_grad = grad(gaussian_likelihood)(params)
+    rec_grad = -grad(gaussian_likelihood)(params)
     
     s_logqzx = vmap(lambda mu,z,t: score_apply_fn(score_state.params, jnp.hstack((mu,z,t)), 
                               score_state.rng_key, score_state.state_val))(mu,z,t)

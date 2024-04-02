@@ -188,6 +188,17 @@ class ScoreEvaluation(object):
         div = jnp.trace(s2_val)+.5*jnp.dot(s1_val,jacfwdx(self.M.logAbsDet)(x).squeeze())
 
         return s1_val, s2_val, div, .5*jnp.dot(s1_val,jacfwdx(self.M.logAbsDet)(x).squeeze()), jnp.dot(s1_val, s1_val), self.ggrady_log(x,y,t)
+    
+    def laplace_beltrami(self,
+                         x:Array,
+                         y:Array,
+                         t:Array
+                         )->Array:
+        
+        s1_val = self.grady_val(x,y,t)
+        s2_val = self.ggrady_log(x,y,t)
+        
+        return jnp.trace(s2_val)+.5*jnp.dot(s1_val,jacfwdx(self.M.logAbsDet)(y).squeeze())
         
     def gradt_log(self, 
                   x:Array,

@@ -703,7 +703,6 @@ class VAESampling(object):
     def __init__(self,
                  F:Callable[[Array],Array],
                  x0:Array,
-                 dim:int,
                  method:str='Local',
                  repeats:int=2**3,
                  x_samples:int=2**5,
@@ -716,7 +715,7 @@ class VAESampling(object):
         
         self.F = F
         self.x_samples=x_samples
-        self.dim = dim
+        self.dim = x0.shape[-1]
         self.t_samples = t_samples
         self.N_sim = N_sim
         self.max_T = max_T
@@ -864,15 +863,20 @@ class VAESampling(object):
         else:
             return vmap(lambda subkey: jnp.sqrt(_dts)[:,None]*jrandom.normal(subkey,(_dts.shape[0],d)))(subkeys) 
         
-    def Jf(self,z):
-        
-        return jacfwd(lambda z: self.F(z))(z)
+    def Jmu(self,z):
+
+        return jacfwd(lambda z: self.F(z)[0])(z)
+    
+    def Jsigma(self,z):
+
+        return jacfwd(lambda z: self.F(z)[1])(z)
         
     def G(self,z):
+
+        Jmu = self.Jmu(z).squeeze()
+        Jsigma = self.Jsigma(z).squeeze()
         
-        Jf = self.Jf(z)
-        
-        return jnp.dot(Jf.T,Jf)
+        return jnp.dot(Jmu.T,Jmu)+jnp.dot(Jsigma.T, Jsigma)
     
     def DG(self,z):
         

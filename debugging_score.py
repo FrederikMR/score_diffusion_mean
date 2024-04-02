@@ -228,10 +228,13 @@ def evaluate_diffusion_mean():
                                     method=method, 
                                     seed=args.seed
                                     )
+        #Citer: https://arxiv.org/pdf/2111.04726.pdf
+        #Citer: 
         print("Test Point")
         print(M.hk_embedded(x0[1],x0[1],0.5))
         print(jnp.log(M.hk_embedded(x0[1],x0[1],0.5)))
         print(M.gradt_log_hk(x0,x0,0.5))
+        print(0.5*ScoreEval.laplace_beltrami(x0,x0,0.5))
         print(ScoreEval.gradt_log(x0,x0,0.5))
         test1 = ScoreEval.ggrady_eval(x0,x0,0.5)
         test2 = ScoreEval.grady_eval(x0,x0,0.5)

@@ -73,9 +73,9 @@ class Encoder(hk.Module):
         
         return hk.Linear(output_size=self.latent_dim)(z)
     
-    def t_layer(self, z:Array)->Array:
+    def log_t_layer(self, z:Array)->Array:
         
-        return sigmoid(hk.Linear(output_size=1)(z))
+        return hk.Linear(output_size=1)(z)
 
     def __call__(self, x:Array) -> Tuple[Array, Array]:
 
@@ -84,33 +84,35 @@ class Encoder(hk.Module):
         z = swish(hk.Linear(output_size=100)(z))
         
         mu_zx = self.mu_layer(z)
-        t_zx = self.t_layer(z)
+        log_t_zx = self.log_t_layer(z)
 
-        return mu_zx, t_zx
+        return mu_zx, jnp.exp(log_t_zx)
 
 @dataclasses.dataclass
 class Decoder(hk.Module):
   """Decoder model."""
 
-  def __call__(self, z: Array) -> Array:
+  def __call__(self, z: Array) -> Tuple[Array,Array]:
 
         x_hat = swish(hk.Linear(output_size=100)(z))
-        mu_xz = swish(hk.Linear(output_size=3)(x_hat))
-        sigma_xz = swish(hk.Linear(output_size=3)(x_hat))
+        mu_xz = hk.Linear(output_size=3)(x_hat)
+        log_sigma_xz = hk.Linear(output_size=3)(x_hat)
         
-        return mu_xz, sigma_xz
+        return mu_xz, jnp.exp(log_sigma_xz)
 
 class VAEBM(hk.Module):
     def __init__(self,
                  encoder:Encoder,
                  decoder:Decoder,
-                 seed:int=2712
+                 seed:int=2712,
+                 sample_method:str='Local'
                  ):
         super(VAEBM, self).__init__()
 
         self.encoder = encoder
         self.decoder = decoder
         self.key = jrandom.key(seed)
+        self.sample_method = sample_method
         
     def muz(self, z:Array)->Array:
         
@@ -122,9 +124,9 @@ class VAEBM(hk.Module):
     def tz(self, z:Array)->Array:
         
         z = swish(hk.Linear(output_size=100)(z))
-        t_z = hk.Linear(output_size=1)(z)
+        log_t_z = hk.Linear(output_size=1)(z)
         
-        return t_z
+        return jnp.exp(log_t_z)
         
     def dts(self, T:float=1.0,n_steps:int=n_steps)->Array:
         """time increments, deterministic"""
@@ -145,15 +147,20 @@ class VAEBM(hk.Module):
         else:
             return vmap(lambda subkey: jnp.sqrt(_dts)[:,None]*jrandom.normal(subkey,(_dts.shape[0],d)))(subkeys) 
         
-    def Jf(self,z):
-        
-        return jacfwd(lambda z: self.decoder(z.reshape(-1,2)).reshape(-1))(z)
+    def Jmu(self,z):
+
+        return jacfwd(lambda z: self.decoder(z.reshape(-1,2))[0])(z)
+    
+    def Jsigma(self,z):
+
+        return jacfwd(lambda z: self.decoder(z.reshape(-1,2))[1])(z)
         
     def G(self,z):
+
+        Jmu = self.Jmu(z).squeeze()
+        Jsigma = self.Jsigma(z).squeeze()
         
-        Jf = self.Jf(z)
-        
-        return jnp.dot(Jf.T,Jf)
+        return jnp.dot(Jmu.T,Jmu)+jnp.dot(Jsigma.T, Jsigma)
     
     def DG(self,z):
         
@@ -171,9 +178,9 @@ class VAEBM(hk.Module):
                    +jnp.einsum('im,lmk->ikl',gsharpx,Dgx)
                    -jnp.einsum('im,klm->ikl',gsharpx,Dgx))
     
-    def normal_sample(self, mu:Array, t:Array):
+    def euclidean_sample(self, mu:Array, t:Array):
         
-        return mu+t*jrandom.normal(hk.next_rng_key(), mu.shape)
+        return mu+jnp.sqrt(t)*jrandom.normal(hk.next_rng_key(), mu.shape)
     
     def taylor_sample(self, mu:Array, t:Array):
         
@@ -214,12 +221,11 @@ class VAEBM(hk.Module):
             t += dt
             ginv = self.Ginv(z)
             Chris = self.Chris(z)
-            
+
             stoch = jnp.dot(ginv, dW)
             det = 0.5*jnp.einsum('jk,ijk->i', ginv, Chris)
             
             z += det+stoch
-            
             t = t.astype(jnp.float32)
             z = z.astype(jnp.float32)
             
@@ -237,17 +243,17 @@ class VAEBM(hk.Module):
 
         return val[1]
 
-    def __call__(self, x: Array, sample_method='Local') -> VAEOutput:
+    def __call__(self, x: Array) -> VAEOutput:
         """Forward pass of the variational autoencoder."""
         x = x.astype(jnp.float32)
         mu_zx, t_zx = self.encoder(x)
         
-        if sample_method == 'Local':
-            z = self.local_sample(mu, t)
-        elif sample_method == 'Taylor':
-            z = self.taylor_sample(mu, t)
-        elif sample_method == 'Euclidean':
-            z = self.euclidean_sample(mu, t)
+        if self.sample_method == 'Local':
+            z = self.local_sample(mu_zx, t_zx)
+        elif self.sample_method == 'Taylor':
+            z = self.taylor_sample(mu_zx, t_zx)
+        elif self.sample_method == 'Euclidean':
+            z = self.euclidean_sample(mu_zx, t_zx)
         else:
             raise ValueError("Invalid sampling method. Choose either: Local, Taylor, Euclidean")
             
