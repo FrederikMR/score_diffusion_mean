@@ -15,10 +15,12 @@ import jax.random as jrandom
 
 import haiku as hk
 
+import os
+
 import tensorflow as tf
 
 from jaxgeometry.statistics.vae.VAEBM3D import ScoreNet, Encoder, Decoder, VAEBM
-from jaxgeometry.statistics.score_matching import train_vaebm
+from jaxgeometry.statistics.score_matching import train_vaebm, pretrain_vae, pretrain_scores
 
 #%% Code
 
@@ -67,28 +69,28 @@ def train():
     
     vae_datasets = tf.data.Dataset.from_tensor_slices(X).shuffle(buffer_size=10 * 100, seed=2712)\
         .batch(100).prefetch(buffer_size=5).repeat().as_numpy_iterator()
-    
-    train_vaebm(vae_model = vae_model,
-                decoder_model = decoder_model,
-                score_model = score_model,
-                vae_datasets = vae_datasets,
-                dim = 2,
-                emb_dim = 3,
-                vae_state=None,
-                score_state=None,
-                lr_rate = 0.0002,
-                burnin_epochs=1000,
-                joint_epochs=100,
-                repeats=100,
-                save_step=100,
-                vae_optimizer=None,
-                score_optimizer=None,
-                vae_save_path = "",
-                score_save_path = "",
-                score_type = 'dsmvr',
-                seed = 2712
-                )
-                
+        
+    vae_save_path = 'vaebm/vae/'
+    score_save_path = 'vaebm/score/'
+    if not os.path.exists(vae_save_path):
+        os.makedirs(vae_save_path)
+    if not os.path.exists(score_save_path):
+        os.makedirs(score_save_path)
+        
+    if not os.path.exists('scores/output/'):
+        os.makedirs('scores/output/')
+        
+    pretrain_vae(vae_model=vae_model,
+                     data_generator=vae_datasets,
+                     lr_rate = 0.002,
+                     save_path = vae_save_path,
+                     split = 1/3,
+                     vae_state = None,
+                     epochs=1000,
+                     save_step = 100,
+                     vae_optimizer = None,
+                     seed=2712,
+                     )
     
     print(X.shape)
     

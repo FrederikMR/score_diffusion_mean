@@ -46,13 +46,13 @@ def pretrain_vae(vae_model:object,
         rng_key, next_rng_key = jrandom.split(state.rng_key)
         gradients = grad(vae_euclidean_loss)(state.params, state.state_val, state.rng_key, data,
                                              vae_apply_fn, training_type=training_type)
-        updates, new_opt_state = optimizer.update(gradients, state.opt_state)
+        updates, new_opt_state = vae_optimizer.update(gradients, state.opt_state)
         new_params = optax.apply_updates(state.params, updates)
         
         return TrainingState(new_params, state.state_val, new_opt_state, rng_key)
     
-    if optimizer is None:
-        optimizer = optax.adam(learning_rate = lr_rate,
+    if vae_optimizer is None:
+        vae_optimizer = optax.adam(learning_rate = lr_rate,
                                b1 = 0.9,
                                b2 = 0.999,
                                eps = 1e-08,
@@ -62,13 +62,13 @@ def pretrain_vae(vae_model:object,
     if type(vae_model) == hk.Transformed:
         if vae_state is None:
             initial_params = vae_model.init(jrandom.PRNGKey(seed), next(data_generator))
-            initial_opt_state = optimizer.init(initial_params)
+            initial_opt_state = vae_optimizer.init(initial_params)
             vae_state = TrainingState(initial_params, None, initial_opt_state, initial_rng_key)
         vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, rng_key, data)
     elif type(vae_model) == hk.TransformedWithState:
         if vae_state is None:
             initial_params, init_state = vae_model.init(jrandom.PRNGKey(seed), next(data_generator))
-            initial_opt_state = optimizer.init(initial_params)
+            initial_opt_state = vae_optimizer.init(initial_params)
             vae_state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
         vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, state_val, rng_key, data)[0]
     
