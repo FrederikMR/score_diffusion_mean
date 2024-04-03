@@ -83,6 +83,8 @@ def pretrain_vae(vae_model:object,
         epochs_encoder = 0
         epochs_decoder = 0
     
+    #print(vae_state.params['vaebm/~muz/prior_layer'])
+    #print(vae_state.params['vaebm/~tz/prior_layer'])
     for step in range(epochs_encoder):
         dataset_epoch = data_generator.batch(batch_size)
         j = 0
@@ -107,6 +109,8 @@ def pretrain_vae(vae_model:object,
         if (step+1) % save_step == 0:
             save_model(save_path, vae_state)
             print(f"Epoch: {step+1} \t Loss: {loss:.4f}")
+    #print(vae_state.params['vaebm/~muz/prior_layer'])
+    #print(vae_state.params['vaebm/~tz/prior_layer'])
           
     save_model(save_path, vae_state)
     

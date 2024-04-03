@@ -129,9 +129,9 @@ class VAEBM(hk.Module):
         
     def muz(self, z:Array)->Array:
         
-        mu_z = PriorLayer(output_size=z.shape[-1])
+        mu_z = PriorLayer(output_size=z.shape[-1])(z)
         
-        return mu_z
+        return mu_z*jnp.ones_like(z)
         
         #z = swish(hk.Linear(output_size=100)(z))
         #mu_z = hk.Linear(output_size=2)(z)
@@ -140,9 +140,9 @@ class VAEBM(hk.Module):
     
     def tz(self, z:Array)->Array:
         
-        log_t_z = PriorLayer(output_size=z.shape[-1])
+        log_t_z = PriorLayer(output_size=1)(z)
         
-        return jnp.exp(log_t_z)
+        return jnp.exp(log_t_z)*jnp.ones((z.shape[0],1))
         
         #z = swish(hk.Linear(output_size=100)(z))
         #log_t_z = hk.Linear(output_size=1)(z)
