@@ -74,7 +74,9 @@ class BrownianMixture(object):
             
             return ((t,x,c),)*2
         
-        lax.scan()
+        _, val = lax.scan(step_qt, init=(0.0, x, c), xs=dt)
+        qt = val[2]
+        lax.scan(step_yt, init=(0.0, x, c), xs=dt)
         
         step_yt()
         

@@ -99,6 +99,19 @@ class Decoder(hk.Module):
         log_sigma_xz = hk.Linear(output_size=3)(x_hat)
         
         return mu_xz, jnp.exp(log_sigma_xz)
+    
+class PriorLayer(hk.Module):
+
+  def __init__(self, output_size, name=None):
+    super().__init__(name=name)
+    self.output_size = output_size
+
+  def __call__(self, x):
+    #j, k = x.shape[-1], self.output_size
+    #w_init = hk.initializers.TruncatedNormal(1. / np.sqrt(j))
+    #w = hk.get_parameter("w", shape=[j, k], dtype=x.dtype, init=w_init)
+    b = hk.get_parameter("b", shape=[self.output_size], dtype=x.dtype, init=jnp.zeros)
+    return b
 
 class VAEBM(hk.Module):
     def __init__(self,
@@ -116,17 +129,25 @@ class VAEBM(hk.Module):
         
     def muz(self, z:Array)->Array:
         
-        z = swish(hk.Linear(output_size=100)(z))
-        mu_z = hk.Linear(output_size=2)(z)
+        mu_z = PriorLayer(output_size=z.shape[-1])
         
         return mu_z
+        
+        #z = swish(hk.Linear(output_size=100)(z))
+        #mu_z = hk.Linear(output_size=2)(z)
+        
+        #return mu_z
     
     def tz(self, z:Array)->Array:
         
-        z = swish(hk.Linear(output_size=100)(z))
-        log_t_z = hk.Linear(output_size=1)(z)
+        log_t_z = PriorLayer(output_size=z.shape[-1])
         
         return jnp.exp(log_t_z)
+        
+        #z = swish(hk.Linear(output_size=100)(z))
+        #log_t_z = hk.Linear(output_size=1)(z)
+        
+        #return jnp.exp(log_t_z)
         
     def dts(self, T:float=1.0,n_steps:int=n_steps)->Array:
         """time increments, deterministic"""
