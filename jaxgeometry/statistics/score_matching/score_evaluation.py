@@ -148,7 +148,7 @@ class ScoreEvaluation(object):
         else:
             s1 = self.grady_eval(x,y,t)
 
-        return jnp.linalg.solve(self.M.g(y), s1)#jnp.dot(self.M.gsharp(y), s1)
+        return s1#jnp.linalg.solve(self.M.g(y), s1)#jnp.dot(self.M.gsharp(y), s1)
         
     def ggrady_log(self,
                    x:Tuple[Array, Array],

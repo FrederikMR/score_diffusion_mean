@@ -18,7 +18,7 @@ from jaxgeometry.setup import *
 
 class BrownianMixture(object):
     def __init__(self, 
-                 p0:Callable,
+                 M:object,
                  grady_log:Callable, 
                  gradt_log:Callable, 
                  n_clusters:int=4,
@@ -26,13 +26,57 @@ class BrownianMixture(object):
                  max_iter:int=100
                  )->None:
         
-        self.p0 = p0
+        self.M = M
         self.grady_log = grady_log
         self.gradt_log = gradt_log
         self.n_clusters = n_clusters
         self.max_iter = max_iter
         self.eps = eps
         self.key = jrandom.PRNGKey(2712)
+        
+        return
+    
+    def p0(self, X_obs:Tuple[Array, Array], mu:Tuple[Array, Array], t:Array)->Array:
+        
+        return
+    
+    def density(self, X_obs:Tuple[Array, Array], mu:Tuple[Array, Array], T:Array)->Array:
+        
+        def step_yt(carry, dt):
+            
+            t, x, c = carry
+            
+            t += dt
+            
+            x -= 0.5*M.div(self.grady_log(mu, (x,c), T-t))
+            
+            if self.M.do_chart_update is not None:
+                update = self.M.do_chart_update(x)
+                new_chart = self.M.centered_chart((x,c))
+                new_x = self.M.update_coords((x,c),new_chart)[0]
+                x, c = jnp.where(update,new_x,x),jnp.where(update,new_chart,c)
+            
+            return ((t,x,c),)*2
+        
+        def step_qt(carry, dt):
+            
+            t, x, c = carry
+            
+            t += dt
+            
+            x -= 0.5*M.div(self.grady_log(mu, (x,c), T-t))
+            
+            if self.M.do_chart_update is not None:
+                update = self.M.do_chart_update(x)
+                new_chart = self.M.centered_chart((x,c))
+                new_x = self.M.update_coords((x,c),new_chart)[0]
+                x, c = jnp.where(update,new_x,x),jnp.where(update,new_chart,c)
+            
+            return ((t,x,c),)*2
+        
+        lax.scan()
+        
+        step_yt()
         
         return
     

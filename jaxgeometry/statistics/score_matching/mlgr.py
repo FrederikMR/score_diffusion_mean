@@ -49,37 +49,34 @@ class MLGeodesicRegression(object):
     
     def gradp(self, X_obs:Tuple[Array, Array], mu:Tuple[Array, Array], sigma:Array, v:Array, X:Array):
         
-        v = v.reshape(-1, len(X))
-        w = jnp.dot(v, X)
+        w = jnp.einsum('d,N->Nd', v, X)
         exp_val = vmap(lambda w: self.Exp(mu,w))(w)
         val1 = vmap(lambda x,chart,exp: self.grady_log((x,chart),exp,sigma**2))(X_obs[0], X_obs[1],exp_val)
-        val2 = vmap(lambda w: self.gradp_exp(mu, w))(w),
+        val2 = vmap(lambda w: self.gradp_exp(mu, w))(w)
 
         val = jnp.einsum('...i,...ij->...j', val1, val2)
         
         return -jnp.mean(val, axis=0)
     
     def gradv(self, X_obs:Tuple[Array, Array], mu:Tuple[Array, Array], sigma:Array, v:Array, X:Array):
-        
-        v = v.reshape(-1, len(X))
-        w = jnp.dot(v, X)
+
+        w = jnp.einsum('d,N->Nd', v, X)
         exp_val = vmap(lambda w: self.Exp(mu,w))(w)
-        val1 = -vmap(lambda x,chart,exp: self.grady_log((x,chart),exp,sigma**2))(X_obs[0], X_obs[1],exp_val)
+        val1 = vmap(lambda x,chart,exp: self.grady_log((x,chart),exp,sigma**2))(X_obs[0], X_obs[1],exp_val)
         val2 = vmap(lambda w: self.gradv_exp(mu, w))(w)
         
-        term1 =jnp.einsum('kij,k->kij', val2, X)
+        term1 = jnp.einsum('kij,k->kij', val2, X)
         term2 = jnp.einsum('...j,...jk->...k', val1, term1)
         
         return -jnp.mean(term2, axis=0)
     
     def gradt(self, X_obs:Tuple[Array, Array], mu:Tuple[Array, Array], sigma:Array, v:Array, X:Array):
         
-        v = v.reshape(-1, len(X))
-        w = jnp.dot(v, X)
+        w = jnp.einsum('d,N->Nd', v, X)
         exp_val = vmap(lambda w: self.Exp(mu,w))(w)
-        val1 = -vmap(lambda x,chart, exp: self.gradt_log((x,chart),exp,sigma**2))(X_obs[0], X_obs[1], exp_val)
+        val1 = vmap(lambda x,chart, exp: self.gradt_log((x,chart),exp,sigma**2))(X_obs[0], X_obs[1], exp_val)
         
-        return -52*jnp.mean(val1, axis=0)
+        return -2*jnp.mean(val1, axis=0)
     
     def fit(self, X_obs:Tuple[Array, Array], X:Array, v:Array, mu:Tuple[Array, Array], 
             sigma:Array, method="JAX", opt="Joint")->None:

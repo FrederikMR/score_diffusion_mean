@@ -32,8 +32,9 @@ class HypParaboloid(EmbeddedManifold):
     def __init__(self):
         
         F = lambda x: jnp.array([x[0][0], x[0][1], x[0][0]**2-x[0][1]**2])
+        invF = lambda x: jnp.array([x[1][0], x[1][0]])
         
-        EmbeddedManifold.__init__(self,F,2,3,invF=None)
+        EmbeddedManifold.__init__(self,F,2,3,invF=invF)
 
         # metric matrix
         self.g = lambda x: jnp.dot(self.JF(x).T,self.JF(x))
