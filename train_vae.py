@@ -56,7 +56,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--score_epochs', default=100,
                         type=int)
-    parser.add_argument('--vae_split', default=0.33,
+    parser.add_argument('--vae_split', default=0.0,#0.33,
                         type=float)
     parser.add_argument('--score_x_samples', default=32,
                         type=int)

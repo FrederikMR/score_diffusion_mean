@@ -20,47 +20,52 @@ def vae_euclidean_loss(params:hk.Params, state_val:dict, rng_key:Array, x, vae_a
                        training_type="All")->Array:
     
     @jit
-    def gaussian_likelihood(x, mu_xz, sigma_xz):
+    def gaussian_likelihood(x, mu_xz, log_sigma_xz):
         
         dim = mu_xz.shape[-1]
         diff = x-mu_xz
-        mu_term = jnp.sum((diff**2)/(sigma_xz**2), axis=-1)
-        var_term = dim*jnp.sum(jnp.log(sigma_xz**2), axis=-1)
+        sigma_xz = jnp.exp(log_sigma_xz)
+        mu_term = jnp.sum(jnp.einsum('ij,ij->ij', diff**2, 1/(sigma_xz**2)), axis=-1)
+        var_term = 2*dim*jnp.sum(log_sigma_xz, axis=-1)
         
         loss = -0.5*(mu_term+var_term)
         
         return jnp.mean(loss)
     
     @jit
-    def kl_divergence(z, mu_zx, t_zx, mu_z, t_z):
+    def kl_divergence(z, mu_zx, log_t_zx, mu_z, log_t_z):
         
         dim = mu_zx.shape[-1]
         diff = z-mu_zx
-        dist = jnp.sum(diff**2/t_zx, axis=-1)
-        log_qzx = -0.5*(dim*jnp.log(t_zx)+dist)
+        log_t_zx = log_t_zx.squeeze()
+        log_t_z = log_t_z.squeeze()
+        t_zx = jnp.exp(log_t_zx)
+        t_z = jnp.exp(log_t_z)
+        dist = jnp.sum(jnp.einsum('ij,i->ij', diff**2, 1/(t_zx**2)), axis=-1)
+        log_qzx = -0.5*(dim*log_t_zx+dist)
         
         diff = z-mu_z
-        dist = jnp.sum(diff**2/t_z, axis=-1)
-        log_pz = -0.5*(dim*jnp.log(t_z)+dist)
+        dist = jnp.sum(jnp.einsum('ij,i->ij', diff**2, 1/(t_z**2)), axis=-1)
+        log_pz = -0.5*(dim*log_t_z+dist)
         
         return jnp.mean(log_qzx-log_pz)
 
-    z, mu_xz, sigma_xz, mu_zx, t_zx, mu_z, t_z = vae_apply_fn(params, x, rng_key, state_val)
+    z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z = vae_apply_fn(params, x, rng_key, state_val)
 
     if training_type == "Encoder":
-        sigma_xz = lax.stop_gradient(sigma_xz)
+        sigma_xz = lax.stop_gradient(log_sigma_xz)
         mu_z = lax.stop_gradient(mu_z)
-        t_z = lax.stop_gradient(t_z)
+        t_z = lax.stop_gradient(log_t_z)
     elif training_type == "Decoder":
         mu_xz = lax.stop_gradient(mu_xz)
-        t_zx = lax.stop_gradient(t_zx)
+        t_zx = lax.stop_gradient(log_t_zx)
         mu_zx = lax.stop_gradient(mu_zx)
 
-    rec_loss = gaussian_likelihood(x, mu_xz, sigma_xz)
-    kld = kl_divergence(z, mu_zx, t_zx, mu_z, t_z)
+    rec_loss = gaussian_likelihood(x, mu_xz, log_sigma_xz)
+    kld = kl_divergence(z, mu_zx, log_t_zx, mu_z, log_t_z)
     elbo = kld-rec_loss
     
-    return elbo
+    return elbo, (rec_loss, kld)
 #%% VAE Riemannian Fun
 
 @jit
@@ -85,7 +90,7 @@ def vae_riemannian_loss(params:hk.Params, state_val:dict, rng_key:Array, x:Array
 
         return z
             
-    z, mu_xz, sigma_xz, mu_zx, t_zx, mu_z, t_z = vae_apply_fn(params, x, rng_key, state_val)
+    z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z = vae_apply_fn(params, x, rng_key, state_val)
     
     if training_type == "Encoder":
         sigma_xz = lax.stop_gradient(sigma_xz)

@@ -56,9 +56,10 @@ def generate_data():
         rng_key, subkey = jrandom.split(rng_key)
         theta = jrandom.uniform(subkey, shape=(args.N_data,), minval=0.0, maxval=2*jnp.pi)
         rng_key, subkey = jrandom.split(rng_key)
-        eps = args.std*jrandom.normal(subkey, shape=(args.N_data,))
+        eps = args.std*jrandom.normal(subkey, shape=(3,args.N_data,))
         
-        x1, x2, x3 = jnp.cos(theta), jnp.sin(theta), eps
+        #eps = 0.0*eps
+        x1, x2, x3 = jnp.cos(theta)+1.0+eps[0], jnp.sin(theta)+1.0+eps[1], eps[2]+1.0
         
         X = jnp.stack((x1,x2,x3)).T
         

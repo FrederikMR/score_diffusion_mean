@@ -17,18 +17,18 @@ from jaxgeometry.manifolds import Latent
 #jaxgeometry
 from jaxgeometry.stochastics import product_sde, Brownian_coords
 
-from jax.nn import elu, sigmoid, swish, tanh
+from jax.nn import elu, sigmoid, swish, tanh, softplus
 
 #%% VAE Output
 
 class VAEOutput(NamedTuple):
   z: Array
   mu_xz: Array
-  sigma_xz: Array
+  log_sigma_xz: Array
   mu_zx: Array
-  t_zx: Array
+  log_t_zx: Array
   mu_z: Array
-  t_z: Array
+  log_t_z: Array
 
 #%% Other
 
@@ -70,7 +70,7 @@ class Encoder(hk.Module):
     latent_dim : int = 2
     
     def mu_layer(self, z:Array)->Array:
-        
+
         return hk.Linear(output_size=self.latent_dim)(z)
     
     def log_t_layer(self, z:Array)->Array:
@@ -80,25 +80,35 @@ class Encoder(hk.Module):
     def __call__(self, x:Array) -> Tuple[Array, Array]:
 
         x = x.reshape(-1,3)
-        z = swish(hk.Linear(output_size=100)(x))
-        z = swish(hk.Linear(output_size=100)(z))
         
-        mu_zx = self.mu_layer(z)
-        log_t_zx = self.log_t_layer(z)
+        x = swish(hk.Linear(output_size=100)(x))
+        x = swish(hk.Linear(output_size=100)(x))
 
-        return mu_zx, jnp.exp(log_t_zx)
+        mu_zx = self.mu_layer(x)
+        log_t_zx = self.log_t_layer(x)
+
+        return mu_zx, log_t_zx
 
 @dataclasses.dataclass
 class Decoder(hk.Module):
   """Decoder model."""
+  
+  def mu_layer(self, z:Array)->Array:
+      
+      return hk.Linear(output_size=3)(z)
+  
+  def log_sigma_layer(self, z:Array)->Array:
+      
+      return hk.Linear(output_size=3)(z)
 
   def __call__(self, z: Array) -> Tuple[Array,Array]:
+      
+        z = swish(hk.Linear(output_size=100)(z))
 
-        x_hat = swish(hk.Linear(output_size=100)(z))
-        mu_xz = hk.Linear(output_size=3)(x_hat)
-        log_sigma_xz = hk.Linear(output_size=3)(x_hat)
+        mu_xz = self.mu_layer(z)
+        log_sigma_xz = self.log_sigma_layer(z)
         
-        return mu_xz, jnp.exp(log_sigma_xz)
+        return mu_xz, log_sigma_xz
     
 class PriorLayer(hk.Module):
 
@@ -130,7 +140,7 @@ class VAEBM(hk.Module):
     def muz(self, z:Array)->Array:
         
         mu_z = PriorLayer(output_size=z.shape[-1])(z)
-        
+
         return mu_z*jnp.ones_like(z)
         
         #z = swish(hk.Linear(output_size=100)(z))
@@ -138,18 +148,18 @@ class VAEBM(hk.Module):
         
         #return mu_z
     
-    def tz(self, z:Array)->Array:
+    def log_tz(self, z:Array)->Array:
         
         log_t_z = PriorLayer(output_size=1)(z)
-        
-        return jnp.exp(log_t_z)*jnp.ones((z.shape[0],1))
+
+        return log_t_z*jnp.ones((z.shape[0],1))
         
         #z = swish(hk.Linear(output_size=100)(z))
         #log_t_z = hk.Linear(output_size=1)(z)
         
         #return jnp.exp(log_t_z)
         
-    def dts(self, T:float=1.0,n_steps:int=n_steps)->Array:
+    def dts(self, T:float=1.0,n_steps:int=1000)->Array:
         """time increments, deterministic"""
         return jnp.array([T/n_steps]*n_steps)
 
@@ -199,11 +209,11 @@ class VAEBM(hk.Module):
                    +jnp.einsum('im,lmk->ikl',gsharpx,Dgx)
                    -jnp.einsum('im,klm->ikl',gsharpx,Dgx))
     
-    def euclidean_sample(self, mu:Array, t:Array):
+    def euclidean_sample(self, mu:Array, log_t:Array):
         
-        return mu+jnp.sqrt(t)*jrandom.normal(hk.next_rng_key(), mu.shape)
+        return mu+jnp.exp(log_t)*jrandom.normal(hk.next_rng_key(), mu.shape)
     
-    def taylor_sample(self, mu:Array, t:Array):
+    def taylor_sample(self, mu:Array, log_t:Array):
         
         def sample(carry, step):
             
@@ -219,6 +229,7 @@ class VAEBM(hk.Module):
             
             return ((t,z),)*2
         
+        t = jnp.exp(2*log_t)
         dt = hk.vmap(lambda t: self.dts(t,100), split_rng=False)(t).squeeze().T
         N_data = mu.shape[0]
         dW = hk.vmap(lambda dt: self.dWs(self.encoder.latent_dim,dt),
@@ -232,7 +243,7 @@ class VAEBM(hk.Module):
 
         return val[1]
     
-    def local_sample(self, mu:Array, t:Array)->Array:
+    def local_sample(self, mu:Array, log_t:Array)->Array:
         
         def sample(carry, step):
             
@@ -252,6 +263,7 @@ class VAEBM(hk.Module):
             
             return ((t,z),)*2
         
+        t = jnp.exp(2*log_t)
         dt = hk.vmap(lambda t: self.dts(t,100), split_rng=False)(t).squeeze().T
         N_data = mu.shape[0]
         dW = hk.vmap(lambda dt: self.dWs(self.encoder.latent_dim,dt),
@@ -267,22 +279,22 @@ class VAEBM(hk.Module):
     def __call__(self, x: Array) -> VAEOutput:
         """Forward pass of the variational autoencoder."""
         x = x.astype(jnp.float32)
-        mu_zx, t_zx = self.encoder(x)
+        mu_zx, log_t_zx = self.encoder(x)
         
         if self.sample_method == 'Local':
-            z = self.local_sample(mu_zx, t_zx)
+            z = self.local_sample(mu_zx, log_t_zx)
         elif self.sample_method == 'Taylor':
-            z = self.taylor_sample(mu_zx, t_zx)
+            z = self.taylor_sample(mu_zx, log_t_zx)
         elif self.sample_method == 'Euclidean':
-            z = self.euclidean_sample(mu_zx, t_zx)
+            z = self.euclidean_sample(mu_zx, log_t_zx)
         else:
             raise ValueError("Invalid sampling method. Choose either: Local, Taylor, Euclidean")
             
-        mu_z, t_z = self.muz(z), self.tz(z)
+        mu_z, log_t_z = self.muz(z), self.log_tz(z)
 
-        mu_xz, sigma_xz = self.decoder(z)
+        mu_xz, log_sigma_xz = self.decoder(z)
 
-        return VAEOutput(z, mu_xz, sigma_xz, mu_zx, t_zx, mu_z, t_z)
+        return VAEOutput(z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z)
 
 #%% Transformed model
     

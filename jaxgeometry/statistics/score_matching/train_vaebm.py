@@ -44,7 +44,7 @@ def pretrain_vae(vae_model:object,
     @partial(jit, static_argnames=['training_type'])
     def update(state:TrainingState, data:Array, training_type="All"):
         rng_key, next_rng_key = jrandom.split(state.rng_key)
-        loss, gradients = value_and_grad(vae_euclidean_loss)(state.params, state.state_val, state.rng_key, data,
+        loss, gradients = value_and_grad(vae_euclidean_loss, has_aux=True)(state.params, state.state_val, state.rng_key, data,
                                              vae_apply_fn, training_type=training_type)
         updates, new_opt_state = vae_optimizer.update(gradients, state.opt_state)
         new_params = optax.apply_updates(state.params, updates)
@@ -75,7 +75,7 @@ def pretrain_vae(vae_model:object,
             vae_state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
         vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, state_val, rng_key, data)[0]
     
-    if split>0:
+    if split>0.0:
         epochs_encoder = int(split*epochs)
         epochs_decoder = int((1-split)*epochs)
         epochs = 0
@@ -85,30 +85,44 @@ def pretrain_vae(vae_model:object,
     
     #print(vae_state.params['vaebm/~muz/prior_layer'])
     #print(vae_state.params['vaebm/~tz/prior_layer'])
+    for ds in data_generator.batch(batch_size):
+        test_point = jnp.array(ds)
+        break
     for step in range(epochs_encoder):
         dataset_epoch = data_generator.batch(batch_size)
         j = 0
         for ds in dataset_epoch:
             vae_state, loss = update(vae_state, jnp.array(ds), training_type="Encoder")
         if (step+1) % save_step == 0:
+            z, mu_xz, sigma_xz, mu_zx, t_zx, mu_z, t_z = vae_apply_fn(vae_state.params, test_point, vae_state.rng_key, 
+                                                                      vae_state.state_val)
+            print(mu_xz[0])
+            print(sigma_xz[0])
+            print(t_zx[0])
+            print(test_point[0])
             save_model(save_path, vae_state)
-            print(f"Epoch: {step+1} \t Loss: {loss:.4f}")
+            print(f"Epoch: {step+1} \t ELBO: {loss[0]:.4f} \t RecLoss: {loss[1][0]:.4f} \t KLD: {loss[1][1]:.4f}")
     for step in range(epochs_decoder):
         dataset_epoch = data_generator.batch(batch_size)
         for ds in dataset_epoch:
             vae_state, loss = update(vae_state, jnp.array(ds), training_type="Decoder")
         if (step+1) % save_step == 0:
+            z, mu_xz, sigma_xz, mu_zx, t_zx, mu_z, t_z = vae_apply_fn(vae_state.params, test_point, vae_state.rng_key, 
+                                                                      vae_state.state_val)
+            print(mu_xz[0])
+            print(sigma_xz[0])
+            print(t_zx[0])
+            print(test_point[0])
             save_model(save_path, vae_state)
-            print(f"Epoch: {step+1} \t Loss: {loss:.4f}")
+            print(f"Epoch: {step+1} \t ELBO: {loss[0]:.4f} \t RecLoss: {loss[1][0]:.4f} \t KLD: {loss[1][1]:.4f}")
     
     for step in range(epochs):
-        ds = next(data_generator)
         dataset_epoch = data_generator.batch(batch_size)
         for ds in dataset_epoch:
             vae_state, loss = update(vae_state, jnp.array(ds), training_type="All")
         if (step+1) % save_step == 0:
             save_model(save_path, vae_state)
-            print(f"Epoch: {step+1} \t Loss: {loss:.4f}")
+            print(f"Epoch: {step+1} \t ELBO: {loss[0]:.4f} \t RecLoss: {loss[1][0]:.4f} \t KLD: {loss[1][1]:.4f}")
     #print(vae_state.params['vaebm/~muz/prior_layer'])
     #print(vae_state.params['vaebm/~tz/prior_layer'])
           
