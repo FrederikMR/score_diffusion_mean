@@ -21,7 +21,7 @@ python3 train_score.py \
     --manifold HypParaboloid \
     --dim 2 \
     --s1_loss_type dsmvr \
-    --s2_loss_type dsmvr \
+    --s2_loss_type dsm \
     --load_model 0 \
     --T_sample 0 \
     --t 0.01 \

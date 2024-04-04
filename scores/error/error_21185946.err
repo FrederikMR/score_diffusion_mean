@@ -8,3 +8,21 @@ Switching from python3/3.8.2 to python3/3.10.12
 2024-04-03 10:26:44.989821: E tensorflow/compiler/xla/stream_executor/cuda/cuda_blas.cc:1518] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
 /zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/generators.py:838: UserWarning: Explicitly requested dtype <class 'jax.numpy.float64'> requested in astype is not available, and will be truncated to dtype float32. To enable more dtypes, set the jax_enable_x64 configuration option or the JAX_ENABLE_X64 shell environment variable. See https://github.com/google/jax#current-gotchas for more.
   x0 = x0.astype(jnp.float64)
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_vae.py", line 228, in <module>
+    train()
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_vae.py", line 165, in train
+    pretrain_scores(score_model=score_model,
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/train_vaebm.py", line 211, in pretrain_scores
+    data = next(score_datasets)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow_datasets/core/dataset_utils.py", line 82, in _eager_dataset_iterator
+    for elem in ds:
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/iterator_ops.py", line 809, in __next__
+    return self._next_internal()
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/iterator_ops.py", line 772, in _next_internal
+    ret = gen_dataset_ops.iterator_get_next(
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/ops/gen_dataset_ops.py", line 3023, in iterator_get_next
+    _result = pywrap_tfe.TFE_Py_FastPathExecute(
+KeyboardInterrupt
+terminate called without an active exception
+/zhome/77/8/118225/.lsbatch/1712132269.21185946.shell: line 43:  4727 Aborted                 python3 train_vae.py --data Circle3D --data_path data/vae/ --score_loss_type dsmvr --training_type score --sample_method Local --max_T 1.0 --vae_lr_rate 0.0002 --score_lr_rate 0.0002 --latent_dim 2 --epochs 50000 --vae_batch 100 --vae_epochs 300 --score_epochs 100 --vae_split 0.33 --score_x_samples 32 --score_t_samples 128 --score_repeats 8 --dt_steps 1000 --save_step 100 --save_path vae/joint_train/ --vae_save_path vae/pretrain_vae/ --score_save_path score/pretrain_vae/ --seed 2712

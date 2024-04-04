@@ -1,13 +1,13 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J Circle3D_score
+#BSUB -J Circle3D_vae
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
 #BSUB -R "rusage[mem=32GB]"
 #BSUB -u fmry@dtu.dk
-#BSUB -o scores/output/output_%J.out
-#BSUB -e scores/error/error_%J.err
+#BSUB -o vae/output/output_%J.out
+#BSUB -e vae/error/error_%J.err
 #BSUB -B
 #BSUB -N
 
@@ -21,7 +21,7 @@ python3 train_vae.py \
     --data Circle3D \
     --data_path data/vae/ \
     --score_loss_type dsmvr \
-    --training_type score \
+    --training_type vae \
     --sample_method Local \
     --max_T 1.0 \
     --vae_lr_rate 0.0002 \
