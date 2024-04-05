@@ -21,7 +21,7 @@ python3 train_vae.py \
     --data Circle3D \
     --data_path data/vae/ \
     --score_loss_type dsmvr \
-    --training_type vae \
+    --training_type score \
     --sample_method Local \
     --max_T 1.0 \
     --vae_lr_rate 0.0002 \
@@ -31,7 +31,7 @@ python3 train_vae.py \
     --vae_batch 100 \
     --vae_epochs 300 \
     --score_epochs 100 \
-    --vae_split 0.33 \
+    --vae_split 0.0 \
     --score_x_samples 32 \
     --score_t_samples 128 \
     --score_repeats 8 \

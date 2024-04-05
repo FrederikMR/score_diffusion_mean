@@ -1,0 +1,22 @@
+Loaded dependency [python3/3.10.12]: gcc/11.4.0-binutils-2.40
+Loaded dependency [python3/3.10.12]: sqlite3/3.42.0
+
+Switching from python3/3.8.2 to python3/3.10.12
+  Loading requirement: gcc/11.4.0-binutils-2.40 sqlite3/3.42.0
+2024-04-04 22:18:44.709430: E tensorflow/compiler/xla/stream_executor/cuda/cuda_dnn.cc:9342] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2024-04-04 22:18:44.709817: E tensorflow/compiler/xla/stream_executor/cuda/cuda_fft.cc:609] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2024-04-04 22:18:44.763121: E tensorflow/compiler/xla/stream_executor/cuda/cuda_blas.cc:1518] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_vae.py", line 228, in <module>
+    train()
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_vae.py", line 144, in train
+    pretrain_vae(vae_model=vae_model,
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/train_vaebm.py", line 95, in pretrain_vae
+    vae_state, loss = update(vae_state, jnp.array(ds), training_type="Encoder")
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/jax/_src/numpy/lax_numpy.py", line 2089, in array
+    out_array: Array = lax_internal._convert_element_type(
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/jax/_src/lax/lax.py", line 535, in _convert_element_type
+    if (dtypes.issubdtype(old_dtype, np.complexfloating) and
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/jax/_src/dtypes.py", line 322, in issubdtype
+    def issubdtype(a: DTypeLike | None, b: DTypeLike | None) -> bool:
+KeyboardInterrupt
