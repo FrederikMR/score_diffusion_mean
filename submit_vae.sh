@@ -21,7 +21,7 @@ python3 train_vae.py \
     --data Circle3D \
     --data_path data/vae/ \
     --score_loss_type dsmvr \
-    --training_type score \
+    --training_type vae \
     --sample_method Local \
     --max_T 1.0 \
     --vae_lr_rate 0.0002 \
@@ -38,6 +38,6 @@ python3 train_vae.py \
     --dt_steps 1000 \
     --save_step 100 \
     --save_path vae/joint_train/ \
-    --vae_save_path vae/pretrain_vae/ \
-    --score_save_path score/pretrain_vae/ \
+    --vae_save_path vaebm/pretrain_vae/ \
+    --score_save_path vaebm/pretrain_score/ \
     --seed 2712
