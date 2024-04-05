@@ -40,8 +40,6 @@ def parse_args():
                         type=str)
     parser.add_argument('--sample_method', default="Local",
                         type=str)
-    parser.add_argument('--max_T', default=1.0,
-                        type=float)
     parser.add_argument('--vae_lr_rate', default=0.0002,
                         type=float)
     parser.add_argument('--score_lr_rate', default=0.0002,
@@ -160,18 +158,21 @@ def train():
         elif type(vae_model) == hk.TransformedWithState:
             vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, state_val, rng_key, data)[0]
         data = next(vae_datasets.batch(args.vae_batch).as_numpy_iterator())
-        z, *_ = vae_apply_fn(vae_state.params, data, vae_state.rng_key, vae_state.state_val)
+        z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z = vae_apply_fn(vae_state.params, jnp.array(data), 
+                                                                              vae_state.rng_key, 
+                                                                              vae_state.state_val)
         x0s = z[jnp.round(jnp.linspace(0, len(z) - 1, args.score_repeats)).astype(int)]
+        max_T = jnp.maximum(2*jnp.exp(2*log_t_z[0]), 1.0)
         pretrain_scores(score_model=score_model,
                         vae_state=vae_state,
                         decoder_model=decoder_model,
                         x0s=x0s,
                         lr_rate = args.score_lr_rate,
-                        save_path = args.score_save_path,
+                        save_path = score_save_path,
                         repeats=args.score_repeats,
                         x_samples=args.score_x_samples,
                         t_samples=args.score_t_samples,
-                        max_T=args.max_T,
+                        max_T=max_T,
                         dt_steps=args.dt_steps,
                         training_type=args.score_loss_type,
                         score_state = None,
@@ -204,7 +205,6 @@ def train():
                     score_repeats=args.score_repeats,
                     score_x_samples=args.score_x_samples,
                     score_t_samples=args.score_t_samples,
-                    max_T=args.max_T,
                     dt_steps=args.dt_steps,
                     vae_optimizer = None,
                     score_optimizer = None,

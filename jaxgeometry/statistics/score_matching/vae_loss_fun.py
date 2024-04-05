@@ -75,13 +75,17 @@ def vae_riemannian_loss(params:hk.Params, state_val:dict, rng_key:Array, x:Array
     @jit
     def gaussian_likelihood(params:hk.Params):
         
-        _, mu_xz, sigma_xz, *_ = vae_apply_fn(params, x, rng_key, state_val)
+        z, mu_xz, log_sigma_xz, *_ = vae_apply_fn(params, x, rng_key, state_val)
         
         dim = mu_xz.shape[-1]
-        mu_term = jnp.einsum('...i,...i->...', x-mu_xz, (x-mu_xz)/sigma_xz)
-        var_term = dim*jnp.sum(jnp.log(sigma_xz), axis=-1)
+        diff = x-mu_xz
+        sigma_xz = jnp.exp(log_sigma_xz)
+        mu_term = jnp.sum(jnp.einsum('ij,ij->ij', diff**2, 1/(sigma_xz**2)), axis=-1)
+        var_term = 2*dim*jnp.sum(log_sigma_xz, axis=-1)
         
-        return -0.5*(mu_term+var_term)
+        loss = -0.5*(mu_term+var_term)
+        
+        return jnp.mean(loss)
     
     @jit
     def encoder_fun(params:hk.Params):
@@ -91,6 +95,9 @@ def vae_riemannian_loss(params:hk.Params, state_val:dict, rng_key:Array, x:Array
         return z
             
     z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z = vae_apply_fn(params, x, rng_key, state_val)
+    
+    t_zx = jnp.exp(2*log_t_zx)
+    t_z = jnp.exp(2*log_t_z)
     
     if training_type == "Encoder":
         sigma_xz = lax.stop_gradient(sigma_xz)
@@ -104,10 +111,10 @@ def vae_riemannian_loss(params:hk.Params, state_val:dict, rng_key:Array, x:Array
     z_grad = jacfwd(encoder_fun)(params)
     rec_grad = -grad(gaussian_likelihood)(params)
     
-    s_logqzx = vmap(lambda mu,z,t: score_apply_fn(score_state.params, jnp.hstack((mu,z,t)), 
-                              score_state.rng_key, score_state.state_val))(mu,z,t)
-    s_logpz = vmap(lambda mu0,z,t0: score_apply_fn(score_state.params, jnp.hstack((mu0,z,t0)), 
-                             rng_key, score_state.state_val))(mu0,z,t0)
+    s_logqzx = vmap(lambda mu_zx,z,t_zx: score_apply_fn(score_state.params, jnp.hstack((mu_zx,z,t_zx)), 
+                              score_state.rng_key, score_state.state_val))(mu_zx,z,t_zx)
+    s_logpz = vmap(lambda mu0,z,t0: score_apply_fn(score_state.params, jnp.hstack((mu_z,z,t_z)), 
+                             rng_key, score_state.state_val))(mu_z,z,t_z)
     diff = s_logqzx-s_logpz
 
     if x.ndim == 1:

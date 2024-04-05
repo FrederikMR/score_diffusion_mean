@@ -23,7 +23,6 @@ python3 train_vae.py \
     --score_loss_type dsmvr \
     --training_type vae \
     --sample_method Local \
-    --max_T 1.0 \
     --vae_lr_rate 0.0002 \
     --score_lr_rate 0.0002 \
     --latent_dim 2 \

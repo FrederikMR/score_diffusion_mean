@@ -58,7 +58,6 @@ def generate_data():
         rng_key, subkey = jrandom.split(rng_key)
         eps = args.std*jrandom.normal(subkey, shape=(3,args.N_data,))
         
-        #eps = 0.0*eps
         x1, x2, x3 = jnp.cos(theta)+1.0+eps[0], jnp.sin(theta)+1.0+eps[1], eps[2]+1.0
         
         X = jnp.stack((x1,x2,x3)).T
