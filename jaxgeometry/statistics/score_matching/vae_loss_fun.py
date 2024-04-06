@@ -68,7 +68,7 @@ def vae_euclidean_loss(params:hk.Params, state_val:dict, rng_key:Array, x, vae_a
     return elbo, (rec_loss, kld)
 #%% VAE Riemannian Fun
 
-@jit
+#@jit
 def vae_riemannian_loss(params:hk.Params, state_val:dict, rng_key:Array, x:Array, vae_apply_fn,
                         score_apply_fn, score_state, training_type="All"):
     
@@ -109,12 +109,14 @@ def vae_riemannian_loss(params:hk.Params, state_val:dict, rng_key:Array, x:Array
         mu_zx = lax.stop_gradient(mu_zx)
     
     z_grad = jacfwd(encoder_fun)(params)
-    rec_grad = -grad(gaussian_likelihood)(params)
+    rec_grad = grad(gaussian_likelihood)(params)
     
-    s_logqzx = vmap(lambda mu_zx,z,t_zx: score_apply_fn(score_state.params, jnp.hstack((mu_zx,z,t_zx)), 
-                              score_state.rng_key, score_state.state_val))(mu_zx,z,t_zx)
-    s_logpz = vmap(lambda mu0,z,t0: score_apply_fn(score_state.params, jnp.hstack((mu_z,z,t_z)), 
-                             rng_key, score_state.state_val))(mu_z,z,t_z)
+    #s_logqzx = vmap(lambda mu_zx,z,t_zx: score_apply_fn(score_state.params, jnp.hstack((mu_zx,z,t_zx)), 
+    #                          score_state.rng_key, score_state.state_val))(mu_zx,z,t_zx)
+    s_logqzx = score_apply_fn(score_state.params, jnp.hstack((mu_zx,z,t_zx)), score_state.rng_key, score_state.state_val)
+    s_logpz = score_apply_fn(score_state.params, jnp.hstack((mu_z, z, t_z)), score_state.rng_key, score_state.state_val)
+    #s_logpz = vmap(lambda mu_z,z,t_z: score_apply_fn(score_state.params, jnp.hstack((mu_z,z,t_z)), 
+    #                         rng_key, score_state.state_val))(mu_z,z,t_z)
     diff = s_logqzx-s_logpz
 
     if x.ndim == 1:
@@ -125,7 +127,6 @@ def vae_riemannian_loss(params:hk.Params, state_val:dict, rng_key:Array, x:Array
                    for layer,val in z_grad.items()}
     #z_grad.update((x, jnp.einsum('...i,...ij->...j')) for v,w in x for x, y in my_dict.items())
     #kl_grad = jnp.mean(jnp.einsum('...i,...ij->...j', s_logqzx-s_logpz, z_grad), axis=0)
-    
     res = {layer: {name: kl_grad[layer][name]-rec_grad[layer][name] for name,w in val.items()} \
                for layer,val in z_grad.items()}
 

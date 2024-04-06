@@ -36,7 +36,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--score_loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--training_type', default="score",
+    parser.add_argument('--training_type', default="joint",
                         type=str)
     parser.add_argument('--sample_method', default="Local",
                         type=str)
@@ -50,7 +50,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--vae_batch', default=100,
                         type=int)
-    parser.add_argument('--vae_epochs', default=300,
+    parser.add_argument('--vae_epochs', default=100,
                         type=int)
     parser.add_argument('--score_epochs', default=100,
                         type=int)
@@ -66,11 +66,11 @@ def parse_args():
                         type=int)
     parser.add_argument('--save_step', default=100,
                         type=int)
-    parser.add_argument('--save_path', default='vae/joint_train/',
+    parser.add_argument('--save_path', default='vaebm/joint_train/',
                         type=str)
-    parser.add_argument('--vae_save_path', default='vae/pretrain_vae/',
+    parser.add_argument('--vae_save_path', default='vaebm/pretrain_vae/',
                         type=str)
-    parser.add_argument('--score_save_path', default='vae/pretrain_score/',
+    parser.add_argument('--score_save_path', default='vaebm/pretrain_score/',
                         type=str)
     parser.add_argument('--seed', default=2712,
                         type=int)
@@ -191,6 +191,7 @@ def train():
         
         vae_state = load_model(vae_save_path)
         score_state = load_model(score_save_path)
+        
         train_vaebm(vae_model=vae_model,
                     decoder_model=decoder_model,
                     score_model=score_model,
@@ -201,7 +202,7 @@ def train():
                     score_epochs=args.score_epochs,
                     vae_split=args.vae_split,
                     lr_rate_vae=args.vae_lr_rate,
-                    lr_rate_score=args.lr_rate_score,
+                    lr_rate_score=args.score_lr_rate,
                     score_repeats=args.score_repeats,
                     score_x_samples=args.score_x_samples,
                     score_t_samples=args.score_t_samples,

@@ -85,21 +85,11 @@ def pretrain_vae(vae_model:object,
     
     #print(vae_state.params['vaebm/~muz/prior_layer'])
     #print(vae_state.params['vaebm/~tz/prior_layer'])
-    for ds in data_generator.batch(batch_size):
-        test_point = jnp.array(ds)
-        break
     for step in range(epochs_encoder):
         dataset_epoch = data_generator.batch(batch_size)
-        j = 0
         for ds in dataset_epoch:
             vae_state, loss = update(vae_state, jnp.array(ds), training_type="Encoder")
         if (step+1) % save_step == 0:
-            z, mu_xz, sigma_xz, mu_zx, t_zx, mu_z, t_z = vae_apply_fn(vae_state.params, test_point, vae_state.rng_key, 
-                                                                      vae_state.state_val)
-            print(mu_xz[0])
-            print(sigma_xz[0])
-            print(t_zx[0])
-            print(test_point[0])
             save_model(save_path, vae_state)
             print(f"Epoch: {step+1} \t ELBO: {loss[0]:.4f} \t RecLoss: {loss[1][0]:.4f} \t KLD: {loss[1][1]:.4f}")
     for step in range(epochs_decoder):
@@ -107,12 +97,6 @@ def pretrain_vae(vae_model:object,
         for ds in dataset_epoch:
             vae_state, loss = update(vae_state, jnp.array(ds), training_type="Decoder")
         if (step+1) % save_step == 0:
-            z, mu_xz, sigma_xz, mu_zx, t_zx, mu_z, t_z = vae_apply_fn(vae_state.params, test_point, vae_state.rng_key, 
-                                                                      vae_state.state_val)
-            print(mu_xz[0])
-            print(sigma_xz[0])
-            print(t_zx[0])
-            print(test_point[0])
             save_model(save_path, vae_state)
             print(f"Epoch: {step+1} \t ELBO: {loss[0]:.4f} \t RecLoss: {loss[1][0]:.4f} \t KLD: {loss[1][1]:.4f}")
     
@@ -255,6 +239,7 @@ def train_vaebm(vae_model:object,
                 score_model:object,
                 vae_datasets:object,
                 dim:int,
+                vae_batch_size:int=100,
                 epochs:int=1000,
                 vae_epochs:int=100,
                 score_epochs:int=100,
@@ -278,15 +263,16 @@ def train_vaebm(vae_model:object,
                 )->None:
     
     @partial(jit, static_argnames=['training_type'])
-    def update(state:TrainingState, data:Array, training_type="All"):
+    def update_vae(state:TrainingState, data:Array, training_type="All"):
         
         rng_key, next_rng_key = jrandom.split(state.rng_key)
-        gradients = grad(vae_riemannian_loss)(state.params, state.state_val, state.rng_key, data,
+
+        gradients = vae_riemannian_loss(state.params, state.state_val, state.rng_key, data,
                                              vae_apply_fn, score_apply_fn, score_state, 
                                              training_type=training_type)
-        updates, new_opt_state = optimizer.update(gradients, state.opt_state)
+        updates, new_opt_state = vae_optimizer.update(gradients, state.opt_state)
         new_params = optax.apply_updates(state.params, updates)
-        
+
         return TrainingState(new_params, state.state_val, new_opt_state, rng_key)
     
     @jit
@@ -341,9 +327,10 @@ def train_vaebm(vae_model:object,
         
     F = lambda z: decoder_apply_fn(vae_state.params, z.reshape(-1,dim), vae_state.rng_key, 
                                    vae_state.state_val)[0].reshape(-1)
+    batch_size = score_x_samples*score_repeats*score_t_samples
+    score_N_sim = score_x_samples*score_repeats
     x0 = jnp.zeros(dim)
     score_generator = VAESampling(F=F,
-                                  dim=dim,
                                   x0=x0,
                                   repeats=score_repeats,
                                   x_samples=score_x_samples,
@@ -352,8 +339,7 @@ def train_vaebm(vae_model:object,
                                   max_T=1.0,
                                   dt_steps=dt_steps,
                                   )
-    batch_size = score_x_samples*score_repeats*score_t_samples
-    score_N_sim = score_x_samples*score_repeats
+    
     score_datasets = tf.data.Dataset.from_generator(score_generator,output_types=tf.float32,
                                                    output_shapes=([batch_size,3*dim+2]))
     score_datasets = iter(tfds.as_numpy(score_datasets))
@@ -361,13 +347,13 @@ def train_vaebm(vae_model:object,
     initial_rng_key = jrandom.PRNGKey(seed)
     if type(vae_model) == hk.Transformed:
         if vae_state is None:
-            initial_params = vae_model.init(jrandom.PRNGKey(seed), next(vae_datasets))
+            initial_params = vae_model.init(jrandom.PRNGKey(seed), next(vae_datasets.batch(vae_batch_size)))
             initial_opt_state = vae_optimizer.init(initial_params)
             vae_state = TrainingState(initial_params, None, initial_opt_state, initial_rng_key)
         vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, rng_key, data)
     elif type(vae_model) == hk.TransformedWithState:
         if vae_state is None:
-            initial_params, init_state = vae_model.init(jrandom.PRNGKey(seed), next(vae_datasets))
+            initial_params, init_state = vae_model.init(jrandom.PRNGKey(seed), next(vae_datasets.batch(vae_batch_size)))
             initial_opt_state = vae_optimizer.init(initial_params)
             vae_state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
         vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, state_val, rng_key, data)[0]
@@ -397,14 +383,19 @@ def train_vaebm(vae_model:object,
     
     for step in range(epochs):
         for vae_step in range(epochs_encoder):
-            ds = next(vae_datasets)
-            vae_state = update(vae_state, ds, training_type="Encoder")
+            dataset_epoch = vae_datasets.batch(vae_batch_size)
+            for ds in dataset_epoch:
+                vae_state = update_vae(vae_state, jnp.array(ds), training_type="Encoder")
         for vae_step in range(epochs_decoder):
-            ds = next(vae_datasets)
-            vae_state = update(vae_state, ds, training_type="Decoder")
+            dataset_epoch = vae_datasets.batch(vae_batch_size)
+            for ds in dataset_epoch:
+                vae_state = update_vae(vae_state, jnp.array(ds), training_type="Decoder")
+        
         for vae_step in range(vae_epochs):
-            ds = next(vae_datasets)
-            vae_state = update(vae_state, ds, training_type="All")
+            dataset_epoch = vae_datasets.batch(vae_batch_size)
+            for ds in dataset_epoch:
+                vae_state = update_vae(vae_state, jnp.array(ds), training_type="All")
+        save_model(vae_path, vae_state)
 
         F = lambda z: decoder_apply_fn(vae_state.params, z.reshape(-1,dim), vae_state.rng_key, 
                                        vae_state.state_val)[0].reshape(-1)
@@ -435,10 +426,9 @@ def train_vaebm(vae_model:object,
                 score_datasets = tf.data.Dataset.from_generator(score_generator,output_types=tf.float32,
                                                                output_shapes=([batch_size,3*dim+2]))
                 score_datasets = iter(tfds.as_numpy(score_datasets))
-                
-        if (step+1) % save_step == 0:            
-            save_model(score_path, score_state)
-            save_model(vae_path, vae_state)
+        print("Hallo2")
+        save_model(score_path, score_state)
+        if (step+1) % save_step == 0:
             print("Epoch: {}".format(step+1))
           
     save_model(score_path, score_state)
