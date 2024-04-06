@@ -36,7 +36,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--score_loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--training_type', default="vae",
+    parser.add_argument('--training_type', default="score",
                         type=str)
     parser.add_argument('--sample_method', default="Local",
                         type=str)
@@ -162,7 +162,7 @@ def train():
                                                                               vae_state.rng_key, 
                                                                               vae_state.state_val)
         x0s = z[jnp.round(jnp.linspace(0, len(z) - 1, args.score_repeats)).astype(int)]
-        max_T = jnp.maximum(2*jnp.exp(2*log_t_z[0]), 1.0)
+        max_T = jnp.maximum(2*jnp.exp(2*log_t_z[0]), 1.0).squeeze()
         pretrain_scores(score_model=score_model,
                         vae_state=vae_state,
                         decoder_model=decoder_model,

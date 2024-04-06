@@ -412,7 +412,7 @@ def train_vaebm(vae_model:object,
         score_generator.F = F
         z0 = z[np.round(np.linspace(0, len(z) - 1, score_repeats)).astype(int)]
         score_generator.x0s = z0
-        score_generator.max_T = jnp.maxmimum(2*jnp.exp(2*log_t_z[0]),1.0)
+        score_generator.max_T = jnp.maxmimum(2*jnp.exp(2*log_t_z[0]),1.0).squeeze()
         score_generator.x0s_default = z0
         score_datasets = tf.data.Dataset.from_generator(score_generator,output_types=tf.float32,
                                                        output_shapes=([batch_size,3*dim+2]))
