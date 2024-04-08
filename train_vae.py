@@ -36,7 +36,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--score_loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--training_type', default="joint",
+    parser.add_argument('--training_type', default="vae",
                         type=str)
     parser.add_argument('--sample_method', default="Local",
                         type=str)
@@ -50,19 +50,9 @@ def parse_args():
                         type=int)
     parser.add_argument('--vae_batch', default=100,
                         type=int)
-    parser.add_argument('--vae_epochs', default=100,
-                        type=int)
-    parser.add_argument('--score_epochs', default=100,
-                        type=int)
     parser.add_argument('--vae_split', default=0.0,#0.33,
                         type=float)
-    parser.add_argument('--score_x_samples', default=32,
-                        type=int)
-    parser.add_argument('--score_t_samples', default=128,
-                        type=int)
-    parser.add_argument('--score_repeats', default=8,
-                        type=int)
-    parser.add_argument('--dt_steps', default=1000,
+    parser.add_argument('--dt_steps', default=100,
                         type=int)
     parser.add_argument('--save_step', default=100,
                         type=int)
@@ -102,6 +92,7 @@ def train():
             encoder=Encoder(latent_dim=args.latent_dim),
             decoder=Decoder(),
             sample_method = sample_method,
+            dt_steps = args.dt_steps
             )
           
             return vae(x)
