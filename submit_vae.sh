@@ -36,7 +36,7 @@ python3 train_vae.py \
     --score_repeats 8 \
     --dt_steps 1000 \
     --save_step 100 \
-    --save_path vae/joint_train/ \
+    --save_path vaebm/joint_train/ \
     --vae_save_path vaebm/pretrain_vae/ \
     --score_save_path vaebm/pretrain_score/ \
     --seed 2712
