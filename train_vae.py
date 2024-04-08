@@ -50,6 +50,10 @@ def parse_args():
                         type=int)
     parser.add_argument('--vae_batch', default=100,
                         type=int)
+    parser.add_argument('--use_pretrain_vae', default=1,
+                        type=int)
+    parser.add_argument('--use_pretrain_score', default=1,
+                        type=int)
     parser.add_argument('--vae_split', default=0.0,#0.33,
                         type=float)
     parser.add_argument('--dt_steps', default=100,
@@ -167,8 +171,14 @@ def train():
         if not os.path.exists(score_joint_save_path):
             os.makedirs(score_joint_save_path)
         
-        vae_state = load_model(vae_save_path)
-        score_state = load_model(score_save_path)
+        if args.use_pretrain_vae:
+            vae_state = load_model(vae_save_path)
+        else:
+            vae_state = None
+        if args.use_pretrain_score:
+            score_state = load_model(score_save_path)
+        else:
+            score_state = None
         
         train_vaebm(vae_model=vae_model,
                     score_model=score_model,
