@@ -147,7 +147,12 @@ def train():
                      seed=args.seed,
                      )
     elif args.training_type == "score":
-        vae_state = load_model(vae_save_path)
+        
+        if args.use_pretrain_vae:
+            vae_state = load_model(vae_save_path)
+        else:
+            vae_state = None
+
         pretrain_scores(score_model=score_model,
                         vae_model = vae_model,
                         data_generator=vae_datasets,
@@ -175,6 +180,7 @@ def train():
             vae_state = load_model(vae_save_path)
         else:
             vae_state = None
+            
         if args.use_pretrain_score:
             score_state = load_model(score_save_path)
         else:
