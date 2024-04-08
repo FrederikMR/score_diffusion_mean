@@ -15,7 +15,7 @@ from jaxgeometry.setup import *
 
 #%% VAE Loss Fun
 
-#@jit
+#@partial(jit, static_argnames=['state_val', 'vae_apply_fn', 'training_type'])
 def vae_euclidean_loss(params:hk.Params, state_val:dict, rng_key:Array, x, vae_apply_fn,
                        training_type="All")->Array:
     
@@ -68,14 +68,12 @@ def vae_euclidean_loss(params:hk.Params, state_val:dict, rng_key:Array, x, vae_a
     return elbo, (rec_loss, kld)
 #%% VAE Riemannian Fun
 
-#@jit
-def vae_riemannian_loss(params:hk.Params, state_val:dict, rng_key:Array, x:Array, vae_apply_fn,
+#@partial(jit, static_argnames=['vae_state_val', 'vae_apply_fn', 'score_apply_fn', 'score_state', 'training_type'])
+def vae_riemannian_loss(params:hk.Params, vae_state_val:dict, rng_key:Array, x:Array, vae_apply_fn,
                         score_apply_fn, score_state, training_type="All"):
     
     @jit
-    def gaussian_likelihood(params:hk.Params):
-        
-        z, mu_xz, log_sigma_xz, *_ = vae_apply_fn(params, x, rng_key, state_val)
+    def gaussian_likelihood(params:hk.Params, z:Array, mu_xz:Array, log_sigma_xz:Array):
         
         dim = mu_xz.shape[-1]
         diff = x-mu_xz
@@ -88,16 +86,25 @@ def vae_riemannian_loss(params:hk.Params, state_val:dict, rng_key:Array, x:Array
         return jnp.mean(loss)
     
     @jit
-    def encoder_fun(params:hk.Params):
+    def kl_divergence(params:hk.Params, s_logqzx:Array, s_logpz:Array):
         
-        z, *_ = vae_apply_fn(params, x, rng_key, state_val)
-
-        return z
+        z, *_ = vae_apply_fn(params, x, rng_key, vae_state_val)
+        
+        return jnp.mean(jnp.einsum('...i,...i->...', s_logqzx, z)-jnp.einsum('...i,...i->...', s_logpz, z))
             
-    z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z = vae_apply_fn(params, x, rng_key, state_val)
+    z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z = vae_apply_fn(params, x, rng_key, vae_state_val)
     
     t_zx = jnp.exp(2*log_t_zx)
     t_z = jnp.exp(2*log_t_z)
+    
+    s_logqzx = lax.stop_gradient(score_apply_fn(score_state.params, 
+                                                jnp.hstack((mu_zx,z,t_zx)), 
+                                                score_state.rng_key, 
+                                                score_state.state_val))
+    s_logpz = lax.stop_gradient(score_apply_fn(score_state.params, 
+                                               jnp.hstack((mu_z, z, t_z)), 
+                                               score_state.rng_key, 
+                                               score_state.state_val))
     
     if training_type == "Encoder":
         sigma_xz = lax.stop_gradient(sigma_xz)
@@ -107,27 +114,11 @@ def vae_riemannian_loss(params:hk.Params, state_val:dict, rng_key:Array, x:Array
         mu_xz = lax.stop_gradient(mu_xz)
         t_zx = lax.stop_gradient(t_zx)
         mu_zx = lax.stop_gradient(mu_zx)
+        
+    kl_grad = grad(kl_divergence)(params, s_logqzx, s_logpz)
+    rec_grad = grad(gaussian_likelihood)(params, z, mu_xz, log_sigma_xz)
     
-    z_grad = jacfwd(encoder_fun)(params)
-    rec_grad = grad(gaussian_likelihood)(params)
-    
-    #s_logqzx = vmap(lambda mu_zx,z,t_zx: score_apply_fn(score_state.params, jnp.hstack((mu_zx,z,t_zx)), 
-    #                          score_state.rng_key, score_state.state_val))(mu_zx,z,t_zx)
-    s_logqzx = score_apply_fn(score_state.params, jnp.hstack((mu_zx,z,t_zx)), score_state.rng_key, score_state.state_val)
-    s_logpz = score_apply_fn(score_state.params, jnp.hstack((mu_z, z, t_z)), score_state.rng_key, score_state.state_val)
-    #s_logpz = vmap(lambda mu_z,z,t_z: score_apply_fn(score_state.params, jnp.hstack((mu_z,z,t_z)), 
-    #                         rng_key, score_state.state_val))(mu_z,z,t_z)
-    diff = s_logqzx-s_logpz
+    gradient = {layer: {name: kl_grad[layer][name]-rec_grad[layer][name] for name,w in val.items()} \
+                    for layer,val in kl_grad.items()}
 
-    if x.ndim == 1:
-        kl_grad = {layer: {name: jnp.einsum('i,i...->...', diff, w) for name,w in val.items()} \
-                   for layer,val in z_grad.items()}
-    else:
-        kl_grad = {layer: {name: jnp.mean(jnp.einsum('ki,ki...->k...', diff, w), axis=0) for name,w in val.items()} \
-                   for layer,val in z_grad.items()}
-    #z_grad.update((x, jnp.einsum('...i,...ij->...j')) for v,w in x for x, y in my_dict.items())
-    #kl_grad = jnp.mean(jnp.einsum('...i,...ij->...j', s_logqzx-s_logpz, z_grad), axis=0)
-    res = {layer: {name: kl_grad[layer][name]-rec_grad[layer][name] for name,w in val.items()} \
-               for layer,val in z_grad.items()}
-
-    return res
+    return gradient

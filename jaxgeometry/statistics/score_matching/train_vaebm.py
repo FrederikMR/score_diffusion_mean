@@ -266,7 +266,6 @@ def train_vaebm(vae_model:object,
     def update_vae(state:TrainingState, data:Array, training_type="All"):
         
         rng_key, next_rng_key = jrandom.split(state.rng_key)
-
         gradients = vae_riemannian_loss(state.params, state.state_val, state.rng_key, data,
                                              vae_apply_fn, score_apply_fn, score_state, 
                                              training_type=training_type)
@@ -426,7 +425,6 @@ def train_vaebm(vae_model:object,
                 score_datasets = tf.data.Dataset.from_generator(score_generator,output_types=tf.float32,
                                                                output_shapes=([batch_size,3*dim+2]))
                 score_datasets = iter(tfds.as_numpy(score_datasets))
-        print("Hallo2")
         save_model(score_path, score_state)
         if (step+1) % save_step == 0:
             print("Epoch: {}".format(step+1))
