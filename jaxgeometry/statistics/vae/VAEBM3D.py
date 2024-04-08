@@ -29,6 +29,11 @@ class VAEOutput(NamedTuple):
   log_t_zx: Array
   mu_z: Array
   log_t_z: Array
+  dW: Array
+  dt: Array
+  z_prior:Array
+  dW_prior:Array
+  dt_prior:Array
 
 #%% Other
 
@@ -128,6 +133,7 @@ class VAEBM(hk.Module):
                  encoder:Encoder,
                  decoder:Decoder,
                  seed:int=2712,
+                 dt_steps:int=100,
                  sample_method:str='Local'
                  ):
         super(VAEBM, self).__init__()
@@ -136,28 +142,19 @@ class VAEBM(hk.Module):
         self.decoder = decoder
         self.key = jrandom.key(seed)
         self.sample_method = sample_method
+        self.dt_steps = dt_steps
         
     def muz(self, z:Array)->Array:
         
         mu_z = PriorLayer(output_size=z.shape[-1])(z)
 
         return mu_z*jnp.ones_like(z)
-        
-        #z = swish(hk.Linear(output_size=100)(z))
-        #mu_z = hk.Linear(output_size=2)(z)
-        
-        #return mu_z
     
     def log_tz(self, z:Array)->Array:
         
         log_t_z = PriorLayer(output_size=1)(z)
 
         return log_t_z*jnp.ones((z.shape[0],1))
-        
-        #z = swish(hk.Linear(output_size=100)(z))
-        #log_t_z = hk.Linear(output_size=1)(z)
-        
-        #return jnp.exp(log_t_z)
         
     def dts(self, T:float=1.0,n_steps:int=1000)->Array:
         """time increments, deterministic"""
@@ -211,7 +208,11 @@ class VAEBM(hk.Module):
     
     def euclidean_sample(self, mu:Array, log_t:Array):
         
-        return mu+jnp.exp(log_t)*jrandom.normal(hk.next_rng_key(), mu.shape)
+        t = jnp.exp(log_t)
+        eps = jrandom.normal(hk.next_rng_key(), mu.shape)
+        dt = hk.vmap(lambda t: self.dts(t**2,self.dt_steps), split_rng=False)(t).squeeze().T
+        
+        return mu+t*eps, eps, dt[-1]
     
     def taylor_sample(self, mu:Array, log_t:Array):
         
@@ -230,7 +231,7 @@ class VAEBM(hk.Module):
             return ((t,z),)*2
         
         t = jnp.exp(2*log_t)
-        dt = hk.vmap(lambda t: self.dts(t,100), split_rng=False)(t).squeeze().T
+        dt = hk.vmap(lambda t: self.dts(t,self.dt_steps), split_rng=False)(t).squeeze().T
         N_data = mu.shape[0]
         dW = hk.vmap(lambda dt: self.dWs(self.encoder.latent_dim,dt),
                      split_rng=False)(dt).reshape(-1,N_data,self.encoder.latent_dim)
@@ -241,7 +242,7 @@ class VAEBM(hk.Module):
                          init=(jnp.zeros_like(t),mu), xs=(dt,dW)
                          )
 
-        return val[1]
+        return val[1], dW[-1], dt[-1]
     
     def local_sample(self, mu:Array, log_t:Array)->Array:
         
@@ -258,13 +259,13 @@ class VAEBM(hk.Module):
             det = 0.5*jnp.einsum('jk,ijk->i', ginv, Chris)
             
             z += det+stoch
-            t = t.astype(jnp.float32)
-            z = z.astype(jnp.float32)
+            t = t.astype(carry[0].dtype)
+            z = z.astype(carry[1].dtype)
             
             return ((t,z),)*2
         
         t = jnp.exp(2*log_t)
-        dt = hk.vmap(lambda t: self.dts(t,100), split_rng=False)(t).squeeze().T
+        dt = hk.vmap(lambda t: self.dts(t,self.dt_steps), split_rng=False)(t).squeeze().T
         N_data = mu.shape[0]
         dW = hk.vmap(lambda dt: self.dWs(self.encoder.latent_dim,dt),
                      split_rng=False)(dt).reshape(-1,N_data,self.encoder.latent_dim)
@@ -274,7 +275,7 @@ class VAEBM(hk.Module):
                          init=(jnp.zeros_like(t),mu), xs=(dt,dW)
                          )
 
-        return val[1]
+        return val[1], dW[-1], dt[-1]
 
     def __call__(self, x: Array) -> VAEOutput:
         """Forward pass of the variational autoencoder."""
@@ -282,19 +283,24 @@ class VAEBM(hk.Module):
         mu_zx, log_t_zx = self.encoder(x)
         
         if self.sample_method == 'Local':
-            z = self.local_sample(mu_zx, log_t_zx)
+            z, dW, dt = self.local_sample(mu_zx, log_t_zx)
+            mu_z, log_t_z = self.muz(z), self.log_tz(z)
+            z_prior, dW_prior, dt_prior = self.local_sample(mu_z, log_t_z)
         elif self.sample_method == 'Taylor':
-            z = self.taylor_sample(mu_zx, log_t_zx)
+            z, dW, dt = self.taylor_sample(mu_zx, log_t_zx)
+            mu_z, log_t_z = self.muz(z), self.log_tz(z)
+            z_prior, dW_prior, dt_prior = self.taylor_sample(mu_z, log_t_z)
         elif self.sample_method == 'Euclidean':
-            z = self.euclidean_sample(mu_zx, log_t_zx)
+            z, dW, dt = self.euclidean_sample(mu_zx, log_t_zx)
+            mu_z, log_t_z = self.muz(z), self.log_tz(z)
+            z_prior, dW_prior, dt_prior = self.euclidean_sample(mu_z, log_t_z)
         else:
             raise ValueError("Invalid sampling method. Choose either: Local, Taylor, Euclidean")
             
-        mu_z, log_t_z = self.muz(z), self.log_tz(z)
-
         mu_xz, log_sigma_xz = self.decoder(z)
-
-        return VAEOutput(z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z)
+        
+        return VAEOutput(z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z, dW, dt,
+                         z_prior, dW_prior, dt_prior)
 
 #%% Transformed model
     

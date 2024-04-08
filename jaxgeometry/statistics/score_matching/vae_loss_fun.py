@@ -39,18 +39,18 @@ def vae_euclidean_loss(params:hk.Params, state_val:dict, rng_key:Array, x, vae_a
         diff = z-mu_zx
         log_t_zx = log_t_zx.squeeze()
         log_t_z = log_t_z.squeeze()
-        t_zx = jnp.exp(log_t_zx)
-        t_z = jnp.exp(log_t_z)
-        dist = jnp.sum(jnp.einsum('ij,i->ij', diff**2, 1/(t_zx**2)), axis=-1)
+        t_zx = jnp.exp(2*log_t_zx)
+        t_z = jnp.exp(2*log_t_z)
+        dist = jnp.sum(jnp.einsum('ij,i->ij', diff**2, 1/(t_zx)), axis=-1)
         log_qzx = -0.5*(dim*log_t_zx+dist)
         
         diff = z-mu_z
-        dist = jnp.sum(jnp.einsum('ij,i->ij', diff**2, 1/(t_z**2)), axis=-1)
+        dist = jnp.sum(jnp.einsum('ij,i->ij', diff**2, 1/(t_z)), axis=-1)
         log_pz = -0.5*(dim*log_t_z+dist)
         
         return jnp.mean(log_qzx-log_pz)
 
-    z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z = vae_apply_fn(params, x, rng_key, state_val)
+    z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z, *_ = vae_apply_fn(params, x, rng_key, state_val)
 
     if training_type == "Encoder":
         sigma_xz = lax.stop_gradient(log_sigma_xz)
@@ -73,7 +73,7 @@ def vae_riemannian_loss(params:hk.Params, vae_state_val:dict, rng_key:Array, x:A
                         score_apply_fn, score_state, training_type="All"):
     
     @jit
-    def gaussian_likelihood(params:hk.Params, z:Array, mu_xz:Array, log_sigma_xz:Array):
+    def gaussian_likelihood(z:Array, mu_xz:Array, log_sigma_xz:Array):
         
         dim = mu_xz.shape[-1]
         diff = x-mu_xz
@@ -83,16 +83,22 @@ def vae_riemannian_loss(params:hk.Params, vae_state_val:dict, rng_key:Array, x:A
         
         loss = -0.5*(mu_term+var_term)
         
-        return jnp.mean(loss)
+        return loss
     
     @jit
-    def kl_divergence(params:hk.Params, s_logqzx:Array, s_logpz:Array):
+    def kl_divergence(z:Array, s_logqzx:Array, s_logpz:Array):
+
+        return jnp.einsum('...i,...i->...', s_logqzx, z)-jnp.einsum('...i,...i->...', s_logpz, z)
+    
+    @jit
+    def loss_fun(z:Array, mu_xz:Array, log_sigma_xz:Array, s_logqzx:Array, s_logpz:Array):
         
-        z, *_ = vae_apply_fn(params, x, rng_key, vae_state_val)
+        rec = gaussian_likelihood(z, mu_xz, log_sigma_xz)
+        kld = kl_divergence(z, s_logqzx, s_logpz)
         
-        return jnp.mean(jnp.einsum('...i,...i->...', s_logqzx, z)-jnp.einsum('...i,...i->...', s_logpz, z))
+        return jnp.mean(rec-kld)
             
-    z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z = vae_apply_fn(params, x, rng_key, vae_state_val)
+    z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z, *_ = vae_apply_fn(params, x, rng_key, vae_state_val)
     
     t_zx = jnp.exp(2*log_t_zx)
     t_z = jnp.exp(2*log_t_z)
@@ -114,11 +120,49 @@ def vae_riemannian_loss(params:hk.Params, vae_state_val:dict, rng_key:Array, x:A
         mu_xz = lax.stop_gradient(mu_xz)
         t_zx = lax.stop_gradient(t_zx)
         mu_zx = lax.stop_gradient(mu_zx)
-        
-    kl_grad = grad(kl_divergence)(params, s_logqzx, s_logpz)
-    rec_grad = grad(gaussian_likelihood)(params, z, mu_xz, log_sigma_xz)
-    
-    gradient = {layer: {name: kl_grad[layer][name]-rec_grad[layer][name] for name,w in val.items()} \
-                    for layer,val in kl_grad.items()}
+    loss = loss_fun(z, mu_xz, log_sigma_xz, s_logqzx, s_logpz)
 
-    return gradient
+    return loss
+
+#%% Denoising Score Matching First Order
+
+def dsm(s1_model:Callable[[Array, Array, Array], Array],
+        x0:Array,
+        xt:Array,
+        t:Array,
+        dW:Array,
+        dt:Array,
+        )->float:
+    
+    def f(x0,xt,t,dW,dt):
+        
+        s1 = s1_model(x0, xt, t)
+
+        loss = dW/dt+s1
+        
+        return jnp.sum(loss*loss)
+    
+    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
+
+#%% Variance Reduction Denoising Score Matching First Order
+
+def dsmvr(s1_model:object, 
+          x0:Array,
+          xt:Array,
+          t:Array,
+          dW:Array,
+          dt:Array,
+          )->float:
+    
+    def f(x0,xt,t,dW,dt):
+        
+        s1 = s1_model(x0,xt,t)
+        s1p = s1_model(x0,x0,t)
+        
+        l1_loss = dW/dt+s1
+        l1_loss = 0.5*jnp.dot(l1_loss,l1_loss)
+        var_loss = jnp.dot(s1p,dW)/dt+jnp.dot(dW,dW)/(dt**2)
+        
+        return l1_loss-var_loss
+    
+    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))

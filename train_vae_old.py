@@ -36,7 +36,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--score_loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--training_type', default="joint",
+    parser.add_argument('--training_type', default="score",
                         type=str)
     parser.add_argument('--sample_method', default="Local",
                         type=str)
@@ -153,14 +153,27 @@ def train():
                      )
     elif args.training_type == "score":
         vae_state = load_model(vae_save_path)
+        if type(vae_model) == hk.Transformed:
+            vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, rng_key, data)
+        elif type(vae_model) == hk.TransformedWithState:
+            vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, state_val, rng_key, data)[0]
+        data = next(vae_datasets.batch(args.vae_batch).as_numpy_iterator())
+        z, mu_xz, log_sigma_xz, mu_zx, log_t_zx, mu_z, log_t_z = vae_apply_fn(vae_state.params, jnp.array(data), 
+                                                                              vae_state.rng_key, 
+                                                                              vae_state.state_val)
+        x0s = z[jnp.round(jnp.linspace(0, len(z) - 1, args.score_repeats)).astype(int)]
+        max_T = jnp.maximum(2*jnp.exp(2*log_t_z[0]), 1.0).squeeze()
         pretrain_scores(score_model=score_model,
-                        vae_model = vae_model,
-                        data_generator=vae_datasets,
                         vae_state=vae_state,
-                        dim=args.latent_dim,
+                        decoder_model=decoder_model,
+                        x0s=x0s,
                         lr_rate = args.score_lr_rate,
-                        batch_size = args.vae_batch,
                         save_path = score_save_path,
+                        repeats=args.score_repeats,
+                        x_samples=args.score_x_samples,
+                        t_samples=args.score_t_samples,
+                        max_T=max_T,
+                        dt_steps=args.dt_steps,
                         training_type=args.score_loss_type,
                         score_state = None,
                         epochs=args.epochs,
@@ -180,11 +193,20 @@ def train():
         score_state = load_model(score_save_path)
         
         train_vaebm(vae_model=vae_model,
+                    decoder_model=decoder_model,
                     score_model=score_model,
                     vae_datasets=vae_datasets,
                     dim=args.latent_dim,
                     epochs=args.epochs,
+                    vae_epochs=args.vae_epochs,
+                    score_epochs=args.score_epochs,
                     vae_split=args.vae_split,
+                    lr_rate_vae=args.vae_lr_rate,
+                    lr_rate_score=args.score_lr_rate,
+                    score_repeats=args.score_repeats,
+                    score_x_samples=args.score_x_samples,
+                    score_t_samples=args.score_t_samples,
+                    dt_steps=args.dt_steps,
                     vae_optimizer = None,
                     score_optimizer = None,
                     vae_state=vae_state,
