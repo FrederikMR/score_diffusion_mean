@@ -21,15 +21,15 @@ python3 train_vae.py \
     --data Circle3D \
     --data_path data/vae/ \
     --score_loss_type dsmvr \
-    --training_type vae \
+    --training_type joint \
     --sample_method Local \
     --vae_lr_rate 0.0002 \
     --score_lr_rate 0.0002 \
     --latent_dim 2 \
     --epochs 50000 \
     --vae_batch 100 \
-    --use_pretrain_vae 1 \
-    --use_pretrain_score 1 \
+    --use_pretrain_vae 0 \
+    --use_pretrain_score 0 \
     --vae_split 0.0 \
     --dt_steps 1000 \
     --save_step 100 \

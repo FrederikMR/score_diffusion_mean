@@ -1,0 +1,16 @@
+Loaded dependency [python3/3.10.12]: gcc/11.4.0-binutils-2.40
+Loaded dependency [python3/3.10.12]: sqlite3/3.42.0
+
+Switching from python3/3.8.2 to python3/3.10.12
+  Loading requirement: gcc/11.4.0-binutils-2.40 sqlite3/3.42.0
+2024-04-09 08:51:13.402063: E tensorflow/compiler/xla/stream_executor/cuda/cuda_dnn.cc:9342] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2024-04-09 08:51:13.402102: E tensorflow/compiler/xla/stream_executor/cuda/cuda_fft.cc:609] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2024-04-09 08:51:13.402129: E tensorflow/compiler/xla/stream_executor/cuda/cuda_blas.cc:1518] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_vae.py", line 214, in <module>
+    train()
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_vae.py", line 189, in train
+    train_vaebm(vae_model=vae_model,
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/train_vaebm.py", line 295, in train_vaebm
+    initial_params = vae_model.init(jrandom.PRNGKey(seed), next(data_generator.batch(batch_size).repeat().as_numpy_iterator()))
+NameError: name 'data_generator' is not defined
