@@ -6,3 +6,12 @@ Switching from python3/3.8.2 to python3/3.10.12
 2024-04-09 11:19:18.496446: E tensorflow/compiler/xla/stream_executor/cuda/cuda_dnn.cc:9342] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
 2024-04-09 11:19:18.496488: E tensorflow/compiler/xla/stream_executor/cuda/cuda_fft.cc:609] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
 2024-04-09 11:19:18.505274: E tensorflow/compiler/xla/stream_executor/cuda/cuda_blas.cc:1518] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_vae.py", line 214, in <module>
+    
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_vae.py", line 156, in train
+    
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/train_vaebm.py", line 198, in pretrain_scores
+    score_state, loss = update_score(score_state, jnp.array(ds))
+  File "<string>", line 1, in <lambda>
+KeyboardInterrupt
