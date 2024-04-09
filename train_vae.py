@@ -36,7 +36,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--score_loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--training_type', default="vae",
+    parser.add_argument('--training_type', default="joint",
                         type=str)
     parser.add_argument('--sample_method', default="Local",
                         type=str)
@@ -50,9 +50,9 @@ def parse_args():
                         type=int)
     parser.add_argument('--vae_batch', default=100,
                         type=int)
-    parser.add_argument('--use_pretrain_vae', default=1,
+    parser.add_argument('--use_pretrain_vae', default=0,
                         type=int)
-    parser.add_argument('--use_pretrain_score', default=1,
+    parser.add_argument('--use_pretrain_score', default=0,
                         type=int)
     parser.add_argument('--vae_split', default=0.0,#0.33,
                         type=float)

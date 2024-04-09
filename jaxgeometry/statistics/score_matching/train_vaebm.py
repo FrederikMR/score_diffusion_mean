@@ -181,13 +181,13 @@ def pretrain_scores(score_model:object,
     
     if type(score_model) == hk.Transformed:
         if score_state is None:
-            initial_params = score_model.init(jrandom.PRNGKey(seed), 1.0*jnp.ones((batch_size,dim*2+1)))
+            initial_params = score_model.init(jrandom.PRNGKey(seed), 1.0*jnp.ones((2*batch_size,dim*2+1)))
             initial_opt_state = score_optimizer.init(initial_params)
             score_state = TrainingState(initial_params, None, initial_opt_state, initial_rng_key)
         score_apply_fn = lambda params, data, rng_key, state_val: score_model.apply(params, rng_key, data)
     elif type(score_model) == hk.TransformedWithState:
         if score_state is None:
-            initial_params, init_state = score_model.init(jrandom.PRNGKey(seed), 1.0*jnp.ones((batch_size,dim*2+1)))
+            initial_params, init_state = score_model.init(jrandom.PRNGKey(seed), 1.0*jnp.ones((2*batch_size,dim*2+1)))
             initial_opt_state = score_optimizer.init(initial_params)
             score_state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
         score_apply_fn = lambda params, data, rng_key, state_val: score_model.apply(params, state_val, rng_key, data)[0]
@@ -292,13 +292,13 @@ def train_vaebm(vae_model:object,
     initial_rng_key = jrandom.PRNGKey(seed)
     if type(vae_model) == hk.Transformed:
         if vae_state is None:
-            initial_params = vae_model.init(jrandom.PRNGKey(seed), next(vae_datasets.batch(batch_size).repeat().as_numpy_iterator()))
+            initial_params = vae_model.init(jrandom.PRNGKey(seed), next(vae_datasets.batch(vae_batch_size).repeat().as_numpy_iterator()))
             initial_opt_state = vae_optimizer.init(initial_params)
             vae_state = TrainingState(initial_params, None, initial_opt_state, initial_rng_key)
         vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, rng_key, data)
     elif type(vae_model) == hk.TransformedWithState:
         if vae_state is None:
-            initial_params, init_state = vae_model.init(jrandom.PRNGKey(seed), next(vae_datasets.batch(batch_size).repeat().as_numpy_iterator()))
+            initial_params, init_state = vae_model.init(jrandom.PRNGKey(seed), next(vae_datasets.batch(vae_batch_size).repeat().as_numpy_iterator()))
             initial_opt_state = vae_optimizer.init(initial_params)
             vae_state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
         vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, state_val, rng_key, data)[0]
@@ -307,13 +307,13 @@ def train_vaebm(vae_model:object,
         
     if type(score_model) == hk.Transformed:
         if score_state is None:
-            initial_params = score_model.init(jrandom.PRNGKey(seed), 1.0*jnp.ones((batch_size,dim*2+1)))
+            initial_params = score_model.init(jrandom.PRNGKey(seed), 1.0*jnp.ones((2*vae_batch_size,dim*2+1)))
             initial_opt_state = score_optimizer.init(initial_params)
             score_state = TrainingState(initial_params, None, initial_opt_state, initial_rng_key)
         score_apply_fn = lambda params, data, rng_key, state_val: score_model.apply(params, rng_key, data)
     elif type(score_model) == hk.TransformedWithState:
         if score_state is None:
-            initial_params, init_state = score_model.init(jrandom.PRNGKey(seed), 1.0*jnp.ones((batch_size,dim*2+1)))
+            initial_params, init_state = score_model.init(jrandom.PRNGKey(seed), 1.0*jnp.ones((2*vae_batch_size,dim*2+1)))
             initial_opt_state = score_optimizer.init(initial_params)
             score_state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
         score_apply_fn = lambda params, data, rng_key, state_val: score_model.apply(params, state_val, rng_key, data)[0]
@@ -344,8 +344,6 @@ def train_vaebm(vae_model:object,
             ds = jnp.array(ds)
             score_state, score_loss = update_score(score_state, ds)
             vae_state, vae_loss = update_vae(vae_state, ds, training_type="All")
-            print(score_loss)
-            print(vae_loss)
             save_model(score_path, score_state)
             save_model(vae_path, vae_state)
     if (step+1) % save_step == 0:
