@@ -292,13 +292,13 @@ def train_vaebm(vae_model:object,
     initial_rng_key = jrandom.PRNGKey(seed)
     if type(vae_model) == hk.Transformed:
         if vae_state is None:
-            initial_params = vae_model.init(jrandom.PRNGKey(seed), next(vae_datasets.batch(vae_batch_size)))
+            initial_params = vae_model.init(jrandom.PRNGKey(seed), next(data_generator.batch(batch_size).repeat().as_numpy_iterator()))
             initial_opt_state = vae_optimizer.init(initial_params)
             vae_state = TrainingState(initial_params, None, initial_opt_state, initial_rng_key)
         vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, rng_key, data)
     elif type(vae_model) == hk.TransformedWithState:
         if vae_state is None:
-            initial_params, init_state = vae_model.init(jrandom.PRNGKey(seed), next(vae_datasets.batch(vae_batch_size)))
+            initial_params, init_state = vae_model.init(jrandom.PRNGKey(seed), next(data_generator.batch(batch_size).repeat().as_numpy_iterator()))
             initial_opt_state = vae_optimizer.init(initial_params)
             vae_state = TrainingState(initial_params, init_state, initial_opt_state, initial_rng_key)
         vae_apply_fn = lambda params, data, rng_key, state_val: vae_model.apply(params, state_val, rng_key, data)[0]
