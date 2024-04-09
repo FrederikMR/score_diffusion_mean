@@ -82,6 +82,7 @@ def train():
         sample_method = "Euclidean"
     else:
         sample_method = args.sample_method
+    sample_method = args.sample_method
     
     if args.data == "Circle3D":
         X = jnp.load(''.join((args.data_path, f'{args.data}.npy')))
@@ -117,7 +118,7 @@ def train():
             decoder = Decoder()
           
             return decoder(z)
-        
+    
     vae_save_path = ''.join((args.vae_save_path, args.data, '/'))
     score_save_path = ''.join((args.score_save_path, args.data, '/'))
     save_path = ''.join((args.save_path, args.data, '/'))
