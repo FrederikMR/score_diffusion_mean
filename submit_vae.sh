@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J Circle3D_joint
+#BSUB -J Circle3D_score
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
@@ -21,14 +21,14 @@ python3 train_vae.py \
     --data Circle3D \
     --data_path data/vae/ \
     --score_loss_type dsmvr \
-    --training_type joint \
+    --training_type score \
     --sample_method Local \
     --vae_lr_rate 0.0002 \
     --score_lr_rate 0.0002 \
     --latent_dim 2 \
     --epochs 50000 \
     --vae_batch 100 \
-    --use_pretrain_vae 0 \
+    --use_pretrain_vae 1 \
     --use_pretrain_score 0 \
     --vae_split 0.0 \
     --dt_steps 1000 \
