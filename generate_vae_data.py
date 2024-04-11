@@ -28,7 +28,7 @@ def parse_args():
     # File-paths
     parser.add_argument('--data', default="Circle3D",
                         type=str)
-    parser.add_argument('--std', default=0.1,
+    parser.add_argument('--std', default=0.01,
                         type=float)
     parser.add_argument('--N_data', default=50000,
                         type=int)
