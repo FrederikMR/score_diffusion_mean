@@ -38,7 +38,7 @@ from load_manifold import load_manifold
 #jaxgeometry
 from jaxgeometry.manifolds import *
 from jaxgeometry.statistics.score_matching import train_s1, train_s2, train_s1s2, TMSampling, LocalSampling, \
-    EmbeddedSampling, ProjectionSampling
+    EmbeddedSampling, ProjectionSampling, RiemannianBrownianGenerator
 from jaxgeometry.statistics.score_matching.model_loader import load_model
 from ManLearn.train_MNIST import load_dataset as load_mnist
 
@@ -47,7 +47,7 @@ from ManLearn.train_MNIST import load_dataset as load_mnist
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Euclidean",
+    parser.add_argument('--manifold', default="Sphere",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
@@ -63,7 +63,7 @@ def parse_args():
                         type=float)
     parser.add_argument('--gamma', default=1.0,
                         type=float)
-    parser.add_argument('--train_net', default="s2",
+    parser.add_argument('--train_net', default="s1",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
@@ -73,7 +73,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--x_samples', default=32,
                         type=int)
-    parser.add_argument('--t_samples', default=128,#128
+    parser.add_argument('--t_samples', default=128,
                         type=int)
     parser.add_argument('--repeats', default=8,
                         type=int)
@@ -145,68 +145,30 @@ def train_score()->None:
         
     if not os.path.exists('scores/error/'):
         os.makedirs('scores/error/')
-    
-    if args.T_sample:
-        batch_size = args.x_samples*args.repeats
-    else:
-        batch_size = args.x_samples*args.t_samples*args.repeats
         
-    if sampling_method == 'LocalSampling':
-        data_generator = LocalSampling(M=M,
-                                       x0=x0,
-                                       repeats=args.repeats,
-                                       x_samples=args.x_samples,
-                                       t_samples=args.t_samples,
-                                       N_sim=N_sim,
-                                       max_T=args.max_T,
-                                       dt_steps=args.dt_steps,
-                                       T_sample=args.T_sample,
-                                       t=args.t
-                                       )
-    elif sampling_method == "EmbeddedSampling":
-        data_generator = EmbeddedSampling(M=M,
-                                          x0=x0,
-                                          repeats=args.repeats,
-                                          x_samples=args.x_samples,
-                                          t_samples=args.t_samples,
-                                          N_sim=N_sim,
-                                          max_T=args.max_T,
-                                          dt_steps=args.dt_steps,
-                                          T_sample=args.T_sample,
-                                          t=args.t
-                                          )
-    elif sampling_method == "ProjectionSampling":
-        data_generator = ProjectionSampling(M=M,
-                                            x0=(x0[1],x0[0]),
-                                            dim=generator_dim,
-                                            repeats=args.repeats,
-                                            x_samples=args.x_samples,
-                                            t_samples=args.t_samples,
-                                            N_sim=N_sim,
-                                            max_T=args.max_T,
-                                            dt_steps=args.dt_steps,
-                                            T_sample=args.T_sample,
-                                            t=args.t
-                                            )
-    elif sampling_method == "TMSampling":
-        data_generator = TMSampling(M=M,
-                                    x0=(x0[1],x0[0]),
-                                    dim=generator_dim,
-                                    Exp_map=lambda x, v: M.ExpEmbedded(x[0],v),
-                                    repeats=args.repeats,
-                                    x_samples=args.x_samples,
-                                    t_samples=args.t_samples,
-                                    N_sim=N_sim,
-                                    max_T=args.max_T,
-                                    dt_steps=args.dt_steps,
-                                    T_sample=args.T_sample,
-                                    t=args.t
-                                    )
+    if args.T_sample:
+        t0 = args.t
+    else:
+        t0 = 0.0
+        
+    data_generator = RiemannianBrownianGenerator(M=M,
+                                                 x0 = x0,
+                                                 dim = generator_dim,
+                                                 Exp_map = lambda x, v: M.ExpEmbedded(x[0],v),
+                                                 repeats = args.repeats,
+                                                 x_samples = args.x_samples,
+                                                 t_samples = args.t_samples,
+                                                 T = args.max_T,
+                                                 dt_steps = args.dt_steps,
+                                                 t0 = t0,
+                                                 method = sampling_method,
+                                                 seed = args.seed
+                                                 )
 
     if args.train_net == "s2":
         state = load_model(s1_path)
-        rng_key = jran.PRNGKey(2712)
-        s1 = lambda x,y,t: s1_model.apply(state.params,rng_key, jnp.hstack((x, y, t)))
+        rng_key = jran.PRNGKey(args.seed)
+        s1 = lambda x,y,t: s1_model.apply(state.params,rng_key, jnp.hstack((x, y, t.reshape(-1,1))))
         
         if args.load_model:
             state_s2 = load_model(s1_path)
@@ -220,9 +182,6 @@ def train_score()->None:
                  s1_model=s1,
                  s2_model=s2_model,
                  generator=data_generator,
-                 N_dim=generator_dim,
-                 dW_dim=generator_dim,
-                 batch_size=batch_size,
                  state=state_s2,
                  lr_rate=args.lr_rate,
                  epochs=args.epochs,
@@ -249,9 +208,6 @@ def train_score()->None:
         train_s1s2(M=M,
                  s1s2_model=s1s2_model,
                  generator=data_generator,
-                 N_dim=generator_dim,
-                 dW_dim=generator_dim,
-                 batch_size=batch_size,
                  state=state_s1s2,
                  s1_params=state_s1_params,
                  lr_rate=args.lr_rate,
@@ -274,9 +230,6 @@ def train_score()->None:
         train_s1(M=M,
                  model=s1_model,
                  generator=data_generator,
-                 N_dim=generator_dim,
-                 dW_dim=generator_dim,
-                 batch_size=batch_size,
                  state =state,
                  lr_rate=args.lr_rate,
                  epochs=args.epochs,

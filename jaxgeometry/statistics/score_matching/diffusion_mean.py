@@ -69,6 +69,7 @@ def diffusion_mean(M:object,
                                                      grad_fn_rm = lambda y,t: gradx_loss(X_obs, y, t),
                                                      grad_fn_euc = lambda y,t: gradt_loss(X_obs, y, t),
                                                      max_iter=max_iter,
+                                                     lr_rate = step_size,
                                                      bnds_euc=(0.0+1e-3,1.0 ),
                                                      )
         
@@ -76,11 +77,13 @@ def diffusion_mean(M:object,
                                                  M,
                                                  grad_fn=lambda y: gradx_loss(X_obs, y, t),
                                                  max_iter=max_iter,
+                                                 lr_rate = step_size,
                                                  )
         M.sm_dmt = lambda X_obs, x0, t, step_size=0.1, max_iter=1000: JaxOpt(t,
                                                M,
                                                grad_fn = lambda t: gradt_loss(X_obs, x0, t),
                                                max_iter=max_iter,
+                                               lr_rate = step_size,
                                                bnds=(0.0+1e-3,1.0),
                                                )
     elif method == "Gradient":

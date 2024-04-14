@@ -27,13 +27,12 @@ class MLP_s1(hk.Module):
     
     dim:int
     layers:list
-    init:hk.initializers.Initializer = hk.initializers.RandomNormal(stddev=0.1, mean=0.)
     
     def model(self)->object:
         
         model = []
         for l in self.layers:
-            model.append(hk.Linear(l, w_init=self.init, b_init=self.init))
+            model.append(hk.Linear(l, w_init=jnp.zeros, b_init=jnp.zeros))
             model.append(tanh)
             
         model.append(hk.Linear(self.dim))
@@ -62,13 +61,12 @@ class MLP_s2(hk.Module):
     layers_beta:list
     dim:int = 2
     r:int = max(dim // 2,1)
-    init:hk.initializers.Initializer = hk.initializers.RandomNormal(stddev=0.1, mean=0.)
     
     def model_alpha(self)->object:
         
         model = []
         for l in self.layers_alpha:
-            model.append(hk.Linear(l, w_init=self.init, b_init=self.init))
+            model.append(hk.Linear(l, w_init=jnp.zeros, b_init=jnp.zeros))
             model.append(tanh)
             
         model.append(hk.Linear(self.dim))
@@ -79,7 +77,7 @@ class MLP_s2(hk.Module):
         
         model = []
         for l in self.layers_beta:
-            model.append(hk.Linear(l, w_init=self.init, b_init=self.init))
+            model.append(hk.Linear(l, w_init=jnp.zeros, b_init=jnp.zeros))
             model.append(tanh)
             
         model.append(lambda x: hk.Linear(self.dim*self.r)(x).reshape(-1,self.dim,self.r))
@@ -108,13 +106,12 @@ class MLP_diags2(hk.Module):
     layers_beta:list
     dim:int = 2
     r:int = max(dim // 2,1)
-    init:hk.initializers.Initializer = hk.initializers.RandomNormal(stddev=0.1, mean=0.)
     
     def model_alpha(self)->object:
         
         model = []
         for l in self.layers_alpha:
-            model.append(hk.Linear(l, w_init=self.init, b_init=self.init))
+            model.append(hk.Linear(l, w_init=jnp.zeros, b_init=jnp.zeros))
             model.append(tanh)
             
         model.append(hk.Linear(self.dim))
@@ -123,17 +120,13 @@ class MLP_diags2(hk.Module):
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         
-        alpha = self.model_alpha()(x).reshape(-1,self.dim)
+        diag = self.model_alpha()(x).reshape(-1,self.dim)
         
         shape = list(x.shape)
         shape[-1] = 1
         t = x.T[-1].reshape(shape)
-        
-        diag = vmap(lambda x: jnp.diag(x))(alpha)
 
-        hess_rn = -jnp.einsum('ij,...i->...ij', jnp.eye(self.dim), 1/t)
-        
-        return diag.squeeze()+hess_rn.squeeze()
+        return (diag-(1/t).reshape(-1,1)).squeeze()
             
 @dataclasses.dataclass
 class MLP_s1s2(hk.Module):

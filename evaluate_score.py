@@ -12,7 +12,7 @@ Created on Fri Feb  9 13:30:00 2024
 
 #jax
 import jax.numpy as jnp
-import jax.random as jran
+import jax.random as jrandom
 
 #argparse
 import argparse
@@ -52,7 +52,7 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="HypParaboloid",
+    parser.add_argument('--manifold', default="Sphere",
                         type=str)
     parser.add_argument('--dim', default=[2],
                         type=List)
@@ -66,7 +66,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--s2_type', default="s2",
                         type=str)
-    parser.add_argument('--method', default="Gradient",
+    parser.add_argument('--method', default="JAX",
                         type=str)
     parser.add_argument('--data_path', default='../data/',
                         type=str)
@@ -194,23 +194,21 @@ def evaluate_diffusion_mean():
         else:
             mu_opt, T_opt = x0, 0.5
 
+        rng_key = jrandom.PRNGKey(args.seed)
+        s1_fun = lambda x,y,t: s1_model.apply(s1_state.params, rng_key, jnp.hstack((x,y,t)))
+        if args.s2_approx:
+            s2_fun = lambda x,y,t: s2_model.apply(s2_state.params, rng_key, jnp.hstack((x,y,t)))
+        else:
+            s2_fun = None
+
         ScoreEval = ScoreEvaluation(M, 
-                                    s1_model= s1_model,#s1_model_test2,#s1_model_test2,#s1_model, 
-                                    s1_state=s1_state,#None,#s1_state,#s1_state, 
-                                    s2_model=s2_model,#s2_model_test2, 
-                                    s2_state=s2_state,#None,#s2_state,#s2_state,
-                                    s2_approx=args.s2_approx,#args.s2_approx, 
+                                    s1_model= s1_fun, 
+                                    s2_model=s2_fun,#s2_model_test2, 
                                     method=method, 
-                                    seed=args.seed
                                     )
-        
-        #if ((method == "Embedded") and (args.s2_approx)):
-        #    dm_score(M, s1_model=ScoreEval.grady_log, 
-        #             s2_model = lambda x,y,t: ScoreEval.gradt_log(y,x,t), 
-        #             method=args.method)
-        #else:
+
         dm_score(M, 
-                 s1_model=ScoreEval.grady_log,#lambda x,y,t: M.grady_log_hk(x,y,t)[0], #s1_model=ScoreEval.grady_log, 
+                 s1_model=ScoreEval.grady_log,
                  s2_model = ScoreEval.gradt_log, method=args.method)
         if args.fixed_time:
             mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
@@ -224,19 +222,13 @@ def evaluate_diffusion_mean():
         else:
             mu_sm, T_sm, gradx_sm, gradt_sm = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                    step_size=args.step_size, max_iter=args.max_iter)
-            print(T_opt)
-            print(T_sm[-1])
-            print(gradt_sm[-1])
-            print(mu_sm[1][-1])
-            print(mu_sm[0][-1])
-            print(gradx_sm[-1])
             time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                                  number=1, globals=locals(), repeat=args.repeats)
             score_mu_time.append(jnp.mean(jnp.array(time)))
             score_std_time.append(jnp.std(jnp.array(time)))
             #mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]))
-            
+
         if args.bridge_sampling:
             (thetas,chart,log_likelihood,log_likelihoods,mu_bridge) = M.diffusion_mean(X_obs,
                                                                                        num_steps=args.bridge_iter, 
@@ -268,8 +260,7 @@ def evaluate_diffusion_mean():
             
             bridge_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_bridgechart[-1])/D)
             bridge_t_error.append(jnp.linalg.norm(T_opt-T_bridge[-1]))
-    print(score_mu_error)
-    print(score_t_error)
+
     error = {'score_mu_error': jnp.stack(score_mu_error),
              'bridge_mu_error': jnp.stack(bridge_mu_error),
              'score_t_error': jnp.stack(score_t_error),

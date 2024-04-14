@@ -32,6 +32,7 @@ import jax.numpy as jnp
 import jax.scipy as jscipy
 import jax.scipy.optimize as jopt
 import jax.random as jrandom
+from jax import dlpack
 
 #JAX Optimization
 from jax.example_libraries import optimizers

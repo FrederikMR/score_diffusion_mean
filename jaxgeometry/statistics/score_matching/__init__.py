@@ -11,11 +11,11 @@ Created on Tue Sep 12 15:13:58 2023
 #%% Modules
 
 from .trainxt import train_s1, train_s2, train_s1s2
-from .generators import LocalSampling, EmbeddedSampling, TMSampling, ProjectionSampling
+from .generators import LocalSampling, EmbeddedSampling, TMSampling, ProjectionSampling, RiemannianBrownianGenerator, ScorePaths
 from .diffusion_mean import diffusion_mean
 from .model_loader import save_model, load_model
 from .score_evaluation import ScoreEvaluation
 from .mlgr import MLGeodesicRegression
-from .train_vaebm import train_vaebm, pretrain_vae, pretrain_scores
+from .loss_fun import vsm_s1, dsm_s1, dsmvr_s1, dsm_s2, dsmdiag_s2, dsmvr_s2, dsmdiagvr_s2
 
 #%% Code

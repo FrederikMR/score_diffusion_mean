@@ -18,6 +18,338 @@ from jaxgeometry.autodiff import jacfwdx
 from jaxgeometry.integration import dts, dWs, integrator_stratonovich, integrator_ito
 from jaxgeometry.stochastics import tile, product_sde, Brownian_coords, brownian_projection, GRW, \
     product_grw
+    
+#%% Data Class
+
+class ScorePaths(NamedTuple):
+    x0:Array
+    xt:Array
+    t:Array
+    dW:Array
+    dt:Array
+    
+#%% Riemannian Brownian Generator
+
+class RiemannianBrownianGenerator(object):
+    def __init__(self,
+                 M:object,
+                 x0:Tuple[Array,Array],
+                 dim:int=None,
+                 Exp_map:Callable[[Tuple[Array,Array], Array], Array]=None,
+                 repeats:int=2**3,
+                 x_samples:int=2**5,
+                 t_samples:int=2**7,
+                 T:float=1.0,
+                 dt_steps:int=1000,
+                 t0:float=0.0,
+                 method:str='Local',
+                 seed:int=2712,
+                 )->None:
+        
+        if method not in ['Local', 'Embedded', 'TM', 'Projection']:
+            raise ValueError(f"Passed method, {method}, is not: Local, Embedded, TM or Projection")
+        else:
+            self.method = method
+            
+        if dim is None:
+            self.dim = M.dim
+        else:
+            self.dim = dim
+            
+        if method in ['Projection', 'TM']:
+            x0 = (x0[1], x0[0])
+        
+        if x0[0].ndim == 1:
+            x0s = tile(x0, repeats)
+        else:
+            x0s = x0
+        self.x0s = x0s
+        self.x0s_default = x0s
+        
+        self.M = M
+        self.repeats = repeats
+        self.x_samples = x_samples
+        self.t_samples = t_samples
+        self.N_sim = repeats*x_samples
+        self.T = T
+        self.dt_steps = dt_steps
+        self.dt = jnp.array([T/dt_steps]*dt_steps)
+        self.sqrtdt = jnp.sqrt(self.dt)
+        self.t0 = t0
+        self.key = jrandom.key(seed)
+        
+        if self.method in ["Local", "Embedded"]:
+            Brownian_coords(M)
+            (product, sde_product, chart_update_product) = product_sde(M, 
+                                                                       M.sde_Brownian_coords, 
+                                                                       M.chart_update_Brownian_coords)
+        elif self.method == "TM":
+            if Exp_map is not None:
+                GRW(M, f_fun = lambda x,v: M.ExpEmbedded(x[0], v))
+                (product,sde_product,chart_update_product) = product_sde(M, 
+                                                                         M.sde_grw, 
+                                                                         M.chart_update_grw,
+                                                                         lambda a,b: integrator_ito(a,b,lambda x,v: vmap(lambda x,y,v: M.ExpEmbedded(x,v))(x[0],x[1],v)))
+            else:
+                GRW(M, f_fun = lambda x,v: M.Exp(x, v))
+                (product,sde_product,chart_update_product) = product_sde(M, 
+                                                                         M.sde_grw, 
+                                                                         M.chart_update_grw,
+                                                                         lambda a,b: integrator_ito(a,b,lambda x,v: vmap(lambda x,y,v: M.Exp((x,y),v))(x[0],x[1],v)))
+        elif self.method == "Projection":
+            brownian_projection(M)
+            (product,sde_product,chart_update_product) = product_sde(M, 
+                                                                     M.sde_brownian_projection, 
+                                                                     M.chart_update_brownian_projection, 
+                                                                     integrator_stratonovich)
+            
+            
+        self.product = product
+        
+        return
+    
+    def __str__(self)->str:
+        
+        return "Generator Object with Riemannian Brownian Motion paths"
+    
+    def update_coords(self, Fx:Array)->Tuple[Array,Array]:
+        
+        if self.method == "Local":
+            chart = vmap(self.M.centered_chart)(Fx)
+            return (Fx,chart)
+        else:
+            return (vmap(lambda x: self.M.invF((x,x)))(Fx),Fx)
+    
+    def dWs(self, N_sim:int)->Array:
+        
+        keys = jrandom.split(self.key,num=2)
+        self.key = keys[0]
+        subkeys = keys[1:]
+        
+        normal = jrandom.normal(subkeys[0],(self.dt_steps,N_sim))
+        
+        return jnp.einsum('...,...j->...j', self.sqrtdt, normal)
+        
+    def grad_local(self,
+                   x:Array,
+                   v:Array
+                   )->Array:
+        
+        if self.method == "Local":
+            return v
+        else:
+            x = self.update_coords(x)
+            Jf = vmap(lambda x,c: self.M.JF((x,c)))(x[0],x[1])
+            return jnp.einsum('...ij,...i->...j', Jf, v)
+    
+    def grad_TM(self,
+                x:Array,
+                v:Array
+                )->Array:
+        
+        if self.method == "Local":
+            return v
+        else:
+            return vmap(lambda x,v: self.M.proj(x, v))(x,v)
+        
+    def hess_local(self,
+                   x:Array,
+                   v:Array,
+                   h:Array
+                   )->Array:
+        
+        if self.method == "Local":
+            return h
+        else:
+            x = self.update_coords(x)
+            val1 = vmap(lambda x,c: self.M.JF((x,c)))(x[0],x[1])
+            val2 = vmap(lambda x,c: jacfwdx(self.M.JF)((x,c)))(x[0],x[1])
+            term1 = jnp.einsum('...jl,...li,...jk->...ik', h, val1, val1)
+            term2 = jnp.einsum('...j,...jik', v, val2)
+            return term1+term2
+
+    def hess_TM(self,
+                x:Array,
+                v:Array,
+                h:Array
+                )->Array:
+        
+        if self.method == "Local":
+            h
+        else:
+            val1 = vmap(lambda x,h: self.M.proj(x, h))(x,h)
+            val2 = v-vmap(lambda x,v: self.M.proj(x, v))(x,v)
+            val3 = vmap(lambda x,v: jacfwd(lambda Fx: self.M.proj(Fx, v))(x))(x,val2)
+            return val1+val3
+
+    def sim_diffusion_means(self, N_sim:int)->Tuple[Array, Array]:
+        
+        return
+    
+    def sample_local(self)->ScorePaths:
+            
+        dW = self.dWs(self.N_sim*self.M.dim).reshape(self.dt_steps,self.N_sim,self.M.dim)
+        (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
+                                            jnp.repeat(self.x0s[1],self.x_samples,axis=0)),
+                                      self.dt,dW,jnp.repeat(1.,self.N_sim))
+        
+        Fx0s = self.x0s[0]
+        self.x0s = (xss[-1,::self.x_samples],chartss[-1,::self.x_samples])
+        
+        if jnp.isnan(jnp.sum(xss)):
+            self.x0s = self.x0s_default
+        
+        if self.t0 > 0:
+            inds = jnp.argmin(jnp.abs(ts-self.t0))
+            ts = ts[inds]
+            samples = xss[inds]
+            
+            x0 = jnp.repeat(Fx0s,self.x_samples,axis=0)
+            xt = samples.reshape(-1,self.M.dim)
+            t = jnp.repeat(ts,self.N_sim).reshape((-1,1))
+            dW = dW[inds].reshape(-1,self.M.dim)
+            dt = jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1))
+        else:
+            inds = jnp.array(random.sample(range(self.dt_steps), self.t_samples))
+            ts = ts[inds]
+            samples = xss[inds]
+            
+            x0 = jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.t_samples,1))
+            xt = samples.reshape(-1,self.M.dim)
+            t = jnp.repeat(ts,self.N_sim).reshape((-1,1))
+            dW = dW[inds].reshape(-1,self.M.dim)
+            dt = jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1))
+            
+        return ScorePaths(x0,xt,t,dW,dt)
+    
+    def sample_embedded(self)->ScorePaths:
+        
+        dW = self.dWs(self.N_sim*self.M.dim).reshape(-1,self.N_sim,self.M.dim)
+        (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
+                                            jnp.repeat(self.x0s[1],self.x_samples,axis=0)),
+                                      self.dt,dW,jnp.repeat(1.,self.N_sim))
+
+        Fx0s = vmap(lambda x,chart: self.M.F((x,chart)))(*self.x0s)
+        self.x0s = (xss[-1,::self.x_samples],chartss[-1,::self.x_samples])
+        
+        if jnp.isnan(jnp.sum(xss)):
+            self.x0s = self.x0s_default
+       
+        if self.t0 > 0.0:
+            inds = jnp.argmin(jnp.abs(ts-self.t0))
+            ts = ts[inds]
+            samples = xss[inds]
+            charts = chartss[inds]
+            
+            x0 = jnp.repeat(Fx0s,self.x_samples,axis=0)
+            xt = vmap(lambda x,chart: self.M.F((x,chart)))(samples.reshape((-1,self.M.dim)),
+                                                      charts.reshape((-1,chartss.shape[-1])))
+            t = jnp.repeat(ts,self.N_sim).reshape((-1,1))
+            dW = dW[inds].reshape(-1,self.M.dim)
+            dt = jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1))
+        else:
+            inds = jnp.array(random.sample(range(self.dt_steps), self.t_samples))
+            ts = ts[inds]
+            samples = xss[inds]
+            charts = chartss[inds]
+            
+            x0 = jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.t_samples,1))
+            xt = vmap(lambda x,chart: self.M.F((x,chart)))(samples.reshape((-1,self.M.dim)),
+                                                 charts.reshape((-1,chartss.shape[-1])))
+            t = jnp.repeat(ts,self.N_sim).reshape((-1,1))
+            dW = dW[inds].reshape(-1,self.M.dim)
+            dt = jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1))
+        
+        return ScorePaths(x0,xt,t,dW,dt)
+    
+    def sample_tm(self)->ScorePaths:
+        
+        dW = self.dWs(self.N_sim*self.dim).reshape(-1,self.N_sim,self.dim)
+        (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
+                                            jnp.repeat(self.x0s[1],self.x_samples,axis=0)),
+                                      self.dt,dW,jnp.repeat(1.,self.N_sim))
+        
+        Fx0s = self.x0s[0]
+        self.x0s = (xss[-1,::self.x_samples],chartss[-1,::self.x_samples])
+        
+        if jnp.isnan(jnp.sum(xss)):
+            self.x0s = self.x0s_default
+        
+        if self.t0>0.0:
+            inds = jnp.argmin(jnp.abs(ts-self.t0))
+            ts = ts[inds]
+            samples = xss[inds]
+            
+            x0 = jnp.repeat(Fx0s,self.x_samples,axis=0)
+            xt = samples.reshape(-1,self.dim)
+            t = jnp.repeat(ts,self.N_sim).reshape((-1,1))
+            dW = dW[inds].reshape(-1,self.dim)
+            dt = jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1))
+        
+        else:
+            inds = jnp.array(random.sample(range(self.dt_steps), self.t_samples))
+            ts = ts[inds]
+            samples = xss[inds]
+            
+            x0 = jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.t_samples,1))
+            xt = samples.reshape(-1,self.dim)
+            t = jnp.repeat(ts,self.N_sim).reshape((-1,1))
+            dW = dW[inds].reshape(-1,self.dim)
+            dt = jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1))
+            
+        return ScorePaths(x0,xt,t,dW,dt)
+    
+    def sample_projection(self)->ScorePaths:
+        
+        dW = self.dWs(self.N_sim*self.dim).reshape(-1,self.N_sim,self.dim)
+        (ts,chartss,xss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
+                                            jnp.repeat(self.x0s[1],self.x_samples,axis=0)),
+                                      self.dt,dW,jnp.repeat(1.,self.N_sim))
+
+        Fx0s = vmap(lambda x,chart: self.M.F((x,chart)))(self.x0s[1], self.x0s[0]) #x0s[1]
+        self.x0s = (chartss[-1,::self.x_samples], xss[-1,::self.x_samples])
+            
+        if jnp.isnan(jnp.sum(xss)):
+            self.x0s = self.x0s_default
+       
+        if self.t0>0.0:
+            inds = jnp.argmin(jnp.abs(ts-self.t0))
+            ts = ts[inds]
+            samples = xss[inds]
+            charts = chartss[inds]
+            
+            x0 = jnp.repeat(Fx0s,self.x_samples,axis=0)
+            xt = vmap(lambda x,chart: self.M.F((x,chart)))(samples.reshape((-1,self.M.dim)),
+                                                      charts.reshape((-1,chartss.shape[-1])))
+            dW = jnp.repeat(ts,self.N_sim).reshape((-1,1))
+            dt = jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1))
+        else:
+            inds = jnp.array(random.sample(range(self.dt_steps), self.t_samples))
+            ts = ts[inds]
+            samples = xss[inds]
+            charts = chartss[inds]
+            
+            x0 = jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.t_samples,1))
+            xt = vmap(lambda x,chart: self.M.F((x,chart)))(samples.reshape((-1,self.M.dim)),
+                                                 charts.reshape((-1,chartss.shape[-1])))
+            t = jnp.repeat(ts,self.N_sim).reshape((-1,1))
+            dW = dW[inds].reshape(-1,self.dim)
+            dt = jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1))
+            
+        return ScorePaths(x0,xt,t,dW,dt)
+    
+    def __call__(self)->ScorePaths:
+        
+        while True:
+            if self.method == "Local":
+                yield self.sample_local()
+            elif self.method == "Embedded":
+                yield self.sample_embedded()
+            elif self.method == "TM":
+                yield self.sample_tm()
+            elif self.method == "Projection":
+                yield self.sample_projection()
+
 
 #%% Local Coordinates
 
@@ -120,7 +452,7 @@ class LocalSampling(object):
             
     def update_coords(self, Fx:Array)->Tuple[Array,Array]:
         
-        chart = self.M.centered_chart(Fx)
+        chart = vmap(self.M.centered_chart)(Fx)
         
         return (Fx,chart)
     
@@ -136,11 +468,14 @@ class LocalSampling(object):
     def grad_local(self,
                    s1_model:Callable[[Array, Array, Array], Array], 
                    x0:Array, 
-                   x:Tuple[Array,Array], 
+                   xt:Array, 
                    t:Array
                    )->Array:
         
-        return s1_model(x0, x[0], t)
+        if x0.ndim == 1:
+            return s1_model(x0.reshape(1,-1), xt[0].reshape(1,-1), t).squeeze()
+        else:        
+            return s1_model(x0, xt[0], t)
     
     def proj_hess(self,s1_model:Callable[[Array, Array, Array], Array], 
                    s2_model:Callable[[Array, Array, Array], Array],
@@ -695,282 +1030,3 @@ class ProjectionSampling(object):
                 )->Array:
         
         return dW
-
-#%% VAE Sampling
-
-class VAESampling(object):
-    
-    def __init__(self,
-                 F:Callable[[Array],Array],
-                 x0:Array,
-                 method:str='Local',
-                 repeats:int=2**3,
-                 x_samples:int=2**5,
-                 t_samples:int=2**7,
-                 N_sim:int=2**8,
-                 max_T:float=1.0,
-                 dt_steps:int=1000,
-                 seed:int=2712
-                 )->None:
-        
-        self.F = F
-        self.x_samples=x_samples
-        self.dim = x0.shape[-1]
-        self.t_samples = t_samples
-        self.N_sim = N_sim
-        self.max_T = max_T
-        self.dt_steps = dt_steps
-        self.repeats = repeats
-        if x0.ndim == 1:
-            self.x0s = jnp.tile(x0, (repeats,1))
-        else:
-            self.x0s = x0
-        self.x0s_default = self.x0s
-        dt = self.dts(T=self.max_T, n_steps=self.dt_steps)
-        self.dt = dt
-        self.t_grid = jnp.cumsum(dt)
-        self.dt_tile = jnp.tile(dt, (self.N_sim,1))
-        self.method = method
-        self.key = jrandom.key(seed)
-        
-        return
-        
-    def __str__(self)->str:
-        
-        return "Generating Samples for Brownian Motion on Manifolds in Local Coordinates for VAE"
-    
-    def dts(self, T:float=1.0,n_steps:int=n_steps)->Array:
-        """time increments, deterministic"""
-        return jnp.array([T/n_steps]*n_steps)
-
-    def dWs(self,d:int,_dts:Array=None,num:int=1)->Array:
-        """
-        standard noise realisations
-        time increments, stochastic
-        """
-        keys = jrandom.split(self.key,num=num+1)
-        self.key = keys[0]
-        subkeys = keys[1:]
-        if _dts == None:
-            _dts = self.dts()
-        if num == 1:
-            return jnp.sqrt(_dts)[:,None]*jrandom.normal(subkeys[0],(_dts.shape[0],d))
-        else:
-            return vmap(lambda subkey: jnp.sqrt(_dts)[:,None]*jrandom.normal(subkey,(_dts.shape[0],d)))(subkeys) 
-        
-    def Jf(self,z):
-        
-        return jacfwd(lambda z: self.F(z))(z)
-        
-    def G(self,z):
-        
-        Jf = self.Jf(z)
-        
-        return jnp.dot(Jf.T,Jf)
-    
-    def DG(self,z):
-        
-        return jacfwd(self.G)(z)
-    
-    def Ginv(self,z):
-        
-        return jnp.linalg.inv(self.G(z))
-    
-    def Chris(self,z):
-        
-        Dgx = self.DG(z)
-        gsharpx = self.Ginv(z)
-        return 0.5*(jnp.einsum('im,kml->ikl',gsharpx,Dgx)
-                   +jnp.einsum('im,lmk->ikl',gsharpx,Dgx)
-                   -jnp.einsum('im,klm->ikl',gsharpx,Dgx))
-    
-    def taylor_sample(self):
-        
-        def sample(z, step):
-
-            dt, t, dW = step
-            
-            t += dt
-            ginv = self.Ginv(z)
-            
-            stoch = jnp.dot(ginv, dW)
-            
-            z += stoch
-            
-            return ((t,z),)*2
-
-        dW = self.dWs(self.N_sim*self.dim,self.dt).reshape(-1,self.N_sim,self.dim)
-        x0 = jnp.repeat(self.x0s, self.x_samples, axis=0)
-        dt = jnp.tile(self.dt,(self.N_sim,1)).T
-        t_grid = jnp.tile(self.t_grid,(self.N_sim,1))
-        
-        x0 = x0.astype(jnp.float64)
-
-        _, z =lax.scan(lambda carry, step: vmap(lambda z,dW: sample(z,(step[0],step[1],dW)))\
-                         (carry,step[2]),
-                         init=x0, xs=(self.dt,self.t_grid, dW)
-                         )
-
-        return self.t_grid, x0, z, dW
-    
-    def local_sample(self)->Array:
-        
-        def sample(z, step):
-
-            dt, t, dW = step
-            
-            t += dt
-            ginv = self.Ginv(z)
-            Chris = self.Chris(z)
-            
-            stoch = jnp.dot(ginv, dW)
-            det = 0.5*jnp.einsum('jk,ijk->i', ginv, Chris)
-            
-            z += det+stoch
-            
-            return (z,)*2
-        
-        dW = self.dWs(self.N_sim*self.dim,self.dt).reshape(-1,self.N_sim,self.dim)
-        x0 = jnp.repeat(self.x0s, self.x_samples, axis=0)
-        dt = jnp.tile(self.dt,(self.N_sim,1)).T
-        t_grid = jnp.tile(self.t_grid,(self.N_sim,1))
-        
-        x0 = x0.astype(jnp.float64)
-
-        _, z =lax.scan(lambda carry, step: vmap(lambda z,dW: sample(z,(step[0],step[1],dW)))\
-                         (carry,step[2]),
-                         init=x0, xs=(self.dt,self.t_grid, dW)
-                         )
-
-        return self.t_grid, x0, z, dW
-    
-    def dts(self, T:float=1.0,n_steps:int=n_steps)->Array:
-        """time increments, deterministic"""
-        return jnp.array([T/n_steps]*n_steps)
-
-    def dWs(self,d:int,_dts:Array=None,num:int=1)->Array:
-        """
-        standard noise realisations
-        time increments, stochastic
-        """
-        keys = jrandom.split(self.key,num=num+1)
-        self.key = keys[0]
-        subkeys = keys[1:]
-        if _dts == None:
-            _dts = self.dts()
-        if num == 1:
-            return jnp.sqrt(_dts)[:,None]*jrandom.normal(subkeys[0],(_dts.shape[0],d))
-        else:
-            return vmap(lambda subkey: jnp.sqrt(_dts)[:,None]*jrandom.normal(subkey,(_dts.shape[0],d)))(subkeys) 
-        
-    def Jmu(self,z):
-
-        return jacfwd(lambda z: self.F(z)[0])(z)
-    
-    def Jsigma(self,z):
-
-        return jacfwd(lambda z: self.F(z)[1])(z)
-        
-    def G(self,z):
-
-        Jmu = self.Jmu(z).squeeze()
-        Jsigma = self.Jsigma(z).squeeze()
-        
-        return jnp.dot(Jmu.T,Jmu)+jnp.dot(Jsigma.T, Jsigma)
-    
-    def DG(self,z):
-        
-        return jacfwd(self.G)(z)
-    
-    def Ginv(self,z):
-        
-        return jnp.linalg.inv(self.G(z))
-    
-    def Chris(self,z):
-        
-        Dgx = self.DG(z)
-        gsharpx = self.Ginv(z)
-        return 0.5*(jnp.einsum('im,kml->ikl',gsharpx,Dgx)
-                   +jnp.einsum('im,lmk->ikl',gsharpx,Dgx)
-                   -jnp.einsum('im,klm->ikl',gsharpx,Dgx))
-        
-    def __call__(self)->Tuple[Array, Array, Array, Array, Array]:
-        
-        while True:
-            
-            if self.method == 'Taylor':
-                ts,x0s,xss,dW = self.taylor_sample()
-            else:
-                ts,x0s,xss,dW = self.local_sample()
-
-            self.x0s = xss[-1,::self.x_samples]
-            
-            if jnp.isnan(jnp.sum(xss)):
-                self.x0s = self.x0s_default
-
-            inds = jnp.array(random.sample(range(self.dt.shape[0]), self.t_samples))
-            ts = ts[inds]
-            samples = xss[inds]
-            
-            yield jnp.hstack((jnp.tile(x0s,(self.t_samples,1)),
-                              samples.reshape(-1,self.dim),
-                              jnp.repeat(ts,self.N_sim).reshape((-1,1)),
-                              dW[inds].reshape(-1,self.dim),
-                              jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1)),
-                              ))
-
-    def update_coords(self, Fx:Array)->Tuple[Array,Array]:
-        
-        chart = self.M.centered_chart(Fx)
-        
-        return (Fx,chart)
-    
-    def grad_TM(self,
-                  s1_model:Callable[[Array, Array, Array], Array], 
-                  x0:Array, 
-                  x:Array, 
-                  t:Array
-                  )->Array:
-        
-        return s1_model(x0, x, t)
-    
-    def grad_local(self,
-                   s1_model:Callable[[Array, Array, Array], Array], 
-                   x0:Array, 
-                   x:Tuple[Array,Array], 
-                   t:Array
-                   )->Array:
-        
-        return s1_model(x0, x[0], t)
-    
-    def proj_hess(self,s1_model:Callable[[Array, Array, Array], Array], 
-                   s2_model:Callable[[Array, Array, Array], Array],
-                   x0:Array, 
-                   x:Array, 
-                   t:Array
-                   )->Array:
-        
-        return s2_model(x0,x,t)
-    
-    def dW_TM(self,
-                x:Array,
-                dW:Array
-                )->Array:
-    
-        return dW
-    
-    def dW_local(self,
-                x:Array,
-                dW:Array
-                )->Array:
-    
-        return dW
-    
-    def dW_embedded(self,
-                x:Array,
-                dW:Array
-                )->Array:
-        
-        return dW
-
-

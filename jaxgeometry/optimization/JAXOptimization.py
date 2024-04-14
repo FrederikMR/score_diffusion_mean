@@ -19,7 +19,7 @@ def RMJaxOpt(mu_init:Array,
              grad_fn:Callable[[Tuple[Array, Array]], Array],
              max_iter:int=100,
              optimizer:Callable=None,
-             opt_params:Tuple=(0.1, 0.9, 0.999, 1e-8),
+             lr_rate:float = 0.0002,
              bnds:Tuple[Array, Array]=(None, None),
              max_step:Array=None
              )->Tuple[Array, Array]:
@@ -31,11 +31,8 @@ def RMJaxOpt(mu_init:Array,
         
         mu, grad, opt_state = carry
         
-        #grad = jnp.clip(grad, min_step, max_step)
-        
         opt_state = opt_update(idx, grad, opt_state)
         mu_rm = get_params(opt_state)
-        #mu_rm = jnp.clip(mu_rm, lb, ub)
         
         new_chart = M.centered_chart((mu_rm, mu[1]))
         mu = M.update_coords((mu_rm, mu[1]),new_chart)
@@ -52,10 +49,9 @@ def RMJaxOpt(mu_init:Array,
     ub = bnds[1]
     
     if optimizer is None:
-        optimizer = optimizers.adam
-        opt_init, opt_update, get_params = optimizer(0.1, b1=0.9, b2=0.999, eps=1e-8)
+        opt_init, opt_update, get_params = optimizers.sgd(lr_rate)
     else:
-        opt_init, opt_update, get_params = optimizer(*opt_params)
+        opt_init, opt_update, get_params = optimizer
         
     opt_state = opt_init(mu_init[0])
     grad = grad_fn(mu_init)
@@ -72,7 +68,7 @@ def JaxOpt(mu_init:Array,
            grad_fn:Callable[[Array], Array],
            max_iter:int=100,
            optimizer:Callable=None,
-           opt_params:Tuple=(0.1, 0.9, 0.999, 1e-8),
+           lr_rate:float = 0.0002,
            bnds:Tuple[Array, Array]=(None,None),
            max_step=None
            )->Tuple[Array, Array]:
@@ -83,8 +79,6 @@ def JaxOpt(mu_init:Array,
                         Tuple[Array, Array]]:
         
         mu, grad, opt_state = carry
-        
-        #grad = jnp.clip(grad, min_step, max_step)
         
         opt_state = opt_update(idx, grad, opt_state)
         mu = get_params(opt_state)
@@ -103,10 +97,9 @@ def JaxOpt(mu_init:Array,
     ub = bnds[1]
     
     if optimizer is None:
-        optimizer = optimizers.adam
-        opt_init, opt_update, get_params = optimizer(0.1, b1=0.9, b2=0.999, eps=1e-8)
+        opt_init, opt_update, get_params = optimizers.sgd(lr_rate)
     else:
-        opt_init, opt_update, get_params = optimizer(*opt_params)
+        opt_init, opt_update, get_params = optimizer
         
     opt_state = opt_init(mu_init)
     grad = grad_fn(mu_init)
@@ -125,7 +118,7 @@ def JointJaxOpt(mu_rm:Array,
                 grad_fn_euc:Callable[[Array], Array],
                 max_iter:int=100,
                 optimizer:Callable=None,
-                opt_params:Tuple=(0.1, 0.9, 0.999, 1e-8),
+                lr_rate:float=0.0002,
                 bnds_rm:Tuple[Array, Array]=(None,None),
                 bnds_euc:Tuple[Array, Array]=(None,None),
                 max_step:Array=None
@@ -172,10 +165,9 @@ def JointJaxOpt(mu_rm:Array,
     ub_rm = bnds_rm[1]
     
     if optimizer is None:
-        optimizer = optimizers.adam
-        opt_init, opt_update, get_params = optimizer(0.1, b1=0.9, b2=0.999, eps=1e-8)
+        opt_init, opt_update, get_params = optimizers.sgd(lr_rate)
     else:
-        opt_init, opt_update, get_params = optimizer(*opt_params)
+        opt_init, opt_update, get_params = optimizer
         
     bool_val = all(x is not None for x in bnds_euc)
         
