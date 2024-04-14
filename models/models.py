@@ -35,7 +35,7 @@ class MLP_s1(hk.Module):
             model.append(hk.Linear(l, w_init=jnp.zeros, b_init=jnp.zeros))
             model.append(tanh)
             
-        model.append(hk.Linear(self.dim))
+        model.append(hk.Linear(self.dim, w_init=jnp.zeros, b_init=jnp.zeros))
         
         return hk.Sequential(model)
 
@@ -69,7 +69,7 @@ class MLP_s2(hk.Module):
             model.append(hk.Linear(l, w_init=jnp.zeros, b_init=jnp.zeros))
             model.append(tanh)
             
-        model.append(hk.Linear(self.dim))
+        model.append(hk.Linear(self.dim, w_init=jnp.zeros, b_init=jnp.zeros))
         
         return hk.Sequential(model)
     
@@ -80,7 +80,7 @@ class MLP_s2(hk.Module):
             model.append(hk.Linear(l, w_init=jnp.zeros, b_init=jnp.zeros))
             model.append(tanh)
             
-        model.append(lambda x: hk.Linear(self.dim*self.r)(x).reshape(-1,self.dim,self.r))
+        model.append(lambda x: hk.Linear(self.dim*self.r, w_init=jnp.zeros, b_init=jnp.zeros)(x).reshape(-1,self.dim,self.r))
         
         return hk.Sequential(model)
 
@@ -114,7 +114,7 @@ class MLP_diags2(hk.Module):
             model.append(hk.Linear(l, w_init=jnp.zeros, b_init=jnp.zeros))
             model.append(tanh)
             
-        model.append(hk.Linear(self.dim))
+        model.append(hk.Linear(self.dim, w_init=jnp.zeros, b_init=jnp.zeros))
         
         return hk.Sequential(model)
 

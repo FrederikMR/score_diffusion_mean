@@ -129,6 +129,21 @@ class RiemannianBrownianGenerator(object):
         normal = jrandom.normal(subkeys[0],(self.dt_steps,N_sim))
         
         return jnp.einsum('...,...j->...j', self.sqrtdt, normal)
+    
+    def grad_fun(self,
+                 x0:Array,
+                 xt:Tuple[Array,Array],
+                 t:Array,
+                 s1_model:Callable[[Array,Array,Array],Array],
+                 )->Array:
+        
+        if self.method == "Local":
+            return s1_model(x0,xt[0],t)
+        else:
+            Jf = self.M.JF(xt)
+            Fx = self.M.F(xt)
+            v = s1_model(x0,Fx,t)
+            return jnp.einsum('...ij,...i->...j', Jf, v)
         
     def grad_local(self,
                    x:Array,
@@ -215,6 +230,9 @@ class RiemannianBrownianGenerator(object):
         return (chartss[-1], xss[-1])
 
     def sim_diffusion_mean(self, x0:Tuple[Array, Array], N_sim:int)->Tuple[Array, Array]:
+        
+        if self.method in ['Projection', 'TM']:
+            x0 = (x0[1], x0[0])
         
         if self.method == "Local":
             return self.sim_diffusion_local(x0,N_sim)

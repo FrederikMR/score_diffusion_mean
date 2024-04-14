@@ -42,7 +42,7 @@ def train_s1(M:object,
     @jit
     def loss_fun(params:hk.Params, state_val:dict, rng_key:Array, data:Array):
         
-        s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t.reshape(-1,1))), rng_key, state_val)
+        s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
         
         return loss_model(data.x0,data.xt,data.t,data.dW,data.dt, generator, s1_model)
     
@@ -157,7 +157,7 @@ def train_s2(M:object,
                  data:Array
                  )->float:
         
-        s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t.reshape(-1,1))), rng_key, state_val)
+        s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
         
         return loss_model(data.x0, data.xt, data.t, data.dW, data.dt, generator, s1_model, s2_model)
     
@@ -274,8 +274,8 @@ def train_s1s2(M:object,
                  data:Array
                  )->float:
         
-        s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t.reshape(-1,1))), rng_key, state_val)[0]
-        s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t.reshape(-1,1))), rng_key, state_val)[1]
+        s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[0]
+        s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[1]
         
         s1_loss = loss_s1model(data.x0, data.xt, data.t, data.dW, data.dt, generator, s1_model)
         s2_loss = loss_s2model(data.x0, data.xt, data.t, data.dW, data.dt, generator, s1_model, s2_model)

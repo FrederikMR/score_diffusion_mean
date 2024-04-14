@@ -37,8 +37,7 @@ from load_manifold import load_manifold
 
 #jaxgeometry
 from jaxgeometry.manifolds import *
-from jaxgeometry.statistics.score_matching import train_s1, train_s2, train_s1s2, TMSampling, LocalSampling, \
-    EmbeddedSampling, ProjectionSampling, RiemannianBrownianGenerator
+from jaxgeometry.statistics.score_matching import train_s1, train_s2, train_s1s2, RiemannianBrownianGenerator
 from jaxgeometry.statistics.score_matching.model_loader import load_model
 from ManLearn.train_MNIST import load_dataset as load_mnist
 
@@ -47,11 +46,11 @@ from ManLearn.train_MNIST import load_dataset as load_mnist
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Sphere",
+    parser.add_argument('--manifold', default="Euclidean",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
-    parser.add_argument('--train_net', default="s1",
+    parser.add_argument('--train_net', default="s2",
                         type=str)
     parser.add_argument('--s1_loss_type', default="dsmvr",
                         type=str)
@@ -93,7 +92,7 @@ def train_score()->None:
     
     args = parse_args()
 
-    T_sample_name = (args.T_sample == 1)*"T"
+    T_sample_name = (args.t0_sample == 1)*"T"
     s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_{args.s1_loss_type}/"
     s2_path = f"scores/{args.manifold}{args.dim}/s2{T_sample_name}_{args.s2_loss_type}/"
     s1s2_path = f"scores/{args.manifold}{args.dim}/s1s2{T_sample_name}_{args.s2_loss_type}/"
@@ -155,7 +154,7 @@ def train_score()->None:
                                                  repeats = args.repeats,
                                                  x_samples = args.x_samples,
                                                  t_samples = args.t_samples,
-                                                 T = args.max_T,
+                                                 T = args.T,
                                                  dt_steps = args.dt_steps,
                                                  t0 = t0,
                                                  method = sampling_method,

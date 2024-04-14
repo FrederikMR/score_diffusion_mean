@@ -28,8 +28,7 @@ from load_manifold import load_manifold
 
 #jaxgeometry
 from jaxgeometry.manifolds import *
-from jaxgeometry.statistics.score_matching import TMSampling, LocalSampling, \
-    EmbeddedSampling, ProjectionSampling
+from jaxgeometry.statistics.score_matching import RiemannianBrownianGenerator
 from ManLearn.train_MNIST import load_dataset as load_mnist
 
 #%% Args Parser
@@ -41,14 +40,14 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
+    parser.add_argument('--T', default=0.5,
+                        type=float)
+    parser.add_argument('--dt_steps', default=1000,
+                        type=int)
     parser.add_argument('--N_sim', default=1000,
                         type=int)
     parser.add_argument('--save_path', default='../data/',
                         type=str)
-    parser.add_argument('--max_T', default=0.5,
-                        type=float)
-    parser.add_argument('--dt_steps', default=1000,
-                        type=int)
     parser.add_argument('--seed', default=2712,
                         type=int)
 
@@ -62,6 +61,9 @@ def train_score()->None:
     args = parse_args()
     
     save_path = f"{args.save_path}{args.manifold}{args.dim}/"
+    
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
     
     if args.manifold == 'gp_mnist':
         
@@ -107,46 +109,17 @@ def train_score()->None:
         M, x0, sampling_method, generator_dim, layers, opt_val = load_manifold(args.manifold,
                                                                                args.dim)
         
-    if sampling_method == 'LocalSampling':
-        generator_dim = M.dim
-        data_generator = LocalSampling(M=M,
-                                       x0=x0,
-                                       max_T=args.max_T,
-                                       dt_steps=args.dt_steps,
-                                       )
-        sim = data_generator.sim_diffusion_mean((x0[0],x0[1]), args.N_sim)
-    elif sampling_method == "EmbeddedSampling":
-        generator_dim = M.dim
-        data_generator = EmbeddedSampling(M=M,
-                                          x0=x0,
-                                          max_T=args.max_T,
-                                          dt_steps=args.dt_steps,
-                                          )
-        sim = data_generator.sim_diffusion_mean((x0[0],x0[1]), args.N_sim)
-    elif sampling_method == "ProjectionSampling":
-        generator_dim = M.emb_dim
-        data_generator = ProjectionSampling(M=M,
-                                            x0=(x0[1],x0[0]),
-                                            dim=generator_dim,
-                                            max_T=args.max_T,
-                                            dt_steps=args.dt_steps,
-                                            )
-        sim = data_generator.sim_diffusion_mean((x0[1],x0[0]), args.N_sim)
-    elif sampling_method == "TMSampling":
-        generator_dim = M.emb_dim
-        data_generator = TMSampling(M=M,
-                                    x0=(x0[1],x0[0]),
-                                    dim=generator_dim,
-                                    Exp_map=lambda x, v: M.ExpEmbedded(x[0],v),
-                                    max_T=args.max_T,
-                                    dt_steps=args.dt_steps,
-                                    )
-        sim = data_generator.sim_diffusion_mean((x0[1],x0[0]), args.N_sim)
+        
+    data_generator = RiemannianBrownianGenerator(M=M,
+                                                 x0 = x0,
+                                                 dim = generator_dim,
+                                                 Exp_map = lambda x, v: M.ExpEmbedded(x[0],v),
+                                                 method = sampling_method,
+                                                 seed = args.seed
+                                                 )
+    sim = data_generator.sim_diffusion_mean(x0, args.N_sim)
 
     xs, chart = sim[0], sim[1]
-    
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
     
     np.savetxt(''.join((save_path, 'xs.csv')), xs, delimiter=",")
     np.savetxt(''.join((save_path, 'chart.csv')), chart, delimiter=",")

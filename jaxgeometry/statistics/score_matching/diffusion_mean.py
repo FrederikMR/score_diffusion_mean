@@ -19,7 +19,9 @@ from jaxgeometry.optimization.GradientDescent import JointGradientDescent, RMGra
 def diffusion_mean(M:object,
                    s1_model:Callable[[Array, Array, Array], Array],
                    s2_model:Callable[[Array, Array, Array], Array],
-                   method:str="JAX"
+                   method:str="JAX",
+                   min_t:float = 1e-3,
+                   max_t:float = 1.0,
                    )->None:
     
     """
@@ -63,28 +65,28 @@ def diffusion_mean(M:object,
         return gradx
     
     if method == "JAX":
-        M.sm_dmxt = lambda X_obs, x0, t,step_size=0.1, max_iter=1000: JointJaxOpt(x0,
+        M.sm_dmxt = lambda X_obs, x0, t,step_size=0.01, max_iter=1000: JointJaxOpt(x0,
                                                      jnp.array(t),
                                                      M,
                                                      grad_fn_rm = lambda y,t: gradx_loss(X_obs, y, t),
                                                      grad_fn_euc = lambda y,t: gradt_loss(X_obs, y, t),
                                                      max_iter=max_iter,
                                                      lr_rate = step_size,
-                                                     bnds_euc=(0.0+1e-3,1.0 ),
+                                                     bnds_euc=(min_t,max_t),
                                                      )
         
-        M.sm_dmx = lambda X_obs, x0, t, step_size=0.1, max_iter=1000: RMJaxOpt(x0,
+        M.sm_dmx = lambda X_obs, x0, t, step_size=0.01, max_iter=1000: RMJaxOpt(x0,
                                                  M,
                                                  grad_fn=lambda y: gradx_loss(X_obs, y, t),
                                                  max_iter=max_iter,
                                                  lr_rate = step_size,
                                                  )
-        M.sm_dmt = lambda X_obs, x0, t, step_size=0.1, max_iter=1000: JaxOpt(t,
+        M.sm_dmt = lambda X_obs, x0, t, step_size=0.01, max_iter=1000: JaxOpt(t,
                                                M,
                                                grad_fn = lambda t: gradt_loss(X_obs, x0, t),
                                                max_iter=max_iter,
                                                lr_rate = step_size,
-                                               bnds=(0.0+1e-3,1.0),
+                                               bnds=(min_t,max_t),
                                                )
     elif method == "Gradient":
         
@@ -96,7 +98,7 @@ def diffusion_mean(M:object,
                                                                                             step_size_rm=step_size,
                                                                                             step_size_euc=step_size,
                                                                                             max_iter = max_iter,
-                                                                                            bnds_euc = (1e-3,1.0),
+                                                                                            bnds_euc = (min_t,max_t),
                                                                                             )
         
         M.sm_dmx = lambda X_obs, x0, t, step_size=0.1, max_iter=1000: RMGradientDescent(x0,
@@ -110,7 +112,7 @@ def diffusion_mean(M:object,
                                                                                      grad_fn = lambda t: gradt_loss(X_obs, y, t),
                                                                                      step_size=step_size,
                                                                                      max_iter = max_iter,
-                                                                                     bnds=(1e-3,1.0)
+                                                                                     bnds=(min_t,max_t)
                                                                                      )
     
     

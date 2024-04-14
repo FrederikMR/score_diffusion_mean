@@ -32,7 +32,7 @@ def vsm_s1(x0:Array,
     (xts, chartts) = generator.update_coords(xt)
     
     divs = vmap(lambda x0, xt, chart, t: generator.M.div((xt, chart), 
-                                               lambda x: generator.grad_local(s1_model, x0, x, t)))(x0,xts,chartts,t)
+                                               lambda x: generator.grad_fun(x0, x, t,s1_model)))(x0,xts,chartts,t)
     
     return jnp.mean(norm2s+2.0*divs)
 

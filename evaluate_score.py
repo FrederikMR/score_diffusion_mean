@@ -60,12 +60,26 @@ def parse_args():
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--s2_approx', default=1,
-                        type=int)
-    parser.add_argument('--fixed_time', default=0,
-                        type=int)
     parser.add_argument('--s2_type', default="s2",
                         type=str)
+    parser.add_argument('--s2_approx', default=1,
+                        type=int)
+    parser.add_argument('--fixed_t', default=0,
+                        type=int)
+    parser.add_argument('--t0', default=0.01,
+                        type=float)
+    parser.add_argument('--step_size', default=0.01,
+                        type=float)
+    parser.add_argument('--score_iter', default=1000,
+                        type=int)
+    parser.add_argument('--bridge_iter', default=100,
+                        type=int)
+    parser.add_argument('--t_init', default=0.2,
+                        type=float)
+    parser.add_argument('--estimate', default="diffusion_mean",
+                        type=str)
+    parser.add_argument('--bridge_sampling', default=0,
+                        type=int)
     parser.add_argument('--method', default="JAX",
                         type=str)
     parser.add_argument('--data_path', default='../data/',
@@ -74,21 +88,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--score_path', default='scores/',
                         type=str)
-    parser.add_argument('--t', default=0.1,
-                        type=float)
-    parser.add_argument('--t0', default=0.2,
-                        type=float)
-    parser.add_argument('--step_size', default=0.01,
-                        type=float)
-    parser.add_argument('--max_iter', default=1000,
-                        type=int)
-    parser.add_argument('--repeats', default=5,
-                        type=int)
-    parser.add_argument('--bridge_iter', default=100,
-                        type=int)
-    parser.add_argument('--diffusion_mean', default=1,
-                        type=int)
-    parser.add_argument('--bridge_sampling', default=0,
+    parser.add_argument('--timing_repeats', default=5,
                         type=int)
     parser.add_argument('--seed', default=2712,
                         type=int)
@@ -182,13 +182,13 @@ def evaluate_diffusion_mean():
         elif opt_val == "gradient":
             dm_score(M, s1_model=lambda x,y,t: M.grady_log_hk(x,y,t)[0], 
                      s2_model = M.gradt_log_hk, method=args.method)
-            if args.fixed_time:
-                mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
-                                                       step_size=args.step_size, max_iter=args.max_iter)
-                T_opt = args.t0
+            if args.fixed_t:
+                mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t_init]), \
+                                                       step_size=args.step_size, max_iter=args.score_iter)
+                T_opt = args.t_init
             else:
-                mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
-                                                       step_size=args.step_size, max_iter=args.max_iter)
+                mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t_init]), \
+                                                       step_size=args.step_size, max_iter=args.score_iter)
                 T_opt = T_sm[-1]
             mu_opt = (mu_sm[0][-1], mu_sm[1][-1])
         else:
@@ -210,24 +210,24 @@ def evaluate_diffusion_mean():
         dm_score(M, 
                  s1_model=ScoreEval.grady_log,
                  s2_model = ScoreEval.gradt_log, method=args.method)
-        if args.fixed_time:
-            mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
-                                                   step_size=args.step_size, max_iter=args.max_iter)
-            T_sm = args.t0*jnp.ones(len(mu_sm[0]))
-            time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
+        if args.fixed_t:
+            mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t_init]), \
+                                                   step_size=args.step_size, max_iter=args.score_iter)
+            T_sm = args.t_init*jnp.ones(len(mu_sm[0]))
+            time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t_init]), step_size=args.step_size, max_iter=args.bridge_iter)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
-                                 number=1, globals=locals(), repeat=args.repeats)
+                                 number=1, globals=locals(), repeat=args.timing_repeats)
             score_mu_time.append(jnp.mean(jnp.array(time)))
             score_std_time.append(jnp.std(jnp.array(time)))
         else:
-            mu_sm, T_sm, gradx_sm, gradt_sm = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
-                                                   step_size=args.step_size, max_iter=args.max_iter)
-            time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
+            mu_sm, T_sm, gradx_sm, gradt_sm = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t_init]), \
+                                                   step_size=args.step_size, max_iter=args.score_iter)
+            time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t_init]), step_size=args.step_size, max_iter=args.bridge_iter)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
-                                 number=1, globals=locals(), repeat=args.repeats)
+                                 number=1, globals=locals(), repeat=args.timing_repeats)
             score_mu_time.append(jnp.mean(jnp.array(time)))
             score_std_time.append(jnp.std(jnp.array(time)))
-            #mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]))
+            #mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t_init]))
 
         if args.bridge_sampling:
             (thetas,chart,log_likelihood,log_likelihoods,mu_bridge) = M.diffusion_mean(X_obs,
@@ -238,7 +238,7 @@ def evaluate_diffusion_mean():
             mu_bridgex, mu_bridgechart = jnp.stack(mu_bridgex), jnp.stack(mu_bridgechart)
             T_bridge = jnp.stack(T_bridge)
             time = timeit.repeat('M.diffusion_mean(X_obs,num_steps=args.bridge_iter,N=1)', number=1,
-                                 globals=locals(), repeat=args.repeats)
+                                 globals=locals(), repeat=args.timing_repeats)
             bridge_mu_time.append(jnp.mean(jnp.array(time)))
             bridge_std_time.append(jnp.std(jnp.array(time)))
         else:
@@ -359,11 +359,11 @@ def evaluate_frechet_mean():
         
         dm_score(M, s1_model=lambda x,y,t: t*ScoreEval.grady_log(x,y,t), 
                  s2_model = ScoreEval.gradt_log, method="Gradient")
-        mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t]), \
-                                               step_size=args.step_size, max_iter=args.max_iter)
-        time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t]), step_size=args.step_size, max_iter=args.bridge_iter)
+        mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
+                                               step_size=args.step_size, max_iter=args.score_iter)
+        time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
         time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
-                             number=1, globals=locals(), repeat=args.repeats)
+                             number=1, globals=locals(), repeat=args.timing_repeats)
         score_mu_time.append(jnp.mean(jnp.array(time)))
         score_std_time.append(jnp.std(jnp.array(time)))
         
@@ -372,7 +372,7 @@ def evaluate_frechet_mean():
             mu_frechet,loss,iterations,vs = M.Frechet_mean(zip(X_obs[0], X_obs[1]),(X_obs[0][0], X_obs[1][0]))
             time_fun = lambda x: M.Frechet_mean(zip(X_obs[0], X_obs[1]),(x[0], x[1]))
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
-                                 number=1, globals=locals(), repeat=args.repeats)
+                                 number=1, globals=locals(), repeat=args.timing_repeats)
             frechet_mu_time.append(jnp.mean(jnp.array(time)))
             frechet_std_time.append(jnp.std(jnp.array(time)))
         else:
@@ -414,7 +414,7 @@ if __name__ == '__main__':
     
     args = parse_args()
     
-    if args.diffusion_mean:
+    if args.estimate == "diffusion_mean":
         evaluate_diffusion_mean()
     else:
         evaluate_frechet_mean()
