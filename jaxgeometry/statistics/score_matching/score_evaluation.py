@@ -91,8 +91,7 @@ class ScoreEvaluation(object):
             v = self.s1_model(x,y,t)
             return self.grad_local(y, v)
         else:
-            s1 = self.s1_model(x,y,t)
-            return s1
+            return self.s1_model(x,y,t)
         
     def ggrady_log(self,
                    x:Tuple[Array, Array],
@@ -107,18 +106,13 @@ class ScoreEvaluation(object):
             v = self.s1_model(x,y,t)
             return self.hess_local(y,v,h)
         else:
-            s2 = self.s2_model(x,y,t)
-            return s2
+            return self.s2_model(x,y,t)
         
     def gradt_log(self, 
                   x:Tuple[Array,Array],
                   y:Tuple[Array,Array],
                   t:Array, 
                   )->Array:
-        
-        #if self.method == "Embedded":
-            #x = self.update_coords(x)
-            #y = self.update_coords(y)
         
         s1 = self.grady_log(x,y,t)
         s2 = self.ggrady_log(x,y,t)
@@ -127,9 +121,9 @@ class ScoreEvaluation(object):
             laplace_beltrami = jnp.trace(s2)
             norm_s1 = jnp.dot(s1,s1)
         else:
+            norm_s1 = jnp.dot(s1,s1)#self.M.dot(y,s1,s1)
             s1 = jnp.linalg.solve(self.M.g(y), s1)
             s2 = jnp.linalg.solve(self.M.g(y), s2)
             laplace_beltrami = jnp.trace(s2)+.5*jnp.dot(s1,jacfwdx(self.M.logAbsDet)(y).squeeze())
-            norm_s1 = self.M.dot(y,s1,s1)
         
         return 0.5*(laplace_beltrami+norm_s1)

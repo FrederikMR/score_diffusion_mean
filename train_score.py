@@ -51,25 +51,19 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
+    parser.add_argument('--train_net', default="s1",
+                        type=str)
     parser.add_argument('--s1_loss_type', default="dsmvr",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--load_model', default=0,
+    parser.add_argument('--epochs', default=50000,
                         type=int)
-    parser.add_argument('--T_sample', default=0,
-                        type=int)
-    parser.add_argument('--t', default=0.1,
-                        type=float)
-    parser.add_argument('--gamma', default=1.0,
-                        type=float)
-    parser.add_argument('--train_net', default="s1",
-                        type=str)
-    parser.add_argument('--max_T', default=1.0,
-                        type=float)
     parser.add_argument('--lr_rate', default=0.0002,
                         type=float)
-    parser.add_argument('--epochs', default=50000,
+    parser.add_argument('--T', default=1.0,
+                        type=float)
+    parser.add_argument('--dt_steps', default=1000,
                         type=int)
     parser.add_argument('--x_samples', default=32,
                         type=int)
@@ -77,9 +71,13 @@ def parse_args():
                         type=int)
     parser.add_argument('--repeats', default=8,
                         type=int)
-    parser.add_argument('--samples_per_batch', default=16,
+    parser.add_argument('--t0_sample', default=0,
                         type=int)
-    parser.add_argument('--dt_steps', default=1000,
+    parser.add_argument('--t0', default=0.01,
+                        type=float)
+    parser.add_argument('--gamma', default=1.0,
+                        type=float)
+    parser.add_argument('--load_model', default=0,
                         type=int)
     parser.add_argument('--save_step', default=10,
                         type=int)
@@ -94,8 +92,7 @@ def parse_args():
 def train_score()->None:
     
     args = parse_args()
-    
-    N_sim = args.x_samples*args.repeats
+
     T_sample_name = (args.T_sample == 1)*"T"
     s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_{args.s1_loss_type}/"
     s2_path = f"scores/{args.manifold}{args.dim}/s2{T_sample_name}_{args.s2_loss_type}/"
@@ -140,14 +137,14 @@ def train_score()->None:
              
             return s1s2(x)
     
-    if not os.path.exists('scores/output/'):
-        os.makedirs('scores/output/')
+    if not os.path.exists('scores/hpc/output/'):
+        os.makedirs('scores/hpc/output/')
         
-    if not os.path.exists('scores/error/'):
-        os.makedirs('scores/error/')
+    if not os.path.exists('scores/hpc/error/'):
+        os.makedirs('scores/hpc/error/')
         
-    if args.T_sample:
-        t0 = args.t
+    if args.t0_sample:
+        t0 = args.t0
     else:
         t0 = 0.0
         
@@ -171,7 +168,7 @@ def train_score()->None:
         s1 = lambda x,y,t: s1_model.apply(state.params,rng_key, jnp.hstack((x, y, t.reshape(-1,1))))
         
         if args.load_model:
-            state_s2 = load_model(s1_path)
+            state_s2 = load_model(s2_path)
         else:
             state_s2 = None
 

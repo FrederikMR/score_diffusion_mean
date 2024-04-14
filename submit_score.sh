@@ -6,8 +6,8 @@
 #BSUB -W 24:00
 #BSUB -R "rusage[mem=32GB]"
 #BSUB -u fmry@dtu.dk
-#BSUB -o scores/output/output_%J.out
-#BSUB -e scores/error/error_%J.err
+#BSUB -o scores/output/hpc/output_%J.out
+#BSUB -e scores/error/hpc/error_%J.err
 #BSUB -B
 #BSUB -N
 
@@ -20,19 +20,19 @@ module swap python3/3.10.12
 python3 train_score.py \
     --manifold Sphere \
     --dim 3 \
+    --train_net s1 \
     --s1_loss_type dsmvr \
     --s2_loss_type dsmvr \
-    --load_model 0 \
-    --T_sample 0 \
-    --t 0.01 \
-    --train_net s2 \
-    --max_T 5.0 \
-    --lr_rate 0.0002 \
     --epochs 50000 \
+    --lr_rate 0.0002 \
+    --T 1.0 \
+    --dt_steps 1000 \
     --x_samples 64 \
     --t_samples 256 \
     --repeats 16 \
-    --samples_per_batch 32 \
-    --dt_steps 1000 \
+    --t0_sample 0 \
+    --t0 0.01 \
+    --gamma 1.0 \
+    --load_model 0 \
     --save_step 100 \
-    --seed 2712
+    --seed 2712 \
