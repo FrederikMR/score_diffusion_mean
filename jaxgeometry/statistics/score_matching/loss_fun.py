@@ -26,13 +26,13 @@ def vsm_s1(x0:Array,
            )->Array:
     """ compute loss."""
     
-    loss_s1 = s1_model(x0,xt,t)
+    loss_s1 = s1_model(x0,xt,t.reshape(-1,1))
     norm2s = jnp.sum(loss_s1*loss_s1, axis=1)
     
-    (xts, chartts) = generator.update_coords(xt)
+    (xts, chartts) = vmap(generator.update_coords)(xt)
     
     divs = vmap(lambda x0, xt, chart, t: generator.M.div((xt, chart), 
-                                               lambda x: generator.grad_fun(x0, x, t,s1_model)))(x0,xts,chartts,t)
+                                               lambda x: generator.grad_fun(x0, x, t, s1_model)))(x0,xts,chartts,t)
     
     return jnp.mean(norm2s+2.0*divs)
 
@@ -47,15 +47,14 @@ def dsm_s1(x0:Array,
            generator:object,
            s1_model:Callable[[Array,Array,Array],Array]
            )->Array:
+    
+    def f(x0,xt,t,dW,dt):
+
+        loss = dW/dt+s1
         
-    dW = generator.grad_local(xt,dW)
-    dt = dt.reshape(-1,1)
+        return jnp.sum(loss*loss)
     
-    s1 = grad_local(xt,s1_model(x0,xt,t))
-    
-    loss = dW/dt+s1
-    
-    return jnp.mean(jnp.sum(loss*loss, axis=-1))
+    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
 
 #%% Variance Reduction Denoising Score Matching First Order
 
@@ -69,19 +68,19 @@ def dsmvr_s1(x0:Array,
              s1_model:Callable[[Array,Array,Array],Array]
              )->Array:
 
-    dW = generator.grad_local(xt,dW)
-    dt = dt.reshape(-1,1)
-    dt_inv = 1/dt
+    def f(x0,xt,t,dW,dt):
+                
+        s1 = s1_model(x0,xt,t)
+        s1p = s1_model(x0,x0,t)
+        dt_inv = 1/dt
+        
+        l1_loss = dW*dt_inv+s1
+        l1_loss = 0.5*jnp.dot(l1_loss,l1_loss)
+        var_loss = dt_inv*(jnp.dot(s1p,dW)+jnp.dot(dW,dW)*dt_inv)
+        
+        return l1_loss-var_loss
     
-    s1 = generator.grad_local(xt,s1_model(x0,xt,t))
-    s1p = generator.grad_local(xt,s1_model(x0,x0,t))
-    
-    dsm_loss = dW*dt_inv+s1
-    
-    s1_loss = 0.5*jnp.sum(dsm_loss*dsm_loss,axis=-1)
-    vr_loss = jnp.sum(dt_inv*(s1p*dW+dt_inv*dW*dW), axis=-1)
-    
-    return jnp.mean(s1_loss-vr_loss)
+    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
 
 #%% Denoising Score Matching Second Order
 
@@ -96,19 +95,20 @@ def dsm_s2(x0:Array,
            s2_model:Callable[[Array, Array, Array], Array],
            )->Array:
     
-    dW = generator.grad_local(xt,dW)
-    dt_inv = 1/dt.reshape(-1,1,1)
+    def f(x0,xt,t,dW,dt):
+        
+        dt_inv = 1/dt
+        
+        s1 = s1_model(x0,xt,t)
+        s2 = s2_model(x0,xt,t)
+
+        loss_s2 = s2+jnp.einsum('i,j->ij', s1, s1)+(eye-jnp.einsum('i,j->ij', dW, dW)*dt_inv)*dt_inv
+        
+        return jnp.sum(loss_s2*loss_s2)
+    
     eye = jnp.eye(dW.shape[-1])
     
-    v = s1_model(x0,xt,t)
-    h = s2_model(x0,xt,t)
-    s1 = generator.grad_local(xt,v)
-    s2 = generator.hess_local(xt,v,h)
-    
-    diff = (eye-jnp.einsum('...i,...j->...ij', dW, dW)*dt_inv)*dt_inv
-    loss = s2+jnp.einsum('...i,...j->...ij', s1, s1)+diff
-
-    return jnp.mean(jnp.sum(loss*loss, axis=(1,2)))
+    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
 
 #%% Denoising Score Matching Diag Second Order
 
@@ -123,20 +123,18 @@ def dsmdiag_s2(x0:Array,
                s2_model:Callable[[Array, Array, Array], Array],
                )->Array:
     
-    dW = generator.grad_local(xt,dW)
-    dt = dt.reshape(-1,1)
-    dt_inv = 1/dt
+    def f(x0,xt,t,dW,dt):
+        
+        dt_inv = 1/dt
+        
+        s1 = s1_model(x0,xt,t)
+        s2 = s2_model(x0,xt,t)
+
+        loss_s2 = jnp.diag(s2)+s1*s1+(1.0-dW*dW*dt_inv)*dt_inv
+        
+        return jnp.sum(loss_s2*loss_s2)
     
-    v = s1_model(x0,xt,t)
-    h = s2_model(x0,xt,t)
-    h = vmap(lambda x: jnp.diag(x))(h)
-    
-    s1 = generator.grad_local(xt,v)
-    s2 = jnp.diagonal(generator.hess_local(xt,v,h), axis1=1, axis2=2)
-    
-    loss = s2+s1*s1+(1.0-dW*dW*dt_inv)*dt_inv
-    
-    return jnp.mean(jnp.sum(loss*loss, axis=-1))
+    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
 
 #%% Denoising Score Matching Second Order
 
@@ -151,27 +149,30 @@ def dsmvr_s2(x0:Array,
              s2_model:Callable[[Array, Array, Array], Array],
              )->Array:
     
-    dW = generator.grad_local(xt,dW)
-    dt_inv = 1/dt.reshape(-1,1,1)
+    def f(x0,xt,t,dW,dt):
+                
+        dt_inv = 1/dt
+        
+        s1 = s1_model(x0,x0,t)
+        s2 = s2_model(x0,x0,t)
+
+        s1p = s1_model(x0,xt,t)
+        s2p = s2_model(x0,xt,t)
+
+        psi = s2+jnp.einsum('i,j->ij', s1, s1)
+        psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
+        diff = (eye-jnp.einsum('i,j->ij', dW, dW)*dt_inv)*dt_inv
+        
+        loss1 = psip**2
+        loss3 = 2.*diff*(psip-psi)
+        
+        loss_s2 = loss1+loss3
+
+        return 0.5*jnp.sum(loss_s2)
+    
     eye = jnp.eye(dW.shape[-1])
     
-    v = s1_model(x0,xt,t)
-    vp = s1_model(x0,x0,t)
-    h = s2_model(x0,xt,t)
-    hp = s2_model(x0,x0,t)
-    
-    s1 = generator.grad_local(xt, v)
-    s1p = generator.grad_local(xt, vp)
-    s2 = generator.hess_local(xt, v, h)
-    s2p = generator.hess_local(xt, vp, hp)
-
-    psi = s2+jnp.einsum('...i,...j->...ij', s1, s1)
-    psip = s2p+jnp.einsum('...i,...j->...ij', s1p, s1p)
-    diff = (eye-jnp.einsum('...i,...j->...ij', dW, dW)*dt_inv)*dt_inv
-    
-    loss = 0.5*(psip**2)+diff*(psip-psi)
-
-    return jnp.mean(jnp.sum(loss, axis=(1,2)))
+    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
 
 #%% Denoising Score Matching Second Order
 
@@ -186,26 +187,25 @@ def dsmdiagvr_s2(x0:Array,
                  s2_model:Callable[[Array, Array, Array], Array],
                  )->Array:
     
-    dW = generator.grad_local(xt,dW)
-    dt = dt.reshape(-1,1)
-    dt_inv = 1/dt
-    
-    v = s1_model(x0,xt,t)
-    vp = s1_model(x0,x0,t)
-    h = s2_model(x0,xt,t)
-    h = vmap(lambda x: jnp.diag(x))(h)
-    hp = s2_model(x0,x0,t)
-    hp = vmap(lambda x: jnp.diag(x))(hp)
-    
-    s1 = generator.grad_local(xt, v)
-    s1p = generator.grad_local(xt, vp)
-    s2 = jnp.diagonal(generator.hess_local(xt, v, h), axis1=1, axis2=2)
-    s2p = jnp.diagonal(generator.hess_local(xt, vp, hp), axis1=1,axis2=2)
-    
-    psi = s2+s1*s1
-    psip = s2p+s1p*s1p
-    diff = (1.0-dW*dW*dt_inv)*dt_inv
-    
-    loss = 0.5*(psip**2)+diff*(psip-psi)
+    def f(x0,xt,t,dW,dt):
+        
+        dt_inv = 1/dt
+                
+        s1 = s1_model(x0,x0,t)
+        s2 = s2_model(x0,x0,t)
 
-    return jnp.mean(jnp.sum(loss, axis=-1))
+        s1p = s1_model(x0,xt,t)
+        s2p = s2_model(x0,xt,t)
+
+        psi = jnp.diag(s2)+s1*s1
+        psip = jnp.diag(s2p)+s1p*s1p
+        diff = (1.0-dW*dW*dt_inv)*dt_inv
+        
+        loss1 = psip**2
+        loss3 = 2.*diff*(psip-psi)
+        
+        loss_s2 = loss1+loss3
+
+        return 0.5*jnp.sum(loss_s2)
+    
+    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))

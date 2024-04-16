@@ -115,10 +115,10 @@ class RiemannianBrownianGenerator(object):
     def update_coords(self, Fx:Array)->Tuple[Array,Array]:
         
         if self.method == "Local":
-            chart = vmap(self.M.centered_chart)(Fx)
+            chart = self.M.centered_chart(Fx)
             return (Fx,chart)
         else:
-            return (vmap(lambda x: self.M.invF((x,x)))(Fx),Fx)
+            return (self.M.invF((Fx,Fx)),Fx)
     
     def dWs(self, N_sim:int)->Array:
         
@@ -143,7 +143,7 @@ class RiemannianBrownianGenerator(object):
             Jf = self.M.JF(xt)
             Fx = self.M.F(xt)
             v = s1_model(x0,Fx,t)
-            return jnp.einsum('...ij,...i->...j', Jf, v)
+            return jnp.einsum('ij,i->j', Jf, v)
         
     def grad_local(self,
                    x:Array,
@@ -154,8 +154,8 @@ class RiemannianBrownianGenerator(object):
             return v
         else:
             x = self.update_coords(x)
-            Jf = vmap(lambda x,c: self.M.JF((x,c)))(x[0],x[1])
-            return jnp.einsum('...ij,...i->...j', Jf, v)
+            Jf = self.M.JF((x[0],x[1]))
+            return jnp.einsum('ij,i->j', Jf, v)
     
     def grad_TM(self,
                 x:Array,
@@ -165,7 +165,7 @@ class RiemannianBrownianGenerator(object):
         if self.method == "Local":
             return v
         else:
-            return vmap(lambda x,v: self.M.proj(x, v))(x,v)
+            return self.M.proj(x, v)
         
     def hess_local(self,
                    x:Array,
@@ -177,10 +177,10 @@ class RiemannianBrownianGenerator(object):
             return h
         else:
             x = self.update_coords(x)
-            val1 = vmap(lambda x,c: self.M.JF((x,c)))(x[0],x[1])
-            val2 = vmap(lambda x,c: jacfwdx(self.M.JF)((x,c)))(x[0],x[1])
-            term1 = jnp.einsum('...jl,...li,...jk->...ik', h, val1, val1)
-            term2 = jnp.einsum('...j,...jik', v, val2)
+            val1 = self.M.JF((x[0],x[1]))
+            val2 = jacfwdx(self.M.JF)((x[0],x[1]))
+            term1 = jnp.einsum('jl,li,jk->ik', h, val1, val1)
+            term2 = jnp.einsum('j,jik', v, val2)
             return term1+term2
 
     def hess_TM(self,
@@ -192,9 +192,9 @@ class RiemannianBrownianGenerator(object):
         if self.method == "Local":
             h
         else:
-            val1 = vmap(lambda x,h: self.M.proj(x, h))(x,h)
-            val2 = v-vmap(lambda x,v: self.M.proj(x, v))(x,v)
-            val3 = vmap(lambda x,v: jacfwd(lambda Fx: self.M.proj(Fx, v))(x))(x,val2)
+            val1 = self.M.proj(x, h)
+            val2 = v-self.M.proj(x, v)
+            val3 = jacfwd(lambda Fx: self.M.proj(Fx, val2))(x)
             return val1+val3
         
     def sim_diffusion_local(self, x0:Tuple[Array,Array], N_sim:int)->Tuple[Array, Array]:

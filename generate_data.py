@@ -36,7 +36,7 @@ from ManLearn.train_MNIST import load_dataset as load_mnist
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Sphere",
+    parser.add_argument('--manifold', default="HypParaboloid",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
@@ -115,6 +115,7 @@ def train_score()->None:
                                                  dim = generator_dim,
                                                  Exp_map = lambda x, v: M.ExpEmbedded(x[0],v),
                                                  method = sampling_method,
+                                                 T = args.T,
                                                  seed = args.seed
                                                  )
     sim = data_generator.sim_diffusion_mean(x0, args.N_sim)

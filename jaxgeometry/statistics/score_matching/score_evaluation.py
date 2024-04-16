@@ -118,10 +118,10 @@ class ScoreEvaluation(object):
         s2 = self.ggrady_log(x,y,t)
         
         if self.method == "Embedded":
-            laplace_beltrami = jnp.trace(s2)
             norm_s1 = jnp.dot(s1,s1)
+            laplace_beltrami = jnp.trace(s2)+.5*jnp.dot(s1,jacfwdx(self.M.logAbsDet)(y).squeeze())
         else:
-            norm_s1 = jnp.dot(s1,s1)#self.M.dot(y,s1,s1)
+            norm_s1 = jnp.dot(s1,s1)
             s1 = jnp.linalg.solve(self.M.g(y), s1)
             s2 = jnp.linalg.solve(self.M.g(y), s2)
             laplace_beltrami = jnp.trace(s2)+.5*jnp.dot(s1,jacfwdx(self.M.logAbsDet)(y).squeeze())

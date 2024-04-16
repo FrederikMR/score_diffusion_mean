@@ -52,7 +52,7 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Sphere",
+    parser.add_argument('--manifold', default="HypParaboloid",
                         type=str)
     parser.add_argument('--dim', default=[2],
                         type=List)
@@ -80,7 +80,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--bridge_sampling', default=0,
                         type=int)
-    parser.add_argument('--method', default="JAX",
+    parser.add_argument('--method', default="Gradient",
                         type=str)
     parser.add_argument('--data_path', default='../data/',
                         type=str)
@@ -114,11 +114,9 @@ def evaluate_diffusion_mean():
     bridge_std_time = []
     for N in args.dim:
         
-        M, x0, sampling_method, generator_dim, layers, opt_val = load_manifold(args.manifold,
+        M, x0, method, generator_dim, layers, opt_val = load_manifold(args.manifold,
                                                                                N)
-        if sampling_method == "LocalSampling":
-            method = "Local"
-        else:
+        if not (method == "Local"):
             method = "Embedded"
             
         Brownian_coords(M)
@@ -201,8 +199,8 @@ def evaluate_diffusion_mean():
         else:
             s2_fun = None
 
-        ScoreEval = ScoreEvaluation(M, 
-                                    s1_model= s1_fun, 
+        ScoreEval = ScoreEvaluation(M,
+                                    s1_model=s1_fun, 
                                     s2_model=s2_fun,#s2_model_test2, 
                                     method=method, 
                                     )
@@ -228,7 +226,10 @@ def evaluate_diffusion_mean():
             score_mu_time.append(jnp.mean(jnp.array(time)))
             score_std_time.append(jnp.std(jnp.array(time)))
             #mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t_init]))
-
+        print(T_opt)
+        print(T_sm[-1])
+        print(mu_opt[1])
+        print(mu_sm[1][-1])
         if args.bridge_sampling:
             (thetas,chart,log_likelihood,log_likelihoods,mu_bridge) = M.diffusion_mean(X_obs,
                                                                                        num_steps=args.bridge_iter, 
@@ -261,6 +262,8 @@ def evaluate_diffusion_mean():
             bridge_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_bridgechart[-1])/D)
             bridge_t_error.append(jnp.linalg.norm(T_opt-T_bridge[-1]))
 
+    print(score_mu_error)
+    print(score_t_error)
     error = {'score_mu_error': jnp.stack(score_mu_error),
              'bridge_mu_error': jnp.stack(bridge_mu_error),
              'score_t_error': jnp.stack(score_t_error),

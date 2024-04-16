@@ -23,6 +23,7 @@ class BrownianMixture(object):
                  gradt_log:Callable, 
                  n_clusters:int=4,
                  eps:float=0.01,
+                 method:str = 'Local',
                  max_iter:int=100
                  )->None:
         
@@ -32,11 +33,12 @@ class BrownianMixture(object):
         self.n_clusters = n_clusters
         self.max_iter = max_iter
         self.eps = eps
-        self.key = jrandom.PRNGKey(2712)
-        
+        self.method = method
         return
     
     def p0(self, X_obs:Tuple[Array, Array], mu:Tuple[Array, Array], t:Array)->Array:
+        
+        vmap(lambda x: vmap(lambda mu: jscipy.stats.multivariate_normal.pdf(x, mu, self.eps))(mu[0]))(X_obs[0])
         
         return
     
@@ -48,7 +50,7 @@ class BrownianMixture(object):
             
             t += dt
             
-            x -= 0.5*M.div(self.grady_log(mu, (x,c), T-t))
+            x -= 0.5*self.M.div(lambda x: self.grady_log(mu, (x,c), T-t))
             
             if self.M.do_chart_update is not None:
                 update = self.M.do_chart_update(x)
