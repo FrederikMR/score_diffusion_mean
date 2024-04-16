@@ -11,7 +11,7 @@ Created on Tue Sep 12 15:13:58 2023
 #%% Modules
 
 from .trainxt import train_s1, train_s2, train_s1s2
-from .generators import RiemannianBrownianGenerator, ScorePaths
+from .generators import RiemannianBrownianGenerator
 from .diffusion_mean import diffusion_mean
 from .model_loader import save_model, load_model
 from .score_evaluation import ScoreEvaluation

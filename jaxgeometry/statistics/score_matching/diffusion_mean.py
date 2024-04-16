@@ -73,21 +73,21 @@ def diffusion_mean(M:object,
                                                      max_iter=max_iter,
                                                      lr_rate = step_size,
                                                      bnds_euc=(min_t,max_t),
-                                                     )
+                                                     )[1]
         
         M.sm_dmx = lambda X_obs, x0, t, step_size=0.01, max_iter=1000: RMJaxOpt(x0,
                                                  M,
                                                  grad_fn=lambda y: gradx_loss(X_obs, y, t),
                                                  max_iter=max_iter,
                                                  lr_rate = step_size,
-                                                 )
+                                                 )[1]
         M.sm_dmt = lambda X_obs, x0, t, step_size=0.01, max_iter=1000: JaxOpt(t,
                                                M,
                                                grad_fn = lambda t: gradt_loss(X_obs, x0, t),
                                                max_iter=max_iter,
                                                lr_rate = step_size,
                                                bnds=(min_t,max_t),
-                                               )
+                                               )[1]
     elif method == "Gradient":
         
         M.sm_dmxt = lambda X_obs, x0, t, step_size=0.1, max_iter=1000: JointGradientDescent(x0,
@@ -99,21 +99,21 @@ def diffusion_mean(M:object,
                                                                                             step_size_euc=step_size,
                                                                                             max_iter = max_iter,
                                                                                             bnds_euc = (min_t,max_t),
-                                                                                            )
+                                                                                            )[1]
         
         M.sm_dmx = lambda X_obs, x0, t, step_size=0.1, max_iter=1000: RMGradientDescent(x0,
                                                                                         M,
                                                                                         grad_fn = lambda y: gradx_loss(X_obs, y, t),
                                                                                         step_size=step_size,
                                                                                         max_iter = max_iter
-                                                                                        )
+                                                                                        )[1]
         
         M.sm_dmt = lambda X_obs, y, t, step_size=0.1, max_iter=1000: GradientDescent(t,
                                                                                      grad_fn = lambda t: gradt_loss(X_obs, y, t),
                                                                                      step_size=step_size,
                                                                                      max_iter = max_iter,
                                                                                      bnds=(min_t,max_t)
-                                                                                     )
+                                                                                     )[1]
     
     
     

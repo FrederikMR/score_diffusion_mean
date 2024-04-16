@@ -19,15 +19,6 @@ from jaxgeometry.integration import dts, dWs, integrator_stratonovich, integrato
 from jaxgeometry.stochastics import tile, product_sde, Brownian_coords, brownian_projection, GRW, \
     product_grw
     
-#%% Data Class
-
-class ScorePaths(NamedTuple):
-    x0:Array
-    xt:Array
-    t:Array
-    dW:Array
-    dt:Array
-    
 #%% Riemannian Brownian Generator
 
 class RiemannianBrownianGenerator(object):
@@ -71,6 +62,7 @@ class RiemannianBrownianGenerator(object):
         self.x_samples = x_samples
         self.t_samples = t_samples
         self.N_sim = repeats*x_samples
+        self.batch_size = repeats*x_samples*t_samples
         self.T = T
         self.dt_steps = dt_steps
         self.dt = jnp.array([T/dt_steps]*dt_steps)
@@ -243,7 +235,7 @@ class RiemannianBrownianGenerator(object):
         elif self.method == "Projection":
             return self.sim_diffusion_projection(x0,N_sim)
     
-    def sample_local(self)->ScorePaths:
+    def sample_local(self)->Array:
             
         dW = self.dWs(self.N_sim*self.M.dim).reshape(self.dt_steps,self.N_sim,self.M.dim)
         (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
@@ -277,9 +269,9 @@ class RiemannianBrownianGenerator(object):
             dW = dW[inds].reshape(-1,self.M.dim)
             dt = jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1))
             
-        return ScorePaths(x0,xt,t,dW,dt)
+        return jnp.hstack((x0,xt,t,dW,dt))
     
-    def sample_embedded(self)->ScorePaths:
+    def sample_embedded(self)->Array:
         
         dW = self.dWs(self.N_sim*self.M.dim).reshape(-1,self.N_sim,self.M.dim)
         (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
@@ -317,9 +309,9 @@ class RiemannianBrownianGenerator(object):
             dW = dW[inds].reshape(-1,self.M.dim)
             dt = jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1))
         
-        return ScorePaths(x0,xt,t,dW,dt)
+        return jnp.hstack((x0,xt,t,dW,dt))
     
-    def sample_tm(self)->ScorePaths:
+    def sample_tm(self)->Array:
         
         dW = self.dWs(self.N_sim*self.dim).reshape(-1,self.N_sim,self.dim)
         (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
@@ -354,9 +346,9 @@ class RiemannianBrownianGenerator(object):
             dW = dW[inds].reshape(-1,self.dim)
             dt = jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1))
             
-        return ScorePaths(x0,xt,t,dW,dt)
+        return jnp.hstack((x0,xt,t,dW,dt))
     
-    def sample_projection(self)->ScorePaths:
+    def sample_projection(self)->Array:
         
         dW = self.dWs(self.N_sim*self.dim).reshape(-1,self.N_sim,self.dim)
         (ts,chartss,xss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
@@ -393,9 +385,9 @@ class RiemannianBrownianGenerator(object):
             dW = dW[inds].reshape(-1,self.dim)
             dt = jnp.repeat(self.dt[inds],self.N_sim).reshape((-1,1))
             
-        return ScorePaths(x0,xt,t,dW,dt)
+        return jnp.hstack((x0,xt,t,dW,dt))
     
-    def __call__(self)->ScorePaths:
+    def __call__(self)->Array:
         
         while True:
             if self.method == "Local":

@@ -49,12 +49,9 @@ def RMGradientDescent(mu_init:Array,
     ub = bnds[1]
         
     grad = grad_fn(mu_init)
-    _, out = lax.scan(update, init=(mu_init, grad), xs=jnp.arange(0,max_iter,1))
-    
-    mu = out[0]
-    grad = out[1]    
-    
-    return mu, grad
+    val, carry = lax.scan(update, init=(mu_init, grad), xs=jnp.arange(0,max_iter,1))
+
+    return val, carry #return (mu,grad),(mu_grad)
 
 #%% Euclidean Gradient Descent
 
@@ -89,12 +86,9 @@ def GradientDescent(mu_init:Array,
     ub = bnds[1]
         
     grad = grad_fn(mu_init)
-    _, out = lax.scan(update, init=(mu_init, grad), xs=jnp.arange(0,max_iter,1))
-    
-    mu = out[0]
-    grad = out[1]
+    val, carry = lax.scan(update, init=(mu_init, grad), xs=jnp.arange(0,max_iter,1))
 
-    return mu, grad
+    return val, carry #return (mu,grad),(mu_grad)
 
 #%% Joint Gradient Descent
 
@@ -156,11 +150,6 @@ def JointGradientDescent(mu_rm:Array,
     grad_rm = grad_fn_rm(mu_rm, mu_euc)
     grad_euc = grad_fn_euc(mu_rm, mu_euc)
 
-    _, out = lax.scan(update, init=(mu_rm, mu_euc, grad_rm, grad_euc), xs=jnp.arange(0,max_iter,1))
+    val, carry = lax.scan(update, init=(mu_rm, mu_euc, grad_rm, grad_euc), xs=jnp.arange(0,max_iter,1))
     
-    mu_rm = out[0]
-    mu_euc = out[1]
-    grad_rm = out[2]
-    grad_euc = out[3]
-    
-    return mu_rm, mu_euc, grad_rm, grad_euc
+    return val, carry #return (mu_rm,mu_euc, grad_rm, grad_euc),(mu_rm,mu_euc, grad_rm, grad_euc)
