@@ -142,11 +142,11 @@ def dsmvr_s2(x0:Array,
     dt_inv = 1/dt.reshape(-1,1,1)
     eye = jnp.eye(dW.shape[-1])
     
-    s1 = s1_model(x0,xt,t)
-    s2 = s2_model(x0,xt,t)
+    s1 = s1_model(x0,x0,t)
+    s2 = s2_model(x0,x0,t)
     
-    s1p = s1_model(x0,x0,t)
-    s2p = s2_model(x0,x0,t)
+    s1p = s1_model(x0,xt,t)
+    s2p = s2_model(x0,xt,t)
     
     psi = s2+jnp.einsum('...i,...j->...ij', s1, s1)
     psip = s2p+jnp.einsum('...i,...j->...ij', s1p, s1p)
@@ -173,11 +173,11 @@ def dsmdiagvr_s2(x0:Array,
     t = t.reshape(-1,1)
     dt_inv = 1/dt.reshape(-1,1)
     
-    s1 = s1_model(x0,xt,t)
-    s2 = s2_model(x0,xt,t)
+    s1 = s1_model(x0,x0,t)
+    s2 = s2_model(x0,x0,t)
     
-    s1p = s1_model(x0,x0,t)
-    s2p = s2_model(x0,x0,t)
+    s1p = s1_model(x0,xt,t)
+    s2p = s2_model(x0,xt,t)
     
     psi = jnp.diagonal(s2, axis1=1,axis2=2)+s1*s1
     psip = jnp.diagonal(s2p, axis1=1,axis2=2)+s1p*s1p
