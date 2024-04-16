@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J Sphere3_s2vr
+#BSUB -J HypParaboloid2_s1vr
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
@@ -18,8 +18,8 @@ module swap cudnn/v8.9.1.23-prod-cuda-12.X
 module swap python3/3.10.12
 
 python3 train_score.py \
-    --manifold Sphere \
-    --dim 3 \
+    --manifold HypParaboloid \
+    --dim 2 \
     --train_net s1 \
     --s1_loss_type dsmvr \
     --s2_loss_type dsmvr \
