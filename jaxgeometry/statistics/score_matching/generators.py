@@ -69,6 +69,7 @@ class RiemannianBrownianGenerator(object):
         self.sqrtdt = jnp.sqrt(self.dt)
         self.t0 = t0
         self.key = jrandom.key(seed)
+        self.counter = 0
         
         if self.method in ["Local", "Embedded"]:
             Brownian_coords(M)
@@ -389,6 +390,9 @@ class RiemannianBrownianGenerator(object):
     
     def __call__(self)->Array:
         
+        self.counter += 1
+        if self.counter % 100 == 0:
+            self.x0s = self.x0s_default
         while True:
             if self.method == "Local":
                 yield self.sample_local()
