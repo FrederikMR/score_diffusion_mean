@@ -290,6 +290,45 @@ def train_s1s2(M:object,
         return s2_loss+gamma*s1_loss
     
     @jit
+    def s1loss_fun(params:hk.Params, 
+                 state_val:dict, 
+                 rng_key:Array, 
+                 data:Array
+                 )->float:
+        
+        s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[0]
+
+        x0 = data[:,:generator.dim]
+        xt = data[:,generator.dim:(2*generator.dim)]
+        t = data[:,2*generator.dim]
+        dW = data[:,(2*generator.dim+1):-1]
+        dt = data[:,-1]
+        
+        s1_loss = loss_s1model(x0, xt, t, dW, dt, generator, s1_model)
+        
+        return s1_loss
+    
+    @jit
+    def s2loss_fun(params:hk.Params, 
+                 state_val:dict, 
+                 rng_key:Array, 
+                 data:Array
+                 )->float:
+        
+        s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[0]
+        s2_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[1]
+        
+        x0 = data[:,:generator.dim]
+        xt = data[:,generator.dim:(2*generator.dim)]
+        t = data[:,2*generator.dim]
+        dW = data[:,(2*generator.dim+1):-1]
+        dt = data[:,-1]
+
+        s2_loss = loss_s2model(x0, xt, t, dW, dt, generator, s1_model, s2_model)
+        
+        return s2_loss
+    
+    @jit
     def update(state:TrainingState, data:Array):
         
         rng_key, next_rng_key = jrandom.split(state.rng_key)
@@ -298,6 +337,22 @@ def train_s1s2(M:object,
         new_params = optax.apply_updates(state.params, updates)
         
         return TrainingState(new_params, state.state_val, new_opt_state, rng_key), loss
+    
+    @jit
+    def step_update(state:TrainingState, data:Array):
+        
+        rng_key, next_rng_key = jrandom.split(state.rng_key)
+        loss_s1, gradients = value_and_grad(s1loss_fun)(state.params, state.state_val, rng_key, data)
+        updates, new_opt_state = optimizer.update(gradients, state.opt_state)
+        new_params = optax.apply_updates(state.params, updates)
+        
+        state = TrainingState(new_params, state.state_val, new_opt_state, rng_key)
+        rng_key, next_rng_key = jrandom.split(state.rng_key)
+        loss_s2, gradients = value_and_grad(s2loss_fun)(state.params, state.state_val, rng_key, data)
+        updates, new_opt_state = optimizer.update(gradients, state.opt_state)
+        new_params = optax.apply_updates(state.params, updates)
+        
+        return TrainingState(new_params, state.state_val, new_opt_state, rng_key), loss_s1+loss_s2
     
     if loss_type == 'dsm':
         loss_s1model = dsm_s1
@@ -357,7 +412,8 @@ def train_s1s2(M:object,
                                                            output_shapes=([generator.batch_size, 3*generator.dim+2]))
             train_dataset = iter(tfds.as_numpy(train_dataset))
             continue
-        new_state, loss_val = update(state, data)
+        #new_state, loss_val = update(state, data)
+        new_state, loss_val = step_update(state, data)
         if ((not any(jnp.sum(jnp.isnan(val))>0 for val in new_state.params[list(new_state.params.keys())[0]].values())) \
                 and (loss_val<1e12)):
             state = new_state
