@@ -390,9 +390,9 @@ class RiemannianBrownianGenerator(object):
     
     def __call__(self)->Array:
         
-        self.counter += 1
-        if self.counter % 100 == 0:
-            self.x0s = self.x0s_default
+        #self.counter += 1
+        #if self.counter % 100 == 0:
+        #    self.x0s = self.x0s_default
         while True:
             if self.method == "Local":
                 yield self.sample_local()

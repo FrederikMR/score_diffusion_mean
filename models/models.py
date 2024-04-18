@@ -81,7 +81,7 @@ class MLP_s2(hk.Module):
             model.append(tanh)
             
         model.append(lambda x: hk.Linear(self.dim*self.r, w_init=jnp.zeros, b_init=jnp.zeros)(x).reshape(-1,self.dim,self.r))
-        
+
         return hk.Sequential(model)
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
@@ -93,7 +93,7 @@ class MLP_s2(hk.Module):
         shape[-1] = 1
         t = x.T[-1].reshape(shape)
         
-        diag = vmap(lambda x: jnp.diag(x))(alpha)
+        diag = vmap(lambda a: jnp.diag(a))(alpha)
 
         hess_rn = -jnp.einsum('ij,...i->...ij', jnp.eye(self.dim), 1/t)
         
