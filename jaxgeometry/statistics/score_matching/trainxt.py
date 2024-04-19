@@ -79,10 +79,11 @@ def train_s1(M:object,
                                eps_root = 0.0,
                                mu_dtype=None)
         
+    print("Hallo1")
     train_dataset = tf.data.Dataset.from_generator(generator,output_types=tf.float32,
                                                    output_shapes=([generator.batch_size, 3*generator.dim+2]))
     train_dataset = iter(tfds.as_numpy(train_dataset))
-
+    print("Hallo2")
     initial_rng_key = jrandom.PRNGKey(seed)
     if type(model) == hk.Transformed:
         if state is None:
@@ -100,8 +101,11 @@ def train_s1(M:object,
         apply_fn = lambda params, data, rng_key, state_val: model.apply(params, state_val, rng_key, data)[0]
     
     loss = []
+    print("Hallo3")
     for step in range(epochs):
+        print(f"Hallo {epochs}")
         data = next(train_dataset)
+        print(f"Hallo2 {epochs}")
         if jnp.isnan(jnp.sum(data)):
             generator.x0s = generator.x0s_default
             train_dataset = tf.data.Dataset.from_generator(generator,output_types=tf.float32,
