@@ -50,7 +50,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
-    parser.add_argument('--train_net', default="s1s2",
+    parser.add_argument('--train_net', default="s2",
                         type=str)
     parser.add_argument('--s1_loss_type', default="dsmvr",
                         type=str)
@@ -164,7 +164,7 @@ def train_score()->None:
     if args.train_net == "s2":
         state = load_model(s1_path)
         rng_key = jran.PRNGKey(args.seed)
-        s1 = lambda x,y,t: s1_model.apply(state.params,rng_key, jnp.hstack((x, y, t.reshape(-1,1))))
+        s1 = lambda x,y,t: s1_model.apply(state.params,rng_key, jnp.hstack((x, y, t)))
         
         if args.load_model:
             state_s2 = load_model(s2_path)

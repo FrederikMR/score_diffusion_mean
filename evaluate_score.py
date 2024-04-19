@@ -54,13 +54,13 @@ def parse_args():
     # File-paths
     parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=[3],
+    parser.add_argument('--dim', default=[2],
                         type=List)
     parser.add_argument('--s1_loss_type', default="dsmvr",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--s2_type', default="s1s2",
+    parser.add_argument('--s2_type', default="s2",
                         type=str)
     parser.add_argument('--s2_approx', default=1,
                         type=int)
