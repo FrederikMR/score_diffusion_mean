@@ -114,7 +114,7 @@ def train_score()->None:
                 models.MLP_s2(layers_alpha=layers, 
                               layers_beta=layers,
                               dim=generator_dim,
-                              r = max(generator_dim//2,1))
+                              r = max((generator_dim-1)//2,1))
                 )
             
             return s1s2(x)
@@ -131,7 +131,7 @@ def train_score()->None:
                 models.MLP_s2(layers_alpha=layers, 
                               layers_beta=layers,
                               dim=generator_dim,
-                              r = max(generator_dim//2,1))
+                              r = max((generator_dim-1)//2,1))
                 )
              
             return s1s2(x)

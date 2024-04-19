@@ -54,7 +54,7 @@ def parse_args():
     # File-paths
     parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=[5],
+    parser.add_argument('--dim', default=[3],
                         type=List)
     parser.add_argument('--s1_loss_type', default="dsmvr",
                         type=str)
@@ -149,7 +149,7 @@ def evaluate_diffusion_mean():
                     models.MLP_s2(layers_alpha=layers, 
                                   layers_beta=layers,
                                   dim=generator_dim,
-                                  r = max(generator_dim//2,1))
+                                  r = max((generator_dim-1)//2,1))
                     )
                 
                 return s1s2(x)
@@ -166,7 +166,7 @@ def evaluate_diffusion_mean():
                     models.MLP_s2(layers_alpha=layers, 
                                   layers_beta=layers,
                                   dim=generator_dim,
-                                  r = max(generator_dim//2,1))
+                                  r = max((generator_dim-1)//2,1))
                     )
                 
                 return s1s2(x)
