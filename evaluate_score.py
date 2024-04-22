@@ -60,7 +60,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsmvr",
                         type=str)
-    parser.add_argument('--s2_type', default="s2",
+    parser.add_argument('--s2_type', default="s1s2",
                         type=str)
     parser.add_argument('--s2_approx', default=1,
                         type=int)

@@ -15,15 +15,17 @@ from jaxgeometry.setup import *
 
 #%% Vanilla Score Matching First Order
 
-@partial(jit, static_argnames=['generator', 's1_model'])
-def vsm_s1(x0:Array,
-           xt:Array,
-           t:Array,
-           dW:Array,
-           dt:Array,
-           generator:object,
-           s1_model:Callable[[Array,Array,Array],Array],
-           )->Array:
+def vsm_s1fun(generator:object,
+              s1_model,
+              params:hk.Params, 
+              state_val:dict, 
+              rng_key:Array, 
+              x0:Array,
+              xt:Array,
+              t:Array,
+              dW:Array,
+              dt:Array
+              )->float:
     """ compute loss."""
     
     loss_s1 = s1_model(x0,xt,t.reshape(-1,1))
@@ -32,81 +34,112 @@ def vsm_s1(x0:Array,
     (xts, chartts) = vmap(generator.update_coords)(xt)
     
     divs = vmap(lambda x0, xt, chart, t: generator.M.div((xt, chart), 
-                                               lambda x: generator.grad_fun(x0, x, t, s1_model)))(x0,xts,chartts,t)
+                                               lambda x: generator.grad_local(s1_model, x0, x, t)))(x0,xts,chartts,t)
     
     return jnp.mean(norm2s+2.0*divs)
 
 #%% Denoising Score Matching First Order
 
-@partial(jit, static_argnames=['generator', 's1_model'])
-def dsm_s1(x0:Array,
-           xt:Array,
-           t:Array,
-           dW:Array,
-           dt:Array,
-           generator:object,
-           s1_model:Callable[[Array,Array,Array],Array]
-           )->Array:
+def dsm_s1fun(generator:object,
+              s1_model,
+              params:hk.Params, 
+              state_val:dict, 
+              rng_key:Array, 
+              x0:Array,
+              xt:Array,
+              t:Array,
+              dW:Array,
+              dt:Array,
+              )->float:
     
     def f(x0,xt,t,dW,dt):
         
-        s1 = s1_model(x0,xt,t)
-        s1_loss = dW/dt+s1
+        s1 = generator.grad_TM(s1_model, x0, xt, t)
+        dW = generator.dW_TM(xt,dW)
+
+        loss = dW/dt+s1
         
-        return jnp.sum(s1_loss*s1_loss)
+        return jnp.sum(loss*loss)
+        
+        #s1_model = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
+        #s1 = generator.grad_TM(s1_model, x0, xt, t)
+        #s1_x0 = generator.grad_TM(s1_model, x0, x0, t)
+        #dW = generator.dW_TM(xt,dW)
+        
+        #l1_loss = dW+dt*s1
+        #l1_loss = jnp.sum(l1_loss*l1_loss)
+        
+        #eps = dt
+        #z = -dW/jnp.sqrt(dt)
+        
+        #var_loss = eps*jnp.dot(z,z)-2*eps**(1.5)*jnp.dot(z, s1_x0)
+        
+        #return (l1_loss-var_loss)/(eps**2)
+        
+        #s1 = lambda x,y,t: apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)
+        #s1 = generator.grad_TM(s1, x0, xt, t)
+        #dW = generator.dW_TM(xt,dW)
+
+        #loss = dW/dt+s1
+        
+        #return jnp.mean(loss*loss)
     
     return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
 
 #%% Variance Reduction Denoising Score Matching First Order
 
-@partial(jit, static_argnames=['generator', 's1_model'])
-def dsmvr_s1(x0:Array,
-             xt:Array,
-             t:Array,
-             dW:Array,
-             dt:Array,
-             generator:object,
-             s1_model:Callable[[Array,Array,Array],Array]
-             )->Array:
+def dsmvr_s1fun(generator:object,
+                s1_model,
+                params:hk.Params, 
+                state_val:dict, 
+                rng_key:Array, 
+                x0:Array,
+                xt:Array,
+                t:Array,
+                dW:Array,
+                dt:Array,
+                )->float:
     
     def f(x0,xt,t,dW,dt):
         
-        dt_inv = 1/dt
+        dW = generator.dW_TM(x0,dW)
         
         s1 = s1_model(x0,xt,t)
         s1p = s1_model(x0,x0,t)
         
-        s1_loss = dW/dt+s1
-        s1_loss = 0.5*jnp.dot(s1_loss,s1_loss)
-        vr_loss = dt_inv*(jnp.dot(s1p,dW)+jnp.dot(dW,dW)*dt_inv)
+        l1_loss = dW/dt+s1
+        l1_loss = 0.5*jnp.dot(l1_loss,l1_loss)
+        var_loss = jnp.dot(s1p,dW)/dt+jnp.dot(dW,dW)/(dt**2)
         
-        return s1_loss-vr_loss
+        return l1_loss-var_loss
     
     return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
 
 #%% Denoising Score Matching Second Order
 
-@partial(jit, static_argnames=['generator', 's1_model', 's2_model'])
-def dsm_s2(x0:Array,
-           xt:Array,
-           t:Array,
-           dW:Array,
-           dt:Array,
-           generator:object,
-           s1_model:Callable[[Array, Array, Array], Array],
-           s2_model:Callable[[Array, Array, Array], Array],
-           )->Array:
+def dsm_s2fun(generator:object,
+              s1_model,
+              s2_model,
+              params:hk.Params, 
+              state_val:dict, 
+              rng_key:Array, 
+              x0:Array,
+              xt:Array,
+              t:Array,
+              dW:Array,
+              dt:Array,
+              )->float:
     
     def f(x0,xt,t,dW,dt):
         
-        dt_inv = 1/dt
+        dW = generator.dW_TM(xt,dW)    
         
-        s1 = lax.stop_gradient(s1_model(x0,xt,t))
-        s2 = s2_model(x0,xt,t)
+        s1 = s1_model(x0,xt,t)#generator.grad_TM(s1_model, x0, xt, t)#s1_model(x0,xt,t)
+        s2 = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
 
-        s2_loss = s2+jnp.einsum('i,j->ij', s1, s1)+(eye-jnp.einsum('i,j->ij', dW, dW)*dt_inv)*dt_inv
+        loss_s2 = s2+jnp.einsum('i,j->ij', s1, s1)+(eye-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
         
-        return jnp.sum(s2_loss*s2_loss)
+        return jnp.sum(loss_s2*loss_s2)
     
     eye = jnp.eye(dW.shape[-1])
     
@@ -114,63 +147,29 @@ def dsm_s2(x0:Array,
 
 #%% Denoising Score Matching Diag Second Order
 
-@partial(jit, static_argnames=['generator', 's1_model', 's2_model'])
-def dsmdiag_s2(x0:Array,
-               xt:Array,
-               t:Array,
-               dW:Array,
-               dt:Array,
-               generator:object,
-               s1_model:Callable[[Array, Array, Array], Array],
-               s2_model:Callable[[Array, Array, Array], Array],
-               )->Array:
+def dsmdiag_s2fun(generator:object,
+              s1_model,
+              s2_model,
+              params:hk.Params, 
+              state_val:dict, 
+              rng_key:Array, 
+              x0:Array,
+              xt:Array,
+              t:Array,
+              dW:Array,
+              dt:Array,
+              )->float:
     
     def f(x0,xt,t,dW,dt):
         
-        dt_inv = 1/dt
-
-        s1 = lax.stop_gradient(s1_model(x0,xt,t))
-        s2 = s2_model(x0,xt,t)
-
-        s2_loss = jnp.diag(s2)+s1*s1+(1.0-dW*dW*dt_inv)*dt_inv
+        dW = generator.dW_TM(xt,dW)    
         
-        return jnp.sum(s2_loss*s2_loss)
-    
-    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
+        s1 = s1_model(x0,xt,t)#generator.grad_TM(s1_model, x0, xt, t)
+        s2 = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
 
-#%% Denoising Score Matching Second Order
-
-@partial(jit, static_argnames=['generator', 's1_model', 's2_model'])
-def dsmvr_s2(x0:Array,
-             xt:Array,
-             t:Array,
-             dW:Array,
-             dt:Array,
-             generator:object,
-             s1_model:Callable[[Array, Array, Array], Array],
-             s2_model:Callable[[Array, Array, Array], Array],
-             )->Array:
-    
-    def f(x0,xt,t,dW,dt):
+        loss_s2 = jnp.diag(s2)+s1*s1+(1-dW*dW/dt)/dt
         
-        dt_inv = 1/dt
-                
-        s1 = lax.stop_gradient(s1_model(x0,x0,t))
-        s2 = s2_model(x0,x0,t)
-
-        s1p = lax.stop_gradient(s1_model(x0,xt,t))
-        s2p = s2_model(x0,xt,t)
-
-        psi = s2+jnp.einsum('i,j->ij', s1, s1)
-        psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
-        diff = (eye-jnp.einsum('i,j->ij', dW, dW)*dt_inv)*dt_inv
-        
-        loss1 = psip**2
-        loss3 = 2.*diff*(psip-psi)
-        
-        s2_loss = loss1+loss3
-
-        return 0.5*jnp.sum(s2_loss)
+        return jnp.sum(loss_s2*loss_s2)
     
     eye = jnp.eye(dW.shape[-1])
     
@@ -178,50 +177,87 @@ def dsmvr_s2(x0:Array,
 
 #%% Denoising Score Matching Second Order
 
-@partial(jit, static_argnames=['generator', 's1_model', 's2_model'])
-def dsmdiagvr_s2(x0:Array,
-                 xt:Array,
-                 t:Array,
-                 dW:Array,
-                 dt:Array,
-                 generator:object,
-                 s1_model:Callable[[Array, Array, Array], Array],
-                 s2_model:Callable[[Array, Array, Array], Array],
-                 )->Array:
+def dsmvr_s2fun(generator:object,
+                s1_model,
+                s2_model,
+                params:hk.Params, 
+                state_val:dict, 
+                rng_key:Array, 
+                x0:Array,
+                xt:Array,
+                t:Array,
+                dW:Array,
+                dt:Array,
+                )->float:
     
     def f(x0,xt,t,dW,dt):
         
-        dt_inv = 1/dt
+        dW = generator.dW_TM(x0,dW)
                 
-        s1 = lax.stop_gradient(s1_model(x0,x0,t))
-        s2 = s2_model(x0,x0,t)
+        s1 = s1_model(x0,x0,t)#generator.grad_TM(s1_model, x0, x0, t)#
+        s2 = s2_model(x0,x0,t)#generator.proj_hess(s1_model, s2_model, x0, x0, t)
 
-        s1p = lax.stop_gradient(s1_model(x0,xt,t))
-        s2p = s2_model(x0,xt,t)
+        s1p = s1_model(x0,xt,t)#generator.grad_TM(s1_model, x0, xt, t)#
+        s2p = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
+        
+        #s1m = generator.grad_TM(s1_model, x0, xm, t)
+        #s2m = generator.proj_hess(s1_model, s2_model, x0, xm, t)
 
-        psi = jnp.diag(s2)+s1*s1
-        psip = jnp.diag(s2p)+s1p*s1p
-        diff = (1.0-dW*dW*dt_inv)*dt_inv
+        psi = s2+jnp.einsum('i,j->ij', s1, s1)
+        psip = s2p+jnp.einsum('i,j->ij', s1p, s1p)
+        #psim = s2m+jnp.einsum('i,j->ij', s1m, s1m)
+        diff = (eye-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
         
         loss1 = psip**2
-        loss3 = 2.*diff*(psip-psi)
+        #loss2 = psim**2
+        loss3 = 2.*diff*(psip-psi)#2*diff*((psip-psi)+(psim-psi))
         
-        s2_loss = loss1+loss3
+        loss_s2 = loss1+loss3#loss1+loss2+loss3
 
-        return 0.5*jnp.sum(s2_loss)
+        return 0.5*jnp.sum(loss_s2)#jnp.mean(loss_s2)#jnp.mean(loss_s2)
+    
+    eye = jnp.eye(dW.shape[-1])
     
     return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
 
+#%% Denoising Score Matching Second Order
 
+def dsmdiagvr_s2fun(generator:object,
+                    s1_model,
+                    s2_model,
+                    params:hk.Params, 
+                    state_val:dict, 
+                    rng_key:Array, 
+                    x0:Array,
+                    xt:Array,
+                    t:Array,
+                    dW:Array,
+                    dt:Array,
+                    )->float:
+    
+    def f(x0,xt,t,dW,dt):
+        
+        dW = generator.dW_TM(x0,dW)
+                
+        s1 = s1_model(x0,x0,t)#generator.grad_TM(s1_model, x0, x0, t)#
+        s2 = s2_model(x0,x0,t)#generator.proj_hess(s1_model, s2_model, x0, x0, t)
 
+        s1p = s1_model(x0,xt,t)#generator.grad_TM(s1_model, x0, xt, t)#
+        s2p = s2_model(x0,xt,t)#generator.proj_hess(s1_model, s2_model, x0, xt, t)
 
+        psi = jnp.diag(s2)+s1*s1
+        psip = jnp.diag(s2p)+s1p*s1p
+        #psim = s2m+jnp.einsum('i,j->ij', s1m, s1m)
+        diff = (1-dW*dW/dt)/dt
+        
+        loss1 = psip**2
+        #loss2 = psim**2
+        loss3 = 2.*diff*(psip-psi)#2*diff*((psip-psi)+(psim-psi))
+        
+        loss_s2 = loss1+loss3#loss1+loss2+loss3
 
-
-
-
-
-
-
-
-
-
+        return 0.5*jnp.sum(loss_s2)#jnp.mean(loss_s2)#jnp.mean(loss_s2)
+    
+    eye = jnp.eye(dW.shape[-1])
+    
+    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
