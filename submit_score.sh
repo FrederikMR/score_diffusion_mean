@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J Sphere20_s1vr
+#BSUB -J Sphere50_s1vr
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
@@ -19,7 +19,7 @@ module swap python3/3.10.12
 
 python3 train_score.py \
     --manifold Sphere \
-    --dim 20 \
+    --dim 50 \
     --s1_loss_type dsmvr \
     --s2_loss_type dsmvr \
     --load_model 0 \
