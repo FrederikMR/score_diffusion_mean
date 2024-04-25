@@ -22,7 +22,7 @@ from jaxgeometry.setup import *
 #    Point has dimensions (m,), data has dimensions (n,m), and output will be of size (n,).
 #    """
 #    return jnp.sqrt(jnp.sum((point - data)**2, axis=1))
-class KMeans:
+class KMeans(object):
     def __init__(self, dist_fun, frechet_fun, n_clusters=4, max_iter=100):
         self.dist_fun = dist_fun
         self.frechet_fun = frechet_fun

@@ -117,7 +117,7 @@ def JointJaxOpt(mu_rm:Array,
                 lr_rate:float=0.0002,
                 bnds_rm:Tuple[Array, Array]=(None,None),
                 bnds_euc:Tuple[Array, Array]=(None,None),
-                max_step:Array=None
+                max_step:float=0.1
                 )->Tuple[Array, Array, Array, Array]:
     
     @jit
@@ -129,7 +129,7 @@ def JointJaxOpt(mu_rm:Array,
         mu_rm, mu_euc, grad_rm, grad_euc, opt_state = carry
         
         grad_rm = grad_rm #jnp.clip(grad_rm, min_step, max_step)
-        grad_euc = grad_euc #jnp.clip(grad_euc, min_step, max_step)
+        grad_euc = jnp.clip(grad_euc, min_step, max_step)
         
         grad = jnp.hstack((grad_rm, grad_euc))
         opt_state = opt_update(idx, grad, opt_state)

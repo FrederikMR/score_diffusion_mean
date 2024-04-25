@@ -21,6 +21,7 @@ class ScoreEvaluation(object):
                  s1_model:Callable[[Array, Array, Array], Array],
                  s2_model:Callable[[Array, Array, Array], Array]=None,
                  method:str='Local',
+                 eps:float=0.01,
                  )->None:
         
         if method not in ['Local', 'Embedded']:
@@ -78,6 +79,21 @@ class ScoreEvaluation(object):
         val3 = jacfwd(lambda x: self.M.proj(Fx, val2))(Fx)
         
         return val1+val3
+    
+    def dist(self,
+             x:Tuple[Array, Array],
+             y:Tuple[Array, Array],
+             t:Array
+             )->Array:
+        
+        if self.method == "Local":
+            p0 = jnp.log(jscipy.stats.multivariate_normal.pdf(y[0],x[0],self.eps*jnp.eye(len(x[0]))))
+        else:
+            p0 = jnp.log(jscipy.stats.multivariate_normal.pdf(self.M.F(y),self.M.F(x),self.eps*jnp.eye(len(x[1]))))
+            
+        qt = (p0-0.5*self.M.div((y[0],y[1]), lambda x: self.grady_log(x, y, t))*t)*t
+        
+        return -2.*qt
     
     def grady_log(self, 
                   x:Tuple[Array, Array], 

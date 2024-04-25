@@ -59,11 +59,11 @@ def parse_args():
                         type=int)
     parser.add_argument('--T_sample', default=0,
                         type=int)
-    parser.add_argument('--t', default=0.1,
+    parser.add_argument('--t', default=0.01,
                         type=float)
     parser.add_argument('--gamma', default=1.0,
                         type=float)
-    parser.add_argument('--train_net', default="s2",
+    parser.add_argument('--train_net', default="s1s2",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)

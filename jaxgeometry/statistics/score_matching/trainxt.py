@@ -52,8 +52,7 @@ def train_s1(M:object,
         dW = data[:,(2*N_dim+1):-1]
         dt = data[:,-1]
         
-        return loss_model(generator, s1_model, params, state_val, rng_key,
-                          x0, xt, t, dW, dt)
+        return loss_model(generator, s1_model, x0, xt, t, dW, dt)
     
     @jit
     def update(state:TrainingState, data:Array):
@@ -77,13 +76,12 @@ def train_s1(M:object,
         return
         
     if optimizer is None:
-        optimizer = optax.sgd(learning_rate=lr_rate)
-        #optimizer = optax.adam(learning_rate = lr_rate,
-        #                       b1 = 0.9,
-        #                       b2 = 0.999,
-        #                       eps = 1e-08,
-        #                       eps_root = 0.0,
-        #                       mu_dtype=None)
+        optimizer = optax.adam(learning_rate = lr_rate,
+                               b1 = 0.9,
+                               b2 = 0.999,
+                               eps = 1e-08,
+                               eps_root = 0.0,
+                               mu_dtype=None)
         
     train_dataset = tf.data.Dataset.from_generator(generator,output_types=tf.float32,
                                                    output_shapes=([batch_size,2*N_dim+dW_dim+2]))
@@ -173,8 +171,7 @@ def train_s2(M:object,
         dW = data[:,(2*N_dim+1):-1]
         dt = data[:,-1]
         
-        return loss_model(generator, s1_model, s2_model, params, state_val, rng_key,
-                          x0, xt, t, dW, dt)
+        return loss_model(generator, s1_model, s2_model, x0, xt, t, dW, dt)
     
     @jit
     def update(state:TrainingState, data:Array):
@@ -195,8 +192,6 @@ def train_s2(M:object,
         loss_model = dsmdiagvr_s2fun
         
     if optimizer is None:
-        #optimizer = optax.sgd(learning_rate=lr_rate)
-        #optimizer = optax.rmsprop(learning_rate=lr_rate)
         optimizer = optax.adam(learning_rate = lr_rate,
                                b1 = 0.9,
                                b2 = 0.999,
@@ -296,10 +291,9 @@ def train_s1s2(M:object,
         dW = data[:,(2*N_dim+1):-1]
         dt = data[:,-1]
         
-        s1_loss = loss_s1model(generator, s1_model, params, state_val, rng_key,
-                               x0, xt, t, dW, dt)
-        s2_loss = loss_s2model(generator, s1_model, s2_model, params, state_val, rng_key,
-                               x0, xt, t, dW, dt)
+        s1_loss = loss_s1model(generator, s1_model, x0, xt, t, dW, dt)
+        s1_model = lambda x,y,t: lax.stop_gradient(apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[0])
+        s2_loss = loss_s2model(generator, s1_model, s2_model, x0, xt, t, dW, dt)
         
         return s2_loss+gamma*s1_loss
     
@@ -327,7 +321,6 @@ def train_s1s2(M:object,
         loss_s2model = dsmdiagvr_s2fun
         
     if optimizer is None:
-        #optimizer = optax.sgd(learning_rate=lr_rate)
         optimizer = optax.adam(learning_rate = lr_rate,
                                b1 = 0.9,
                                b2 = 0.999,
