@@ -1,10 +1,10 @@
 #!/bin/sh
-#BSUB -q gpuv100
-#BSUB -J Sphere50_s1vr
+#BSUB -q gpua100
+#BSUB -J Sphere20_s1vr
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
-#BSUB -R "rusage[mem=32GB]"
+#BSUB -R "rusage[mem=100GB]"
 #BSUB -u fmry@dtu.dk
 #BSUB -o scores/output/output_%J.out
 #BSUB -e scores/error/error_%J.err
@@ -19,14 +19,14 @@ module swap python3/3.10.12
 
 python3 train_score.py \
     --manifold Sphere \
-    --dim 50 \
+    --dim 20 \
     --s1_loss_type dsmvr \
     --s2_loss_type dsmvr \
     --load_model 0 \
     --T_sample 0 \
     --t 0.01 \
     --train_net s1 \
-    --max_T 5.0 \
+    --max_T 1.0 \
     --lr_rate 0.0002 \
     --epochs 50000 \
     --x_samples 64 \
