@@ -56,13 +56,13 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=[2],
                         type=List)
-    parser.add_argument('--s1_loss_type', default="dsmvr",
+    parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
-    parser.add_argument('--s2_loss_type', default="dsmvr",
+    parser.add_argument('--s2_loss_type', default="dsm",
                         type=str)
     parser.add_argument('--s2_type', default="s1s2",
                         type=str)
-    parser.add_argument('--s2_approx', default=1,
+    parser.add_argument('--s2_approx', default=0,
                         type=int)
     parser.add_argument('--fixed_t', default=0,
                         type=int)
