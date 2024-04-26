@@ -51,9 +51,9 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
-    parser.add_argument('--s1_loss_type', default="dsmvr",
+    parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
-    parser.add_argument('--s2_loss_type', default="dsmvr",
+    parser.add_argument('--s2_loss_type', default="dsm",
                         type=str)
     parser.add_argument('--load_model', default=0,
                         type=int)
@@ -270,7 +270,7 @@ def train_score()->None:
 
         if not os.path.exists(s1_path):
             os.makedirs(s1_path)
-            
+
         train_s1(M=M,
                  model=s1_model,
                  generator=data_generator,

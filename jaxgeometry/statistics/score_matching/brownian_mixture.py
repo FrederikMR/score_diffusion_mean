@@ -166,6 +166,9 @@ class BrownianMixture(object):
             Tk = T[:-1]
             TK = T[-1]
             
+            pik = pi[:-1]
+            piK = pi[-1]
+            
             
             val = jnp.einsum('ij,j->ij', pt, self.pi)
             gamma_znk = val/jnp.sum(val, axis=-1).reshape(-1,1)

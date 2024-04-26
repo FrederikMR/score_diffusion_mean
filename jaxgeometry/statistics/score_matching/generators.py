@@ -283,9 +283,9 @@ class EmbeddedSampling(object):
                 h:Array,
                 )->Array:
         
-        val1 = self.M.proj(x0, h)
-        val2 = s1_model(x0,x,t)-self.M.proj(x0, v)
-        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x0)
+        val1 = self.M.proj(x, h)
+        val2 = v-self.M.proj(x, v)
+        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x)
         
         return val1+val3
     
@@ -436,9 +436,9 @@ class TMSampling(object):
                 h:Array,
                 )->Array:
         
-        val1 = self.M.proj(x0, h)
-        val2 = s1_model(x0,x,t)-self.M.proj(x0, v)
-        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x0)
+        val1 = self.M.proj(x, h)
+        val2 = v-self.M.proj(x, v)
+        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x)
         
         return val1+val3
     
@@ -590,9 +590,9 @@ class ProjectionSampling(object):
                 h:Array,
                 )->Array:
         
-        val1 = self.M.proj(x0, h)
-        val2 = s1_model(x0,x,t)-self.M.proj(x0, v)
-        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x0)
+        val1 = self.M.proj(x, h)
+        val2 = v-self.M.proj(x, v)
+        val3 = jacfwd(lambda x: self.M.proj(x, val2))(x)
         
         return val1+val3
     
