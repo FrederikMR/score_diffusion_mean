@@ -62,7 +62,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--s2_type', default="s1s2",
                         type=str)
-    parser.add_argument('--s2_approx', default=0,
+    parser.add_argument('--s2_approx', default=1,
                         type=int)
     parser.add_argument('--fixed_t', default=0,
                         type=int)
