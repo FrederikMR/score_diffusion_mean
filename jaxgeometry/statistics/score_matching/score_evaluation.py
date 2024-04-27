@@ -130,13 +130,21 @@ class ScoreEvaluation(object):
                   t:Array, 
                   )->Array:
         
-        s1 = self.grady_log(x,y,t)
-        s2 = self.ggrady_log(x,y,t)
-        
         if self.method == "Embedded":
-            norm_s1 = jnp.dot(s1,s1)
-            laplace_beltrami = jnp.trace(s2)+.5*jnp.dot(s1,jacfwdx(self.M.logAbsDet)(y).squeeze())
+            s1 = self.s1_model(x,y,t)
+            s2 = self.s2_model(x,y,t)
+            v = self.grad_TM(self.M.F(x), s1)
+            h = self.hess_TM(self.M.F(x), v, s2)
+            
+            norm_s1 = jnp.dot(v,v)
+            laplace_beltrami = jnp.trace(h)
+            
+            #norm_s1 = jnp.dot(s1,s1)
+            #laplace_beltrami = jnp.trace(s2)+.5*jnp.dot(s1,jacfwdx(self.M.logAbsDet)(y).squeeze())
         else:
+            s1 = self.grady_log(x,y,t)
+            s2 = self.ggrady_log(x,y,t)
+            
             norm_s1 = jnp.dot(s1,s1)
             s1 = jnp.linalg.solve(self.M.g(y), s1)
             s2 = jnp.linalg.solve(self.M.g(y), s2)

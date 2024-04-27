@@ -60,7 +60,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsm",
                         type=str)
-    parser.add_argument('--s2_type', default="s1s2",
+    parser.add_argument('--s2_type', default="s2",
                         type=str)
     parser.add_argument('--s2_approx', default=1,
                         type=int)
@@ -135,6 +135,7 @@ def evaluate_diffusion_mean():
             s2_state = None
             s2_ntrain.append(jnp.nan)
         print(s2_ntrain)
+        print(s1_ntrain)
         s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
         if "diag" in args.s2_loss_type:
             s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers, layers_beta=layers,
