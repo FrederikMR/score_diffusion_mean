@@ -292,7 +292,6 @@ def train_s1s2(M:object,
         dt = data[:,-1]
         
         s1_loss = loss_s1model(generator, s1_model, x0, xt, t, dW, dt)
-        s1_model = lambda x,y,t: lax.stop_gradient(apply_fn(params, jnp.hstack((x,y,t)), rng_key, state_val)[0])
         s2_loss = loss_s2model(generator, s1_model, s2_model, x0, xt, t, dW, dt)
         
         return s2_loss+gamma*s1_loss

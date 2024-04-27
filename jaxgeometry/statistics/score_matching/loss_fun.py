@@ -101,7 +101,7 @@ def dsm_s2fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        s1 = s1_model(x0,xt,t)
+        s1 = lax.stop_gradient(s1_model(x0,xt,t))
         s2 = s2_model(x0,xt,t)
         
         s1 = generator.grad_TM(xt, s1)
@@ -130,7 +130,7 @@ def dsmdiag_s2fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
         
-        s1 = s1_model(x0,xt,t)
+        s1 = lax.stop_gradient(s1_model(x0,xt,t))
         s2 = s2_model(x0,xt,t)
         
         s1 = generator.grad_TM(xt, s1)
@@ -157,10 +157,10 @@ def dsmvr_s2fun(generator:object,
     
     def f(x0,xt,t,dW,dt):
                 
-        s1 = s1_model(x0,x0,t)
+        s1 = lax.stop_gradient(s1_model(x0,x0,t))
         s2 = s2_model(x0,x0,t)
 
-        s1p = s1_model(x0,xt,t)
+        s1p = lax.stop_gradient(s1_model(x0,xt,t))
         s2p = s2_model(x0,xt,t)
         
         s1 = generator.grad_TM(xt, s1)
@@ -197,13 +197,11 @@ def dsmdiagvr_s2fun(generator:object,
                     )->float:
     
     def f(x0,xt,t,dW,dt):
-        
-        dW = generator.dW_TM(x0,dW)
                 
-        s1 = s1_model(x0,x0,t)
+        s1 = lax.stop_gradient(s1_model(x0,x0,t))
         s2 = s2_model(x0,x0,t)
 
-        s1p = s1_model(x0,xt,t)
+        s1p = lax.stop_gradient(s1_model(x0,xt,t))
         s2p = s2_model(x0,xt,t)
         
         s1 = generator.grad_TM(xt, s1)
