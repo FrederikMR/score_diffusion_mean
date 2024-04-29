@@ -60,7 +60,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsm",
                         type=str)
-    parser.add_argument('--s2_type', default="s2",
+    parser.add_argument('--s2_type', default="s1s2",
                         type=str)
     parser.add_argument('--s2_approx', default=1,
                         type=int)
@@ -199,10 +199,14 @@ def evaluate_diffusion_mean():
             s2_fun = lambda x,y,t: s2_model.apply(s2_state.params, rng_key, jnp.hstack((x,y,t)))
         else:
             s2_fun = None
+            
+        from jax import jacfwd
+        s1_test = lambda x,y,t: jacfwd(lambda y1: jnp.log(M.hk_embedded(x,y1,t)).squeeze())(y)
+        s2_test = lambda x,y,t: jacfwd(lambda y1: jacfwd(lambda y2: jnp.log(M.hk_embedded(x,y2,t)).squeeze())(y1))(y)
 
         ScoreEval = ScoreEvaluation(M,
-                                    s1_model=s1_fun, 
-                                    s2_model=s2_fun,#s2_model_test2, 
+                                    s1_model=s1_fun,#s1_fun, 
+                                    s2_model=s2_fun,#s2_fun,#s2_model_test2, 
                                     method=method, 
                                     )
 

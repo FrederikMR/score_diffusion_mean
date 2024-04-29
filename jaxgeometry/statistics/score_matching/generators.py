@@ -300,7 +300,7 @@ class EmbeddedSampling(object):
         val1 = self.M.JF(x)
         val2 = jacfwdx(lambda x1: self.M.JF(x1))(x)
         term1 = jnp.einsum('jl,li,jk->ik', h, val1, val1)
-        term2 = jnp.einsum('j,jik', v, val2)
+        term2 = jnp.einsum('j,jik->ik', v, val2)
         
         return term1+term2
 
@@ -425,6 +425,8 @@ class TMSampling(object):
                    x:Array,
                    v:Array,
                    )->Array:
+        
+        x = self.update_coords(x)
 
         Jf = self.M.JF(x)
 
@@ -453,7 +455,7 @@ class TMSampling(object):
         val1 = self.M.JF(x)
         val2 = jacfwdx(lambda x1: self.M.JF(x1))(x)
         term1 = jnp.einsum('jl,li,jk->ik', h, val1, val1)
-        term2 = jnp.einsum('j,jik', v, val2)
+        term2 = jnp.einsum('j,jik->ik', v, val2)
         
         return term1+term2
 
@@ -607,6 +609,6 @@ class ProjectionSampling(object):
         val1 = self.M.JF(x)
         val2 = jacfwdx(lambda x1: self.M.JF(x1))(x)
         term1 = jnp.einsum('jl,li,jk->ik', h, val1, val1)
-        term2 = jnp.einsum('j,jik', v, val2)
+        term2 = jnp.einsum('j,jik->ik', v, val2)
         
         return term1+term2
