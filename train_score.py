@@ -140,12 +140,6 @@ def train_score()->None:
              
             return s1s2(x)
     
-    if not os.path.exists('scores/output/'):
-        os.makedirs('scores/output/')
-        
-    if not os.path.exists('scores/error/'):
-        os.makedirs('scores/error/')
-    
     if args.T_sample:
         batch_size = args.x_samples*args.repeats
     else:

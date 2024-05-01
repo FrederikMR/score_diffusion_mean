@@ -6,8 +6,6 @@
 #BSUB -W 24:00
 #BSUB -R "rusage[mem=32GB]"
 #BSUB -u fmry@dtu.dk
-#BSUB -o scores/output/output_%Jout
-#BSUB -e scores/error/error_%J.err
 #BSUB -B
 #BSUB -N
 

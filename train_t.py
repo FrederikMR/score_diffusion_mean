@@ -89,12 +89,6 @@ def train_score()->None:
                                                                            args.dim)
     
     s1_model = hk.transform(lambda x: models.MLP_t(dim=generator_dim, layers=layers)(x))
-    
-    if not os.path.exists('scores/output/'):
-        os.makedirs('scores/output/')
-        
-    if not os.path.exists('scores/error/'):
-        os.makedirs('scores/error/')
 
     batch_size = args.x_samples*args.dt_steps*args.repeats
         
