@@ -50,8 +50,8 @@ def dsm_s1fun(generator:object,
         
         s1 = s1_model(x0, xt, t)
 
-        s1 = generator.grad_local(xt, s1)#generator.grad_TM(xt, s1)
-        dW = generator.grad_local(xt, dW)#generator.grad_TM(xt, dW)
+        s1 = generator.grad_TM(xt, s1)#generator.grad_TM(xt, s1)
+        dW = generator.grad_TM(xt, dW)#generator.grad_TM(xt, dW)
 
         loss = dW/dt+s1
         
@@ -104,14 +104,14 @@ def dsm_s2fun(generator:object,
         s1 = lax.stop_gradient(s1_model(x0,xt,t))
         s2 = s2_model(x0,xt,t)
 
-        s2 = generator.hess_local(xt, s1, s2)
-        s1 = generator.grad_local(xt, s1)
-        dW = generator.grad_local(xt,dW)
-        eye = jnp.eye(len(dW))
+        #s2 = generator.hess_local(xt, s1, s2)
+        #s1 = generator.grad_local(xt, s1)
+        #dW = generator.grad_local(xt,dW)
+        #eye = jnp.eye(len(dW))
 
-        #s1 = generator.grad_TM(xt, s1)
-        #s2 = generator.hess_TM(xt, s1, s2)
-        #dW = generator.grad_TM(xt, dW)
+        s1 = generator.grad_TM(xt, s1)
+        s2 = generator.hess_TM(xt, s1, s2)
+        dW = generator.grad_TM(xt, dW)
 
         loss_s2 = s2+jnp.einsum('i,j->ij', s1, s1)+(eye-jnp.einsum('i,j->ij', dW, dW)/dt)/dt
         

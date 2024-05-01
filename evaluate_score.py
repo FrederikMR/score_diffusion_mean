@@ -52,17 +52,17 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Sphere",
+    parser.add_argument('--manifold', default="HypParaboloid",
                         type=str)
     parser.add_argument('--dim', default=[2],
                         type=List)
-    parser.add_argument('--s1_loss_type', default="dsm",
+    parser.add_argument('--s1_loss_type', default="dsmvr",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsm",
                         type=str)
     parser.add_argument('--s2_type', default="s1s2",
                         type=str)
-    parser.add_argument('--s2_approx', default=1,
+    parser.add_argument('--s2_approx', default=0,
                         type=int)
     parser.add_argument('--fixed_t', default=0,
                         type=int)
@@ -116,7 +116,9 @@ def evaluate_diffusion_mean():
         
         M, x0, method, generator_dim, layers, opt_val = load_manifold(args.manifold,
                                                                                N)
-        if not (method == "Local"):
+        if method == "LocalSampling":
+            method = "Local"
+        else:
             method = "Embedded"
             
         Brownian_coords(M)
@@ -125,6 +127,8 @@ def evaluate_diffusion_mean():
         s1_path = f"{args.score_path}{args.manifold}{N}/s1_{args.s1_loss_type}/"
         s2_path = f"{args.score_path}{args.manifold}{N}/{args.s2_type}_{args.s2_loss_type}/"
         data_path = f"{args.data_path}{args.manifold}{N}/"
+        if ((args.s2_type == "s1s2") and (args.s2_approx)):
+            s1_path = s2_path
         
         s1_state = load_model(s1_path)
         s1_ntrain.append(len(jnp.load(''.join((s1_path, 'loss_arrays.npy')))))
@@ -138,39 +142,69 @@ def evaluate_diffusion_mean():
         print(s1_ntrain)
         s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
         if "diag" in args.s2_loss_type:
-            s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers, layers_beta=layers,
-                                                            dim=generator_dim, 
-                                                            r = max((generator_dim-1)//2,1))(x))
-        
-            @hk.transform
-            def s1s2_model(x):
+            if not (args.s2_type == "s1s2"):
+                s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers, layers_beta=layers,
+                                                                    dim=generator_dim, 
+                                                                    r = max((generator_dim-1)//2,1))(x))
+            else:
+                if args.s2_approx:
+                    @hk.transform
+                    def s1_model(x):
+                        
+                        s1s2 =  models.MLP_diags1s2(
+                            models.MLP_s1(dim=generator_dim, layers=layers), 
+                            models.MLP_s2(layers_alpha=layers, 
+                                          layers_beta=layers,
+                                          dim=generator_dim,
+                                          r = max((generator_dim-1)//2,1))
+                            )
+                        
+                        return s1s2(x)[0]
                 
-                s1s2 =  models.MLP_diags1s2(
-                    models.MLP_s1(dim=generator_dim, layers=layers), 
-                    models.MLP_s2(layers_alpha=layers, 
-                                  layers_beta=layers,
-                                  dim=generator_dim,
-                                  r = max((generator_dim-1)//2,1))
-                    )
-                
-                return s1s2(x)
+                    @hk.transform
+                    def s2_model(x):
+                        
+                        s1s2 =  models.MLP_diags1s2(
+                            models.MLP_s1(dim=generator_dim, layers=layers), 
+                            models.MLP_s2(layers_alpha=layers, 
+                                          layers_beta=layers,
+                                          dim=generator_dim,
+                                          r = max((generator_dim-1)//2,1))
+                            )
+                        
+                        return s1s2(x)[1]
         else:    
-            s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                            dim=generator_dim, 
-                                                            r = max((generator_dim-1)//2,1))(x))
-        
-            @hk.transform
-            def s1s2_model(x):
+            if not (args.s2_type == "s1s2"):
+                s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                                dim=generator_dim, 
+                                                                r = max((generator_dim-1)//2,1))(x))
+            else:
+                if args.s2_approx:
+                    @hk.transform
+                    def s1_model(x):
+                        
+                        s1s2 =  models.MLP_diags1s2(
+                            models.MLP_s1(dim=generator_dim, layers=layers), 
+                            models.MLP_s2(layers_alpha=layers, 
+                                          layers_beta=layers,
+                                          dim=generator_dim,
+                                          r = max((generator_dim-1)//2,1))
+                            )
+                        
+                        return s1s2(x)[0]
                 
-                s1s2 =  models.MLP_s1s2(
-                    models.MLP_s1(dim=generator_dim, layers=layers), 
-                    models.MLP_s2(layers_alpha=layers, 
-                                  layers_beta=layers,
-                                  dim=generator_dim,
-                                  r = max((generator_dim-1)//2,1))
-                    )
-                
-                return s1s2(x)
+                    @hk.transform
+                    def s2_model(x):
+                        
+                        s1s2 =  models.MLP_diags1s2(
+                            models.MLP_s1(dim=generator_dim, layers=layers), 
+                            models.MLP_s2(layers_alpha=layers, 
+                                          layers_beta=layers,
+                                          dim=generator_dim,
+                                          r = max((generator_dim-1)//2,1))
+                            )
+                        
+                        return s1s2(x)[1]
 
         xs = pd.read_csv(''.join((data_path, 'xs.csv')), header=None)
         charts = pd.read_csv(''.join((data_path, 'chart.csv')), header=None)
@@ -235,6 +269,8 @@ def evaluate_diffusion_mean():
         print(T_sm[-1])
         print(mu_opt[1])
         print(mu_sm[1][-1])
+        print(mu_opt[0])
+        print(mu_sm[0][-1])
         if args.bridge_sampling:
             (thetas,chart,log_likelihood,log_likelihoods,mu_bridge) = M.diffusion_mean(X_obs,
                                                                                        num_steps=args.bridge_iter, 

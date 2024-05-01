@@ -94,7 +94,7 @@ class BrownianMixture(object):
         p0 = self.p0((x,c), mu, T)
         pt = (p0*jnp.exp(log_qt)).squeeze()
         
-        return pt, (x,c), jnp.exp(log_qt).squeeze(), p0
+        return pt, (x,c), jnp.exp(log_qt).squeeze(), p0, (x-mu[0], c-mu[1])
     
     def density(self, 
                 x_obs:Tuple[Array,Array], 
@@ -128,7 +128,22 @@ class BrownianMixture(object):
         p0 = self.p0((x,c), mu, T)
         pt = (p0*jnp.exp(log_qt)).squeeze()
         
-        return jnp.exp(log_qt).squeeze()#pt
+        return jnp.exp(log_qt).squeeze()
+    
+    def p_nk(self, 
+             X_obs:Tuple[Array,Array],
+             mu:Tuple[Array, Array],
+             T:Array,
+             )->Array:
+        
+        pt = vmap(lambda x,c: vmap(lambda mu_x,mu_c,t: self.density((x,c),(mu_x,mu_c), t))(self.mu[0],
+                                                                                           self.mu[1],
+                                                                                           self.T))(X_obs[0],
+                                                                                                    X_obs[1])
+        
+        val = jnp.einsum('ij,j->ij', pt, self.pi)
+        
+        return val/jnp.sum(val, axis=-1).reshape(-1,1)
     
     def gamma_znk(self, 
                     X_obs:Tuple[Array,Array], 
@@ -150,15 +165,18 @@ class BrownianMixture(object):
                               )->None:
         
         @jit
-        def pi_gradient(pt:Array, pi:Array, mu:Tuple[Array, Array], T:Array)->Array:
+        def pi_gradient(pk:Array, pK:Array, pi:Array, mu:Tuple[Array, Array], T:Array)->Array:
             
-            val = jnp.einsum('ij,j->ij', pt, self.pi)
-            gamma_znk = pt/jnp.sum(val, axis=-1).reshape(-1,1)
+            term1 = jnp.sum(jnp.einsum('ij,j->ij', pk, self.pi), axis=-1)
+            term2 = (1-jnp.sum(self.pi))*pK
+            denom = term1+term2
+            
+            num = pk-pK.reshape(-1,1)
 
-            return -jnp.sum(gamma_znk, axis=0)
+            return -jnp.sum(num/denom.reshape(-1,1), axis=0)
         
         @jit
-        def mu_gradient(pt:Array, pi:Array, mu:Tuple[Array, Array], T:Array)->Array:
+        def mu_gradient(pk:Array, pK:Array, pi:Array, mu:Tuple[Array, Array], T:Array)->Array:
             
             muk = (mu[0][:-1], mu[1][:-1])
             muK = (mu[0][-1], mu[1][-1])
@@ -166,36 +184,44 @@ class BrownianMixture(object):
             Tk = T[:-1]
             TK = T[-1]
             
-            pik = pi[:-1]
-            piK = pi[-1]
+            term1 = jnp.einsum('ij,j->ij', pk, self.pi)
+            term2 = (1-jnp.sum(self.pi))*pK
+            denom = (jnp.sum(term1, axis=-1)+term2).reshape(-1,1)
             
-            
-            val = jnp.einsum('ij,j->ij', pt, self.pi)
-            gamma_znk = val/jnp.sum(val, axis=-1).reshape(-1,1)
-            gamma_znk /= jnp.sum(gamma_znk)
-            
-            s1 = vmap(lambda x,c: vmap(lambda mu_x, mu_c, t: self.grady_log((x,c), (mu_x, mu_c), t))(mu[0], 
-                                                                                                     mu[1],
-                                                                                                     T))(X_obs[0],
-                                                                                                         X_obs[1])
-            grad = jnp.einsum('nk,nki->nki', gamma_znk, s1)
+            s1k = vmap(lambda x,c: vmap(lambda mu_x, mu_c, t: self.grady_log((x,c), (mu_x, mu_c), t))(muk[0], 
+                                                                                                      muk[1],
+                                                                                                      Tk))(X_obs[0],
+                                                                                                           X_obs[1])
+            s1K = vmap(lambda x,c: self.grady_log((x,c), muK, TK))(X_obs[0],X_obs[1])
+
+            grad_k = -jnp.sum(jnp.einsum('ij,ijk->ijk', term1/denom, s1k), axis=0)
+            grad_K = -jnp.sum(jnp.einsum('i,ik->ik', term2/denom.reshape(-1), s1K), axis=0)
         
-            return -jnp.sum(grad, axis=0)
+            return jnp.vstack((grad_k, grad_K))
         
         @jit
-        def T_gradient(pt, pi:Array, mu:Tuple[Array, Array], T:Array)->Array:
+        def T_gradient(pk:Array, pK:Array, pi:Array, mu:Tuple[Array, Array], T:Array)->Array:
             
-            val = jnp.einsum('ij,j->ij', pt, self.pi)
-            gamma_znk = val/jnp.sum(val, axis=-1).reshape(-1,1)
-            gamma_znk /= jnp.sum(gamma_znk)
+            muk = (mu[0][:-1], mu[1][:-1])
+            muK = (mu[0][-1], mu[1][-1])
             
-            s1 = vmap(lambda x,c: vmap(lambda mu_x, mu_c, t: self.gradt_log((x,c), (mu_x, mu_c), t))(mu[0], 
-                                                                                                     mu[1],
-                                                                                                     T))(X_obs[0],
-                                                                                                         X_obs[1])
-            grad = jnp.einsum('nk,nk->nk', gamma_znk, s1)
+            Tk = T[:-1]
+            TK = T[-1]
+            
+            term1 = jnp.einsum('ij,j->ij', pk, self.pi)
+            term2 = (1-jnp.sum(self.pi))*pK
+            denom = (jnp.sum(term1, axis=-1)+term2).reshape(-1,1)
+            
+            s1k = vmap(lambda x,c: vmap(lambda mu_x, mu_c, t: self.gradt_log((x,c), (mu_x, mu_c), t))(muk[0], 
+                                                                                                      muk[1],
+                                                                                                      Tk))(X_obs[0],
+                                                                                                           X_obs[1])
+            s1K = vmap(lambda x,c: self.gradt_log((x,c), muK, TK))(X_obs[0],X_obs[1])
+
+            grad_k = -jnp.sum((term1/denom)*s1k, axis=0)
+            grad_K = -jnp.sum(term2/denom.reshape(-1)*s1K, axis=0).reshape(1)
         
-            return -jnp.sum(grad, axis=0)
+            return jnp.hstack((grad_k, grad_K))
         
         @jit
         def update(carry:Tuple[Array, Array, Array], idx:int
@@ -204,18 +230,20 @@ class BrownianMixture(object):
             
             mu, T, pi = carry
             
-            pt = vmap(lambda x,c: vmap(lambda mu_x,mu_c,t: self.density((x,c),(mu_x,mu_c), t))(self.mu[0],
-                                                                                               self.mu[1],
-                                                                                               self.T))(X_obs[0],
+            pk = vmap(lambda x,c: vmap(lambda mu_x,mu_c,t: self.density((x,c),(mu_x,mu_c), t))(self.mu[0][:-1],
+                                                                                               self.mu[1][:-1],
+                                                                                               self.T[:-1]))(X_obs[0],
                                                                                                         X_obs[1])
-            grad_pi = pi_gradient(pt, pi, mu, T)
-            grad_mu = mu_gradient(pt, pi, mu, T)
-            grad_T = T_gradient(pt, pi, mu, T)
+            pK = vmap(lambda x,c: self.density((x,c),(self.mu[0][-1],self.mu[1][-1]),self.T[-1]))(X_obs[0],X_obs[1])
+                                                                                                        
+            grad_pi = pi_gradient(pk, pK, pi, mu, T)
+            grad_mu = mu_gradient(pk, pK, pi, mu, T)
+            grad_T = T_gradient(pk, pK, pi, mu, T)
             grad_T = jnp.clip(grad_T, -jnp.ones_like(grad_T)*self.max_step/self.lr, 
                               jnp.ones_like(grad_T)*self.max_step/self.lr)
             
             pi -= self.lr*grad_pi
-            pi /= jnp.sum(pi)
+            pi = jnp.clip(pi, 0.0, 1.0)
 
             mu = vmap(lambda mu_x, mu_c, grad: self.M.Exp((mu_x, mu_c), -self.lr*grad))(mu[0], mu[1], grad_mu)
             mu = vmap(lambda mu_x, mu_c: self.M.update_coords((mu_x, mu_c),self.M.centered_chart((mu_x, mu_c))))(mu[0], mu[1])
@@ -246,7 +274,7 @@ class BrownianMixture(object):
             )->None:
         
         if pi_init is None:
-            self.pi = jnp.array([1.0/self.n_clusters]*self.n_clusters)
+            self.pi = jnp.array([1.0/self.n_clusters]*self.n_clusters)[:-1]
         else:
             self.pi = pi_init
         
@@ -265,6 +293,8 @@ class BrownianMixture(object):
             self.mu = mu_init
             
         self.gradient_optimization(X_train)
+        
+        return
 
 #%% Old Version
 
