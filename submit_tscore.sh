@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J HypParaboloid2_s1vr
+#BSUB -J Euclidean2_st
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
@@ -16,7 +16,7 @@ module swap cudnn/v8.9.1.23-prod-cuda-12.X
 module swap python3/3.10.12
 
 python3 train_t.py \
-    --manifold HypParaboloid \
+    --manifold Euclidean \
     --dim 2 \
     --load_model 0 \
     --max_T 1.0 \

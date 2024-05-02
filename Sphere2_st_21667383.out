@@ -1,0 +1,129 @@
+Loaded dependency [python3/3.10.12]: gcc/11.4.0-binutils-2.40
+Loaded dependency [python3/3.10.12]: sqlite3/3.42.0
+
+Switching from python3/3.8.2 to python3/3.10.12
+  Loading requirement: gcc/11.4.0-binutils-2.40 sqlite3/3.42.0
+2024-05-01 23:50:08.676875: E tensorflow/compiler/xla/stream_executor/cuda/cuda_dnn.cc:9342] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2024-05-01 23:50:08.676919: E tensorflow/compiler/xla/stream_executor/cuda/cuda_fft.cc:609] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2024-05-01 23:50:08.676953: E tensorflow/compiler/xla/stream_executor/cuda/cuda_blas.cc:1518] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2024-05-02 00:09:02.922638: W tensorflow/core/framework/op_kernel.cc:1827] INVALID_ARGUMENT: TypeError: `generator` yielded an element of shape (100, 1024, 11) where an element of shape (102400, 11) was expected.
+Traceback (most recent call last):
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/ops/script_ops.py", line 270, in __call__
+    ret = func(*args)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/autograph/impl/api.py", line 643, in wrapper
+    return func(*args, **kwargs)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/from_generator_op.py", line 235, in generator_py_func
+    raise TypeError(
+
+TypeError: `generator` yielded an element of shape (100, 1024, 11) where an element of shape (102400, 11) was expected.
+
+
+using M.Exp for Logarithm
+Epoch: 100 	 loss = -15.6909
+Epoch: 200 	 loss = -69.2873
+Epoch: 300 	 loss = -123.9116
+Epoch: 400 	 loss = -27.4255
+Epoch: 500 	 loss = -52.7810
+Epoch: 600 	 loss = -56.4546
+Epoch: 700 	 loss = 1.7467
+Epoch: 800 	 loss = -59.2264
+Epoch: 900 	 loss = -139.1512
+Epoch: 1000 	 loss = -49.3492
+Epoch: 1100 	 loss = -162.1442
+Epoch: 1200 	 loss = -22.0068
+Epoch: 1300 	 loss = -38.2042
+Epoch: 1400 	 loss = -45.4174
+Epoch: 1500 	 loss = -35.7173
+Epoch: 1600 	 loss = -108.4500
+Epoch: 1700 	 loss = -28.7694
+Epoch: 1800 	 loss = -108.8304
+Epoch: 1900 	 loss = -53.5870
+Epoch: 2000 	 loss = -62.5985
+Epoch: 2100 	 loss = -89.3614
+Epoch: 2200 	 loss = -46.4266
+Epoch: 2300 	 loss = -50.4885
+Epoch: 2400 	 loss = -101.2024
+Epoch: 2500 	 loss = -123.8882
+Epoch: 2600 	 loss = -7.4869
+Epoch: 2700 	 loss = -25.6624
+Epoch: 2800 	 loss = -34.4269
+Epoch: 2900 	 loss = -55.0689
+Epoch: 3000 	 loss = -188.5665
+Epoch: 3100 	 loss = -22.0326
+Epoch: 3200 	 loss = -31.6673
+Epoch: 3300 	 loss = -55.5568
+Epoch: 3400 	 loss = -42.3274
+Epoch: 3500 	 loss = -125.8821
+Epoch: 3600 	 loss = -16.0544
+Epoch: 3700 	 loss = -37.2336
+Epoch: 3800 	 loss = -64.3879
+Epoch: 3900 	 loss = -64.5042
+Epoch: 4000 	 loss = -60.3402
+Epoch: 4100 	 loss = -49.6063
+Epoch: 4200 	 loss = -73.3905
+Epoch: 4300 	 loss = -41.4848
+Epoch: 4400 	 loss = -142.9728
+Epoch: 4500 	 loss = -44.3275
+Epoch: 4600 	 loss = -30.9434
+Epoch: 4700 	 loss = -17.4611
+Epoch: 4800 	 loss = -33.0172
+Epoch: 4900 	 loss = -102.2543
+Epoch: 5000 	 loss = -46.9448
+Epoch: 5100 	 loss = -150.4445
+Epoch: 5200 	 loss = -12.9658
+Epoch: 5300 	 loss = -149.4695
+Epoch: 5400 	 loss = -76.2909
+Epoch: 5500 	 loss = -37.0040
+Traceback (most recent call last):
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_t.py", line 170, in <module>
+    train_score()
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/train_t.py", line 149, in train_score
+    train_t(M=M,
+  File "/zhome/77/8/118225/Desktop/Projects/score_diffusion_mean/score_diffusion_mean/jaxgeometry/statistics/score_matching/traint.py", line 109, in train_t
+    data = next(train_dataset)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow_datasets/core/dataset_utils.py", line 82, in _eager_dataset_iterator
+    for elem in ds:
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/iterator_ops.py", line 809, in __next__
+    return self._next_internal()
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/iterator_ops.py", line 772, in _next_internal
+    ret = gen_dataset_ops.iterator_get_next(
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/ops/gen_dataset_ops.py", line 3028, in iterator_get_next
+2024-05-02 00:09:03.038819: W tensorflow/core/framework/op_kernel.cc:1827] INVALID_ARGUMENT: TypeError: `generator` yielded an element of shape (100, 1024, 11) where an element of shape (102400, 11) was expected.
+Traceback (most recent call last):
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/ops/script_ops.py", line 270, in __call__
+    ret = func(*args)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/autograph/impl/api.py", line 643, in wrapper
+    return func(*args, **kwargs)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/from_generator_op.py", line 235, in generator_py_func
+    raise TypeError(
+
+TypeError: `generator` yielded an element of shape (100, 1024, 11) where an element of shape (102400, 11) was expected.
+
+
+    _ops.raise_from_not_ok_status(e, name)
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/framework/ops.py", line 5888, in raise_from_not_ok_status
+    raise core._status_to_exception(e) from None  # pylint: disable=protected-access
+tensorflow.python.framework.errors_impl.InvalidArgumentError: {{function_node __wrapped__IteratorGetNext_output_types_1_device_/job:localhost/replica:0/task:0/device:CPU:0}} TypeError: `generator` yielded an element of shape (100, 1024, 11) where an element of shape (102400, 11) was expected.
+Traceback (most recent call last):
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/ops/script_ops.py", line 270, in __call__
+    ret = func(*args)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/autograph/impl/api.py", line 643, in wrapper
+    return func(*args, **kwargs)
+
+  File "/zhome/77/8/118225/.local/lib/python3.10/site-packages/tensorflow/python/data/ops/from_generator_op.py", line 235, in generator_py_func
+    raise TypeError(
+
+TypeError: `generator` yielded an element of shape (100, 1024, 11) where an element of shape (102400, 11) was expected.
+
+
+	 [[{{node PyFunc}}]] [Op:IteratorGetNext] name: 
+2024-05-02 00:09:03.255556: W tensorflow/core/kernels/data/generator_dataset_op.cc:108] Error occurred when finalizing GeneratorDataset iterator: FAILED_PRECONDITION: Python interpreter state is not initialized. The process may be terminated.
+	 [[{{node PyFunc}}]]
