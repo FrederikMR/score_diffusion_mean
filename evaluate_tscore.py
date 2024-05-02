@@ -52,7 +52,7 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="HypParaboloid",
+    parser.add_argument('--manifold', default="Sphere",
                         type=str)
     parser.add_argument('--dim', default=[2],
                         type=List)
@@ -154,11 +154,13 @@ def evaluate_diffusion_mean():
 
         rng_key = jrandom.PRNGKey(args.seed)
         s1_fun = lambda x,y,t: s1_model.apply(s1_state.params, rng_key, jnp.hstack((x,y,t)))
-        #st_fun = lambda x,y,t: st_model.apply(st_state.params, rng_key, jnp.hstack((M.F(x),M.F(y),t)))
-        st_fun = lambda x,y,t: st_model.apply(st_state.params, rng_key, jnp.hstack((x[0],y[0],t)))
+        if method == "Local":
+            st_fun = lambda x,y,t: st_model.apply(st_state.params, rng_key, jnp.hstack((x[0],y[0],t)))
+        else:
+            st_fun = lambda x,y,t: st_model.apply(st_state.params, rng_key, jnp.hstack((M.F(x),M.F(y),t)))
         
         print(st_fun(x0,x0,0.5))
-        #print(M.gradt_log_hk(x0,x0,0.5))
+        print(M.gradt_log_hk(x0,x0,0.5))
 
 
         ScoreEval = ScoreEvaluation(M,

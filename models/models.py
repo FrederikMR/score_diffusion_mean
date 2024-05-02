@@ -32,29 +32,29 @@ class MLP_t(hk.Module):
         
         model = []
         for l in self.layers:
-            model.append(hk.Linear(l))#, w_init=jnp.zeros, b_init=jnp.zeros))
+            model.append(hk.Linear(l, w_init=jnp.zeros, b_init=jnp.zeros))
             model.append(tanh)
             
-        model.append(hk.Linear(1))#, w_init=jnp.zeros, b_init=jnp.zeros))
+        model.append(hk.Linear(1, w_init=jnp.zeros, b_init=jnp.zeros))
         
         return hk.Sequential(model)
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         
-        #x_new = x.T
-        #x1 = x_new[:self.dim].T
-        #x2 = x_new[self.dim:(2*self.dim)].T
-        #t = x_new[-1]
+        x_new = x.T
+        x1 = x_new[:self.dim].T
+        x2 = x_new[self.dim:(2*self.dim)].T
+        t = x_new[-1]
         
-        #shape = list(x.shape)
-        #shape[-1] = 1
-        #t = x_new[-1].reshape(shape).squeeze()
+        shape = list(x.shape)
+        shape[-1] = 1
+        t = x_new[-1].reshape(shape).squeeze()
         
-        return self.model()(x).squeeze()
+        #return self.model()(x).squeeze()
         
-        #grad_euc = jnp.linalg.norm(x1-x2, axis=-1)**2/(2*(t**2))-self.dim/(2*t)
+        grad_euc = jnp.linalg.norm(x1-x2, axis=-1)**2/(2*(t**2))-self.dim/(2*t)
       
-        #return (self.model()(x).squeeze()+grad_euc)
+        return (self.model()(x).squeeze()+grad_euc)
 
 @dataclasses.dataclass
 class MLP_s1(hk.Module):
