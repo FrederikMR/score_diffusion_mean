@@ -22,7 +22,7 @@ from jaxgeometry.manifolds import *
 
 #%% Get generator by dimension
 
-def get_generator_dim(dim:int)->List:
+def get_generator_dim(manifold:str, dim:int)->List:
     if dim<3:
         layers = [512, 512, 512]
     elif dim<5:
@@ -46,70 +46,70 @@ def load_manifold(manifold:str, dim:int=None)->None:
         generator_dim = M.dim
         x0 = M.coords([0.]*dim)
         opt_val = "opt"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "Circle":
         sampling_method = 'TMSampling'
         M = S1()
         generator_dim = M.emb_dim
         x0 = M.coords([0.])
         opt_val = "gradient"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "Sphere":
         sampling_method = 'TMSampling'
         M = nSphere(N=dim)
         generator_dim = M.emb_dim
         x0 = M.coords([0.]*dim)
         opt_val = "gradient"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "HyperbolicSpace":
         sampling_method = 'TMSampling'
         M = nHyperbolicSpace(N=dim)
         generator_dim = M.emb_dim
         x0 = (jnp.concatenate((jnp.zeros(dim-1), -1.*jnp.ones(1))),)*2
         opt_val = "x0"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "Grassmanian":
         sampling_method = 'TMSampling'
         M = Grassmanian(N=2*dim,K=dim)
         generator_dim = M.emb_dim
         x0 = (jnp.eye(2*dim)[:,:dim].reshape(-1),)*2
         opt_val = "x0"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "SO":
         sampling_method = 'TMSampling'
         M = SO(N=dim)
         generator_dim = M.emb_dim
         x0 = (jnp.eye(dim).reshape(-1),)*2
         opt_val = "x0"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "Stiefel":
         sampling_method = 'TMSampling'
         M = Stiefel(N=dim, K=2)
         generator_dim = M.emb_dim
         x0 = (jnp.block([jnp.eye(2), jnp.zeros((2,dim-2))]).T.reshape(-1),)*2
         opt_val = "x0"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "Ellipsoid":
         sampling_method = 'TMSampling'
         M = nEllipsoid(N=dim, params = jnp.linspace(0.5,1.0,dim+1))
         generator_dim = M.emb_dim
         x0 = M.coords([0.]*dim)
         opt_val = "x0"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "Cylinder":
         sampling_method = 'EmbeddedSampling'
         M = Cylinder(params=(1.,jnp.array([0.,0.,1.]),jnp.pi/2.))
         generator_dim = M.dim
         x0 = M.coords([0.]*2)
         opt_val = "x0"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "Torus":
         sampling_method = 'EmbeddedSampling'
         M = Torus()        
         generator_dim = M.dim
         x0 = M.coords([0.]*2)
         opt_val = "x0"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "Landmarks":
         sampling_method = 'LocalSampling'
         M = Landmarks(N=dim,m=2)   
@@ -125,28 +125,28 @@ def load_manifold(manifold:str, dim:int=None)->None:
                 idx = jnp.round(jnp.linspace(0, len(x1) - 1, dim)).astype(int)
                 x0 = M.coords(jnp.vstack((x1[idx],x2[idx])).T.flatten())
         opt_val = "x0"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "SPDN":
         sampling_method = 'LocalSampling'
         M = SPDN(N=dim)
         generator_dim = M.dim
         x0 = M.coords([1.]*(dim*(dim+1)//2))
         opt_val = "x0"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "Sym":
         sampling_method = 'LocalSampling'
         M = Sym(N=dim)
         generator_dim = M.dim
         x0 = M.coords([1.]*(dim*(dim+1)//2))
         opt_val = "x0"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "HypParaboloid":
         sampling_method = 'LocalSampling'
         M = HypParaboloid()
         generator_dim = M.dim
         x0 = M.coords([0.]*2)
         opt_val = "x0"
-        layers = get_generator_dim(generator_dim)
+        layers = get_generator_dim(manifold, generator_dim)
     elif manifold == 'gp_mnist':
         
         default_omega = 500.
