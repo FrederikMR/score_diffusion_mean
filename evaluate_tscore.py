@@ -160,7 +160,10 @@ def evaluate_diffusion_mean():
             st_fun = lambda x,y,t: st_model.apply(st_state.params, rng_key, jnp.hstack((M.F(x),M.F(y),t)))
         
         print(st_fun(x0,x0,0.5))
-        print(M.gradt_log_hk(x0,x0,0.5))
+        #print(M.gradt_log_hk(x0,x0,0.5))
+        
+        print(s1_ntrain)
+        print(st_ntrain)
 
 
         ScoreEval = ScoreEvaluation(M,

@@ -24,7 +24,7 @@ from jaxgeometry.manifolds import *
 
 def get_generator_dim(manifold:str, dim:int)->List:
     if dim<3:
-        layers = [512, 512, 512]
+        layers = [512, 512, 512, 512, 512]
     elif dim<5:
         layers = [512, 512, 512, 512, 512]
     elif dim<10:

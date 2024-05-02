@@ -8,6 +8,8 @@
 #BSUB -u fmry@dtu.dk
 #BSUB -B
 #BSUB -N
+#BSUB -o sendmeemail/error_%J.out 
+#BSUB -e sendmeemail/output_%J.err 
 
 #Load the following in case
 #module load python/3.8
