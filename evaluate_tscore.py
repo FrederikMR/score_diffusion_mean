@@ -56,7 +56,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=[2],
                         type=List)
-    parser.add_argument('--s1_loss_type', default="dsmvr",
+    parser.add_argument('--s1_loss_type', default="vsm",
                         type=str)
     parser.add_argument('--fixed_t', default=0,
                         type=int)
