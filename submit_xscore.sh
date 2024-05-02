@@ -16,7 +16,7 @@ module swap cudnn/v8.9.1.23-prod-cuda-12.X
 module swap python3/3.10.12
 
 python3 train_score.py \
-    --manifold Euclidean \
+    --manifold HypParaboloid \
     --dim 2 \
     --s1_loss_type dsmvr \
     --s2_loss_type dsmvr \
