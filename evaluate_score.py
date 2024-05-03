@@ -56,14 +56,12 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=[2],
                         type=List)
-    parser.add_argument('--s1_loss_type', default="vsm",
+    parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsm",
                         type=str)
-    parser.add_argument('--s2_type', default="s1s2",
+    parser.add_argument('--dt_approx', default="dt",
                         type=str)
-    parser.add_argument('--s2_approx', default=0,
-                        type=int)
     parser.add_argument('--fixed_t', default=0,
                         type=int)
     parser.add_argument('--t0', default=0.01,
@@ -107,7 +105,7 @@ def evaluate_diffusion_mean():
     score_t_error = []
     bridge_t_error = []
     s1_ntrain = []
-    s2_ntrain = []
+    dt_ntrain = []
     score_mu_time = []
     score_std_time = []
     bridge_mu_time = []
@@ -124,87 +122,39 @@ def evaluate_diffusion_mean():
         Brownian_coords(M)
         dm_bridge(M)
         
+        st_path = f"{args.score_path}{args.manifold}{N}/st/"
         s1_path = f"{args.score_path}{args.manifold}{N}/s1_{args.s1_loss_type}/"
-        s2_path = f"{args.score_path}{args.manifold}{N}/{args.s2_type}_{args.s2_loss_type}/"
+        s2_path = f"{args.score_path}{args.manifold}{N}/{args.dt_approx}_{args.s2_loss_type}/"
         data_path = f"{args.data_path}{args.manifold}{N}/"
-        if ((args.s2_type == "s1s2") and (args.s2_approx)):
-            s1_path = s2_path
         
-        s1_state = load_model(s1_path)
-        s1_ntrain.append(len(jnp.load(''.join((s1_path, 'loss_arrays.npy')))))
-        if args.s2_approx:
-            s2_state = load_model(s2_path)
-            s2_ntrain.append(len(jnp.load(''.join((s2_path, 'loss_arrays.npy')))))
-        else:
-            s2_state = None
-            s2_ntrain.append(jnp.nan)
-        print(s2_ntrain)
-        print(s1_ntrain)
         s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
+        st_model = hk.transform(lambda x: models.MLP_t(dim=generator_dim, layers=layers)(x))
         if "diag" in args.s2_loss_type:
-            if not (args.s2_type == "s1s2"):
-                s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers, layers_beta=layers,
-                                                                    dim=generator_dim, 
-                                                                    r = max((generator_dim-1)//2,1))(x))
-            else:
-                if args.s2_approx:
-                    @hk.transform
-                    def s1_model(x):
-                        
-                        s1s2 =  models.MLP_diags1s2(
-                            models.MLP_s1(dim=generator_dim, layers=layers), 
-                            models.MLP_s2(layers_alpha=layers, 
-                                          layers_beta=layers,
-                                          dim=generator_dim,
-                                          r = max((generator_dim-1)//2,1))
-                            )
-                        
-                        return s1s2(x)[0]
-                
-                    @hk.transform
-                    def s2_model(x):
-                        
-                        s1s2 =  models.MLP_diags1s2(
-                            models.MLP_s1(dim=generator_dim, layers=layers), 
-                            models.MLP_s2(layers_alpha=layers, 
-                                          layers_beta=layers,
-                                          dim=generator_dim,
-                                          r = max((generator_dim-1)//2,1))
-                            )
-                        
-                        return s1s2(x)[1]
-        else:    
-            if not (args.s2_type == "s1s2"):
-                s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+            s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers, layers_beta=layers,
                                                                 dim=generator_dim, 
                                                                 r = max((generator_dim-1)//2,1))(x))
-            else:
-                if args.s2_approx:
-                    @hk.transform
-                    def s1_model(x):
-                        
-                        s1s2 =  models.MLP_diags1s2(
-                            models.MLP_s1(dim=generator_dim, layers=layers), 
-                            models.MLP_s2(layers_alpha=layers, 
-                                          layers_beta=layers,
-                                          dim=generator_dim,
-                                          r = max((generator_dim-1)//2,1))
-                            )
-                        
-                        return s1s2(x)[0]
-                
-                    @hk.transform
-                    def s2_model(x):
-                        
-                        s1s2 =  models.MLP_diags1s2(
-                            models.MLP_s1(dim=generator_dim, layers=layers), 
-                            models.MLP_s2(layers_alpha=layers, 
-                                          layers_beta=layers,
-                                          dim=generator_dim,
-                                          r = max((generator_dim-1)//2,1))
-                            )
-                        
-                        return s1s2(x)[1]
+        else:
+            s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+                                                            dim=generator_dim, 
+                                                            r = max((generator_dim-1)//2,1))(x))
+                    
+        s1_state = load_model(s1_path)
+        s1_ntrain.append(len(jnp.load(''.join((s1_path, 'loss_arrays.npy')))))
+        st_model = hk.transform(lambda x: models.MLP_t(dim=generator_dim, layers=layers)(x))
+        if args.dt_approx == "s1":
+            s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
+            s2_state = None
+            dt_ntrain.append(jnp.nan)
+            st_fun = None
+        elif "s2" in args.dt_approx:
+            s2_state = load_model(s2_path)
+            dt_ntrain.append(len(jnp.load(''.join((s2_path, 'loss_arrays.npy')))))
+            st_fun = None
+        elif args.dt_approx == "dt":
+            s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
+            st_state = load_model(st_path)
+            dt_ntrain.append(len(jnp.load(''.join((st_path, 'loss_arrays.npy')))))
+            st_fun = lambda x,y,t: st_model.apply(st_state.params, rng_key, jnp.hstack((x,y,t)))
 
         xs = pd.read_csv(''.join((data_path, 'xs.csv')), header=None)
         charts = pd.read_csv(''.join((data_path, 'chart.csv')), header=None)
@@ -229,7 +179,7 @@ def evaluate_diffusion_mean():
 
         rng_key = jrandom.PRNGKey(args.seed)
         s1_fun = lambda x,y,t: s1_model.apply(s1_state.params, rng_key, jnp.hstack((x,y,t)))
-        if args.s2_approx:
+        if "s2" in args.dt_approx:
             s2_fun = lambda x,y,t: s2_model.apply(s2_state.params, rng_key, jnp.hstack((x,y,t)))
         else:
             s2_fun = None
@@ -241,6 +191,7 @@ def evaluate_diffusion_mean():
         ScoreEval = ScoreEvaluation(M,
                                     s1_model=s1_fun,#s1_fun, 
                                     s2_model=s2_fun,#s2_fun,#s2_model_test2, 
+                                    st_model=st_fun,
                                     method=method, 
                                     )
 
@@ -311,7 +262,7 @@ def evaluate_diffusion_mean():
              'bridge_t_error': jnp.stack(bridge_t_error),
              'dim': args.dim,
              's1_ntrain': jnp.stack(s1_ntrain),
-             's2_ntrain': jnp.stack(s2_ntrain),
+             'dt_ntrain': jnp.stack(dt_ntrain),
              'score_mu_time': jnp.stack(score_mu_time),
              'score_std_time': jnp.stack(score_std_time),
              'bridge_mu_time': jnp.stack(bridge_mu_time),
@@ -343,7 +294,7 @@ def evaluate_frechet_mean():
     for N in args.dim:
         M, x0, method, generator_dim, opt_val = load_manifold(N)
         s1_path = f"../scores/{args.manifold}{N}/s1T_{args.s1_loss_type}/"
-        s2_path = f"../scores/{args.manifold}{N}/{args.s2_type}_{args.s2_loss_type}/"
+        s2_path = f"../scores/{args.manifold}{N}/{args.dt_approx}_{args.s2_loss_type}/"
         data_path = f"{args.data_path}{args.manifold}{N}/"
 
         if generator_dim<10:

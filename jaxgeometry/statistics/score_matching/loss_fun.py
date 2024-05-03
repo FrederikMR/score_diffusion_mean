@@ -31,10 +31,10 @@ def vsm_s1fun(generator:object,
     (xts, chartts) = vmap(generator.update_coords)(xt)
     
     divs = vmap(lambda x0, xt, chart, t: generator.M.div((xt, chart), 
-                                               lambda x: generator.grad_local(generator.M.F(x), 
-                                                                              s1_model(x0,
-                                                                                       generator.M.F(x), 
-                                                                                       t))))(x0,xts,chartts,t)
+                                               lambda x: generator.grad_local_vsm(x0,
+                                                                                  x,
+                                                                                  t,
+                                                                                  s1_model)))(x0,xts,chartts,t)
     
     return jnp.mean(norm2s+2.0*divs)
 
@@ -49,18 +49,18 @@ def dsm_s1fun(generator:object,
               dt:Array,
               )->float:
     
-    def f(x0,xt,t,dW,dt):
-        
-        s1 = s1_model(x0, xt, t)
+    def f(x0,xt,t,dW,dt,s1):
 
-        s1 = generator.grad_TM(xt, s1)#generator.grad_TM(xt, s1)
-        dW = generator.grad_TM(xt, dW)#generator.grad_TM(xt, dW)
+        s1 = generator.grad_TM(xt, s1)
+        dW = generator.grad_TM(xt, dW)
 
         loss = dW/dt+s1
         
         return jnp.sum(loss*loss)
     
-    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
+    s1 = s1_model(x0,xt,t.reshape(-1,1))
+    
+    return jnp.mean(vmap(f)(x0,xt,t,dW,dt,s1))
 
 #%% Variance Reduction Denoising Score Matching First Order
 
@@ -73,10 +73,7 @@ def dsmvr_s1fun(generator:object,
                 dt:Array,
                 )->float:
     
-    def f(x0,xt,t,dW,dt):
-        
-        s1 = s1_model(x0,xt,t)
-        s1p = s1_model(x0,x0,t)
+    def f(x0,xt,t,dW,dt,s1,s1p):
         
         s1 = generator.grad_TM(xt, s1)
         s1p = generator.grad_TM(xt,s1p)
@@ -88,7 +85,10 @@ def dsmvr_s1fun(generator:object,
         
         return l1_loss-var_loss
     
-    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
+    s1 = s1_model(x0,xt,t.reshape(-1,1))
+    s1p = s1_model(x0,x0,t.reshape(-1,1))
+    
+    return jnp.mean(vmap(f)(x0,xt,t,dW,dt,s1,s1p))
 
 #%% Denoising Score Matching Second Order
 
@@ -102,15 +102,7 @@ def dsm_s2fun(generator:object,
               dt:Array,
               )->float:
     
-    def f(x0,xt,t,dW,dt):
-        
-        s1 = lax.stop_gradient(s1_model(x0,xt,t))
-        s2 = s2_model(x0,xt,t)
-
-        #s2 = generator.hess_local(xt, s1, s2)
-        #s1 = generator.grad_local(xt, s1)
-        #dW = generator.grad_local(xt,dW)
-        #eye = jnp.eye(len(dW))
+    def f(x0,xt,t,dW,dt,s1,s2):
 
         s1 = generator.grad_TM(xt, s1)
         s2 = generator.hess_TM(xt, s1, s2)
@@ -121,8 +113,10 @@ def dsm_s2fun(generator:object,
         return jnp.sum(loss_s2*loss_s2)
     
     eye = jnp.eye(dW.shape[-1])
+    s1 = lax.stop_gradient(s1_model(x0,xt,t.reshape(-1,1)))
+    s2 = s2_model(x0,xt,t.reshape(-1,1))
     
-    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
+    return jnp.mean(vmap(f)(x0,xt,t,dW,dt,s1,s2))
 
 #%% Denoising Score Matching Diag Second Order
 
@@ -136,10 +130,7 @@ def dsmdiag_s2fun(generator:object,
               dt:Array,
               )->float:
     
-    def f(x0,xt,t,dW,dt):
-        
-        s1 = lax.stop_gradient(s1_model(x0,xt,t))
-        s2 = s2_model(x0,xt,t)
+    def f(x0,xt,t,dW,dt,s1,s2):
         
         s1 = generator.grad_TM(xt, s1)
         s2 = generator.hess_TM(xt, s1, s2)
@@ -149,7 +140,10 @@ def dsmdiag_s2fun(generator:object,
         
         return jnp.sum(loss_s2*loss_s2)
     
-    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
+    s1 = lax.stop_gradient(s1_model(x0,xt,t.reshape(-1,1)))
+    s2 = s2_model(x0,xt,t.reshape(-1,1))
+    
+    return jnp.mean(vmap(f)(x0,xt,t,dW,dt,s1,s2))
 
 #%% Denoising Score Matching Second Order
 
@@ -163,13 +157,7 @@ def dsmvr_s2fun(generator:object,
                 dt:Array,
                 )->float:
     
-    def f(x0,xt,t,dW,dt):
-                
-        s1 = lax.stop_gradient(s1_model(x0,x0,t))
-        s2 = s2_model(x0,x0,t)
-
-        s1p = lax.stop_gradient(s1_model(x0,xt,t))
-        s2p = s2_model(x0,xt,t)
+    def f(x0,xt,t,dW,dt,s1,s1p,s2,s2p):
         
         s1 = generator.grad_TM(xt, s1)
         s2 = generator.hess_TM(xt, s1, s2)
@@ -189,8 +177,12 @@ def dsmvr_s2fun(generator:object,
         return 0.5*jnp.sum(loss_s2)
     
     eye = jnp.eye(dW.shape[-1])
+    s1 = lax.stop_gradient(s1_model(x0,x0,t.reshape(-1,1)))
+    s1p = lax.stop_gradient(s1_model(x0,xt,t.reshape(-1,1)))
+    s2 = s2_model(x0,x0,t.reshape(-1,1))
+    s2p = s2_model(x0,xt,t.reshape(-1,1))
     
-    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
+    return jnp.mean(vmap(f)(x0,xt,t,dW,dt,s1,s1p,s2,s2p))
 
 #%% Denoising Score Matching Second Order
 
@@ -204,7 +196,7 @@ def dsmdiagvr_s2fun(generator:object,
                     dt:Array,
                     )->float:
     
-    def f(x0,xt,t,dW,dt):
+    def f(x0,xt,t,dW,dt,s1,s1p,s2,s2p):
                 
         s1 = lax.stop_gradient(s1_model(x0,x0,t))
         s2 = s2_model(x0,x0,t)
@@ -229,4 +221,9 @@ def dsmdiagvr_s2fun(generator:object,
 
         return 0.5*jnp.sum(loss_s2)
     
-    return jnp.mean(vmap(f,(0,0,0,0,0))(x0,xt,t,dW,dt))
+    s1 = lax.stop_gradient(s1_model(x0,x0,t.reshape(-1,1)))
+    s1p = lax.stop_gradient(s1_model(x0,xt,t.reshape(-1,1)))
+    s2 = s2_model(x0,x0,t.reshape(-1,1))
+    s2p = s2_model(x0,xt,t.reshape(-1,1))
+    
+    return jnp.mean(vmap(f)(x0,xt,t,dW,dt,s1,s1p,s2,s2p))

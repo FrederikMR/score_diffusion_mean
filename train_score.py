@@ -37,7 +37,7 @@ from load_manifold import load_manifold
 
 #jaxgeometry
 from jaxgeometry.manifolds import *
-from jaxgeometry.statistics.score_matching import train_s1, train_s2, train_s1s2, TMSampling, LocalSampling, \
+from jaxgeometry.statistics.score_matching import train_s1, train_s2, train_s1s2, train_t, TMSampling, LocalSampling, \
     EmbeddedSampling, ProjectionSampling
 from jaxgeometry.statistics.score_matching.model_loader import load_model
 from ManLearn.train_MNIST import load_dataset as load_mnist
@@ -49,9 +49,9 @@ def parse_args():
     # File-paths
     parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=2,
+    parser.add_argument('--dim', default=3,
                         type=int)
-    parser.add_argument('--s1_loss_type', default="vsm",
+    parser.add_argument('--s1_loss_type', default="dsmvr",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsmvr",
                         type=str)
@@ -59,7 +59,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--T_sample', default=0,
                         type=int)
-    parser.add_argument('--t', default=0.01,
+    parser.add_argument('--t0', default=0.01,
                         type=float)
     parser.add_argument('--gamma', default=1.0,
                         type=float)
@@ -76,8 +76,6 @@ def parse_args():
     parser.add_argument('--t_samples', default=128,#128
                         type=int)
     parser.add_argument('--repeats', default=8,
-                        type=int)
-    parser.add_argument('--samples_per_batch', default=16,
                         type=int)
     parser.add_argument('--dt_steps', default=1000,
                         type=int)
@@ -97,6 +95,7 @@ def train_score()->None:
     
     N_sim = args.x_samples*args.repeats
     T_sample_name = (args.T_sample == 1)*"T"
+    st_path = f"scores/{args.manifold}{args.dim}/st/"
     s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_{args.s1_loss_type}/"
     s2_path = f"scores/{args.manifold}{args.dim}/s2{T_sample_name}_{args.s2_loss_type}/"
     s1s2_path = f"scores/{args.manifold}{args.dim}/s1s2{T_sample_name}_{args.s2_loss_type}/"
@@ -105,6 +104,7 @@ def train_score()->None:
                                                                            args.dim)
     
     s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
+    st_model = hk.transform(lambda x: models.MLP_t(dim=generator_dim, layers=layers)(x))
     if "diag" in args.s2_loss_type:
         s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers, layers_beta=layers,
                                                         dim=generator_dim, 
@@ -139,35 +139,33 @@ def train_score()->None:
                 )
              
             return s1s2(x)
-    
-    if args.T_sample:
-        batch_size = args.x_samples*args.repeats
+        
+    if args.train_net == "t":
+        t_samples = args.dt_steps
     else:
-        batch_size = args.x_samples*args.t_samples*args.repeats
+        t_samples = args.t_samples
         
     if sampling_method == 'LocalSampling':
         data_generator = LocalSampling(M=M,
                                        x0=x0,
                                        repeats=args.repeats,
                                        x_samples=args.x_samples,
-                                       t_samples=args.t_samples,
-                                       N_sim=N_sim,
+                                       t_samples=t_samples,
                                        max_T=args.max_T,
                                        dt_steps=args.dt_steps,
                                        T_sample=args.T_sample,
-                                       t=args.t
+                                       t0=args.t0
                                        )
     elif sampling_method == "EmbeddedSampling":
         data_generator = EmbeddedSampling(M=M,
                                           x0=x0,
                                           repeats=args.repeats,
                                           x_samples=args.x_samples,
-                                          t_samples=args.t_samples,
-                                          N_sim=N_sim,
+                                          t_samples=t_samples,
                                           max_T=args.max_T,
                                           dt_steps=args.dt_steps,
                                           T_sample=args.T_sample,
-                                          t=args.t
+                                          t0=args.t0
                                           )
     elif sampling_method == "ProjectionSampling":
         data_generator = ProjectionSampling(M=M,
@@ -175,12 +173,11 @@ def train_score()->None:
                                             dim=generator_dim,
                                             repeats=args.repeats,
                                             x_samples=args.x_samples,
-                                            t_samples=args.t_samples,
-                                            N_sim=N_sim,
+                                            t_samples=t_samples,
                                             max_T=args.max_T,
                                             dt_steps=args.dt_steps,
                                             T_sample=args.T_sample,
-                                            t=args.t
+                                            t0=args.t0
                                             )
     elif sampling_method == "TMSampling":
         data_generator = TMSampling(M=M,
@@ -189,12 +186,11 @@ def train_score()->None:
                                     Exp_map=lambda x, v: M.ExpEmbedded(x[0],v),
                                     repeats=args.repeats,
                                     x_samples=args.x_samples,
-                                    t_samples=args.t_samples,
-                                    N_sim=N_sim,
+                                    t_samples=t_samples,
                                     max_T=args.max_T,
                                     dt_steps=args.dt_steps,
                                     T_sample=args.T_sample,
-                                    t=args.t
+                                    t0=args.t0
                                     )
 
     if args.train_net == "s2":
@@ -214,9 +210,6 @@ def train_score()->None:
                  s1_model=s1,
                  s2_model=s2_model,
                  generator=data_generator,
-                 N_dim=generator_dim,
-                 dW_dim=generator_dim,
-                 batch_size=batch_size,
                  state=state_s2,
                  lr_rate=args.lr_rate,
                  epochs=args.epochs,
@@ -243,9 +236,6 @@ def train_score()->None:
         train_s1s2(M=M,
                  s1s2_model=s1s2_model,
                  generator=data_generator,
-                 N_dim=generator_dim,
-                 dW_dim=generator_dim,
-                 batch_size=batch_size,
                  state=state_s1s2,
                  s1_params=state_s1_params,
                  lr_rate=args.lr_rate,
@@ -256,6 +246,25 @@ def train_score()->None:
                  seed=args.seed,
                  loss_type = args.s2_loss_type
                  )
+    elif args.train_net == "t":
+        if args.load_model:
+            state = load_model(st_path)
+        else:
+            state = None
+
+        if not os.path.exists(st_path):
+            os.makedirs(st_path)
+
+        train_t(M=M,
+                model=st_model,
+                generator=data_generator,
+                state=state,
+                lr_rate=args.lr_rate,
+                epochs=args.epochs,
+                save_step=args.save_step,
+                save_path=st_path,
+                seed=args.seed
+                )
     else:
         if args.load_model:
             state = load_model(s1_path)
@@ -268,9 +277,6 @@ def train_score()->None:
         train_s1(M=M,
                  model=s1_model,
                  generator=data_generator,
-                 N_dim=generator_dim,
-                 dW_dim=generator_dim,
-                 batch_size=batch_size,
                  state =state,
                  lr_rate=args.lr_rate,
                  epochs=args.epochs,

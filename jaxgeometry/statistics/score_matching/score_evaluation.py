@@ -20,6 +20,7 @@ class ScoreEvaluation(object):
                  M:object,
                  s1_model:Callable[[Array, Array, Array], Array],
                  s2_model:Callable[[Array, Array, Array], Array]=None,
+                 st_model:Callable[[Array, Array, Array], Array]=None,
                  method:str='Local',
                  eps:float=0.01,
                  )->None:
@@ -34,6 +35,14 @@ class ScoreEvaluation(object):
             self.s1_model = lambda x,y,t: s1_model(self.M.F(x), self.M.F(y), t)
         else:
             self.s1_model = lambda x,y,t: s1_model(x[0],y[0],t)
+            
+        if st_model is None:
+            self.st_model = st_model
+        else:
+            if method == "Embedded":
+                self.st_model = lambda x,y,t: st_model(self.M.F(x), self.M.F(y), t)
+            else:
+                self.st_model = lambda x,y,t: st_model(x[0], y[0], t)
         
         if s2_model is None:
             if method == "Embedded":
@@ -45,7 +54,8 @@ class ScoreEvaluation(object):
                 self.s2_model = lambda x,y,t: s2_model(self.M.F(x), self.M.F(y), t)
             else:
                 self.s2_model = lambda x,y,t: s2_model(x[0], y[0], t)
-        
+                
+        return
     
     def update_coords(self, Fx:Array)->Tuple[Array, Array]:
         
@@ -129,6 +139,9 @@ class ScoreEvaluation(object):
                   y:Tuple[Array,Array],
                   t:Array, 
                   )->Array:
+        
+        if self.st_model is not None:
+            return self.st_model(x,y,t)
         
         if self.method == "Embedded":
             #s1 = self.s1_model(x,y,t)

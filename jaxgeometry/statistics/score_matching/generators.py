@@ -29,29 +29,30 @@ class LocalSampling(object):
                  repeats:int=2**3,
                  x_samples:int=2**5,
                  t_samples:int=2**7,
-                 N_sim:int=2**8,
-                 max_T:float=1.0,
                  dt_steps:int=1000,
+                 max_T:float=1.0,
                  T_sample:bool = False,
-                 t:float = 0.1
+                 t0:float = 0.1
                  )->None:
         
         self.M = M
+        self.dim = M.dim
+        self.repeats = repeats
         self.x_samples=x_samples
         self.t_samples = t_samples
-        self.N_sim = N_sim
+        self.N_sim = x_samples*repeats
         self.max_T = max_T
         self.dt_steps = dt_steps
         self.T_sample = T_sample
-        self.t = t
-        self.repeats = repeats
+        if self.T_sample:
+            self.t_samples = 1
+        self.t0 = t0
         if x0[0].ndim == 1:
             self.x0s = tile(x0, repeats)
         else:
             self.x0s = x0
         self.x0s_default = tile(x0, repeats)
         self._dts = dts(T=self.max_T, n_steps=self.dt_steps)
-        self.counter = 0
         
         Brownian_coords(M)
         (product, sde_product, chart_update_product) = product_sde(M, 
@@ -78,11 +79,6 @@ class LocalSampling(object):
     def __call__(self)->Tuple[Array, Array, Array, Array, Array]:
         
         while True:
-          #  self.counter += 1
-          #  print(self.counter)
-          #  if self.counter > 100:
-          #      self.counter = 0
-          #      self.x0s = self.x0s_default
             
             dW = dWs(self.N_sim*self.M.dim,self._dts).reshape(-1,self.N_sim,self.M.dim)
             (ts,xss,chartss,*_) = self.product((jnp.repeat(self.x0s[0],self.x_samples,axis=0),
@@ -94,37 +90,41 @@ class LocalSampling(object):
             
             if jnp.isnan(jnp.sum(xss)):
                 self.x0s = self.x0s_default
+                
+            x0s = jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.dt_steps,1,1))
+            xt = xss
+            t = jnp.tile(ts, (self.N_sim, 1)).T.reshape(self.dt_steps, self.N_sim, 1)
+            dt = jnp.tile(self._dts, (self.N_sim, 1)).T.reshape(self.dt_steps, self.N_sim, 1)
             
             if not self.T_sample:
                 inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
-                ts = ts[inds]
-                samples = xss[inds]
-                
-                yield jnp.hstack((jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.t_samples,1)),
-                                  samples.reshape(-1,self.M.dim),
-                                  jnp.repeat(ts,self.N_sim).reshape((-1,1)),
-                                  dW[inds].reshape(-1,self.M.dim),
-                                  jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
-                                  ))
-            
+                x0s = x0s[inds]
+                xt = xt[inds]
+                t = t[inds]
+                dt = dt[inds]
+                dW = dW[inds]
             else:
-                inds = jnp.argmin(jnp.abs(ts-self.t))
-                ts = ts[inds]
-                samples = xss[inds]
-                yield jnp.hstack((jnp.repeat(Fx0s,self.x_samples,axis=0),
-                                  samples.reshape(-1,self.M.dim),
-                                  jnp.repeat(ts,self.N_sim).reshape((-1,1)),
-                                  dW[inds].reshape(-1,self.M.dim),
-                                  jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
-                                  ))
+                inds = jnp.argmin(jnp.abs(ts-self.t0))
+                x0s = jnp.expand_dims(x0s[inds], axis=0)
+                xt = jnp.expand_dims(xt[inds], axis=0)
+                t = jnp.expand_dims(t[inds], axis=0)
+                dt = jnp.expand_dims(dt[inds],axis=0)
+                dW = jnp.expand_dims(dW[inds], axis=0)
+                
+            yield jnp.concatenate((x0s,
+                                   xt,
+                                   t,
+                                   dW,
+                                   dt,
+                                   ), axis=-1)
             
     def update_coords(self, 
                       x:Array
                       )->Tuple[Array,Array]:
         
-        chart = self.M.centered_chart(Fx)
+        chart = self.M.centered_chart(x)
         
-        return (Fx,chart)
+        return (x,chart)
     
     def grad_TM(self,
                 x:Array,
@@ -139,6 +139,15 @@ class LocalSampling(object):
                    )->Array:
         
         return v
+    
+    def grad_local_vsm(self,
+                       x0:Array,
+                       xt:Tuple[Array,Array],
+                       t:Array,
+                       s1_model:Callable,
+                       )->Array:
+        
+        return s1_model(x0,xt[0],t)
     
     def hess_TM(self,
                 x:Array,
@@ -166,21 +175,21 @@ class EmbeddedSampling(object):
                  repeats:int=2**3,
                  x_samples:int=2**5,
                  t_samples:int=2**7,
-                 N_sim:int=2**8,
                  max_T:float=1.0,
                  dt_steps:int=1000,
                  T_sample:bool = False,
-                 t:float = 0.1
+                 t0:float = 0.1
                  )->None:
         
         self.M = M
+        self.dim = M.emb_dim
         self.x_samples=x_samples
         self.t_samples = t_samples
-        self.N_sim = N_sim
+        self.N_sim = repeats*x_samples
         self.max_T = max_T
         self.dt_steps = dt_steps
         self.T_sample = T_sample
-        self.t = t
+        self.t0 = t0
         self.repeats = repeats
         self.x0s = tile(x0, repeats)
         self.x0s_default = tile(x0, repeats)
@@ -221,31 +230,33 @@ class EmbeddedSampling(object):
             
             if jnp.isnan(jnp.sum(xss)):
                 self.x0s = self.x0s_default
+                
+            x0s = jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.dt_steps,1,1))
+            xt = xss
+            t = jnp.tile(ts, (self.N_sim, 1)).T.reshape(self.dt_steps, self.N_sim, 1)
+            dt = jnp.tile(self._dts, (self.N_sim, 1)).T.reshape(self.dt_steps, self.N_sim, 1)
            
             if not self.T_sample:
                 inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
-                ts = ts[inds]
-                samples = xss[inds]
-                charts = chartss[inds]
-                yield jnp.hstack((jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.t_samples,1)),
-                                 vmap(lambda x,chart: self.M.F((x,chart)))(samples.reshape((-1,self.M.dim)),
-                                                                      charts.reshape((-1,chartss.shape[-1]))), #charts.reshape(-1,chartss.shape[-1]), #
-                                 jnp.repeat(ts,self.N_sim).reshape((-1,1)),
-                                 dW[inds].reshape(-1,self.M.dim),
-                                 jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
-                                ))
+                x0s = x0s[inds]
+                xt = xt[inds]
+                t = t[inds]
+                dt = dt[inds]
+                dW = dW[inds]
             else:
-                inds = jnp.argmin(jnp.abs(ts-self.t))
-                ts = ts[inds]
-                samples = xss[inds]
-                charts = chartss[inds]
-                yield jnp.hstack((jnp.repeat(Fx0s,self.x_samples,axis=0),
-                                 vmap(lambda x,chart: self.M.F((x,chart)))(samples.reshape((-1,self.M.dim)),
-                                                                           charts.reshape((-1,chartss.shape[-1]))), #charts.reshape(-1,chartss.shape[-1]), #
-                                 jnp.repeat(ts,self.N_sim).reshape((-1,1)),
-                                 dW[inds].reshape(-1,self.M.dim),
-                                 jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
-                                ))
+                inds = jnp.argmin(jnp.abs(ts-self.t0))
+                x0s = jnp.expand_dims(x0s[inds], axis=0)
+                xt = jnp.expand_dims(xt[inds], axis=0)
+                t = jnp.expand_dims(t[inds], axis=0)
+                dt = jnp.expand_dims(dt[inds],axis=0)
+                dW = jnp.expand_dims(dW[inds], axis=0)
+                
+            yield jnp.concatenate((x0s,
+                                   xt,
+                                   t,
+                                   dW,
+                                   dt,
+                                   ), axis=-1)
 
     def update_coords(self, 
                       Fx:Array
@@ -274,6 +285,18 @@ class EmbeddedSampling(object):
                    )->Array:
 
         Jf = self.M.JF(x)
+
+        return jnp.einsum('ij,i->j', Jf, v)
+    
+    def grad_local_vsm(self,
+                       x0:Array,
+                       xt:Tuple[Array,Array],
+                       t:Array,
+                       s1_model:Callable,
+                       )->Array:
+        
+        Jf = self.M.JF(xt)
+        v = s1_model(x0,xt[1],t)
 
         return jnp.einsum('ij,i->j', Jf, v)
 
@@ -316,11 +339,10 @@ class TMSampling(object):
                  repeats:int=2**3,
                  x_samples:int=2**5,
                  t_samples:int=2**7,
-                 N_sim:int=2**8,
                  max_T:float=1.0,
                  dt_steps:int=1000,
                  T_sample:bool = False,
-                 t:float=0.1
+                 t0:float=0.1
                  )->None:
         
         if not hasattr(M, "invJF"):
@@ -329,11 +351,11 @@ class TMSampling(object):
         self.M = M
         self.x_samples=x_samples
         self.t_samples = t_samples
-        self.N_sim = N_sim
+        self.N_sim = x_samples*repeats
         self.max_T = max_T
         self.dt_steps = dt_steps
         self.T_sample = T_sample
-        self.t = t
+        self.t0 = t0
         self.repeats = repeats
         self.x0s = tile(x0, repeats)
         self.x0s_default = tile(x0, repeats)
@@ -385,28 +407,32 @@ class TMSampling(object):
             if jnp.isnan(jnp.sum(xss)):
                 self.x0s = self.x0s_default
             
+            x0s = jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.dt_steps,1,1))
+            xt = xss
+            t = jnp.tile(ts, (self.N_sim, 1)).T.reshape(self.dt_steps, self.N_sim, 1)
+            dt = jnp.tile(self._dts, (self.N_sim, 1)).T.reshape(self.dt_steps, self.N_sim, 1)
+           
             if not self.T_sample:
                 inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
-                ts = ts[inds]
-                samples = xss[inds]
-                
-                yield jnp.hstack((jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.t_samples,1)),
-                                  samples.reshape(-1,self.dim),
-                                  jnp.repeat(ts,self.N_sim).reshape((-1,1)),
-                                  dW[inds].reshape(-1,self.dim),
-                                  jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
-                                  ))
-            
+                x0s = x0s[inds]
+                xt = xt[inds]
+                t = t[inds]
+                dt = dt[inds]
+                dW = dW[inds]
             else:
-                inds = jnp.argmin(jnp.abs(ts-self.t))
-                ts = ts[inds]
-                samples = xss[inds]
-                yield jnp.hstack((jnp.repeat(Fx0s,self.x_samples,axis=0),
-                                  samples.reshape(-1,self.dim),
-                                  jnp.repeat(ts,self.N_sim).reshape((-1,1)),
-                                  dW[inds].reshape(-1,self.dim),
-                                  jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
-                                  ))
+                inds = jnp.argmin(jnp.abs(ts-self.t0))
+                x0s = jnp.expand_dims(x0s[inds], axis=0)
+                xt = jnp.expand_dims(xt[inds], axis=0)
+                t = jnp.expand_dims(t[inds], axis=0)
+                dt = jnp.expand_dims(dt[inds],axis=0)
+                dW = jnp.expand_dims(dW[inds], axis=0)
+                
+            yield jnp.concatenate((x0s,
+                                   xt,
+                                   t,
+                                   dW,
+                                   dt,
+                                   ), axis=-1)
             
     def update_coords(self, Fx:Array)->Tuple[Array,Array]:
         
@@ -429,6 +455,18 @@ class TMSampling(object):
         x = self.update_coords(x)
 
         Jf = self.M.JF(x)
+
+        return jnp.einsum('ij,i->j', Jf, v)
+    
+    def grad_local_vsm(self,
+                       x0:Array,
+                       xt:Tuple[Array,Array],
+                       t:Array,
+                       s1_model:Callable,
+                       )->Array:
+        
+        Jf = self.M.JF(xt)
+        v = s1_model(x0,xt[1],t)
 
         return jnp.einsum('ij,i->j', Jf, v)
 
@@ -470,11 +508,10 @@ class ProjectionSampling(object):
                  repeats:int=2**3,
                  x_samples:int=2**5,
                  t_samples:int=2**7,
-                 N_sim:int=2**8,
                  max_T:float=1.0,
                  dt_steps:int=1000,
                  T_sample:bool = False,
-                 t:float=.1,
+                 t0:float=.1,
                  reverse=True,
                  )->None:
         
@@ -484,11 +521,11 @@ class ProjectionSampling(object):
         self.M = M
         self.x_samples=x_samples
         self.t_samples = t_samples
-        self.N_sim = N_sim
+        self.N_sim = repeats*x_samples
         self.max_T = max_T
         self.dt_steps = dt_steps
         self.T_sample = T_sample
-        self.t = t
+        self.t0 = t0
         self.repeats = repeats
         self.x0s = tile(x0, repeats)
         self.x0s_default = tile(x0, repeats)
@@ -538,31 +575,32 @@ class ProjectionSampling(object):
             if jnp.isnan(jnp.sum(xss)):
                 self.x0s = self.x0s_default
            
+            x0s = jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.dt_steps,1,1))
+            xt = xss
+            t = jnp.tile(ts, (self.N_sim, 1)).T.reshape(self.dt_steps, self.N_sim, 1)
+            dt = jnp.tile(self._dts, (self.N_sim, 1)).T.reshape(self.dt_steps, self.N_sim, 1)
+           
             if not self.T_sample:
                 inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
-                ts = ts[inds]
-                samples = xss[inds]
-                charts = chartss[inds]
-
-                yield jnp.hstack((jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.t_samples,1)),
-                                 vmap(lambda x,chart: self.M.F((x,chart)))(samples.reshape((-1,self.M.dim)),
-                                                                      charts.reshape((-1,chartss.shape[-1]))), #charts.reshape(-1,chartss.shape[-1]), #
-                                 jnp.repeat(ts,self.N_sim).reshape((-1,1)),
-                                 dW[inds].reshape(-1,self.dim),
-                                 jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
-                                ))
+                x0s = x0s[inds]
+                xt = xt[inds]
+                t = t[inds]
+                dt = dt[inds]
+                dW = dW[inds]
             else:
-                inds = jnp.argmin(jnp.abs(ts-self.t))
-                ts = ts[inds]
-                samples = xss[inds]
-                charts = chartss[inds]
-                yield jnp.hstack((jnp.repeat(Fx0s,self.x_samples,axis=0),
-                                 vmap(lambda x,chart: self.M.F((x,chart)))(samples.reshape((-1,self.M.dim)),
-                                                                           charts.reshape((-1,chartss.shape[-1]))), #charts.reshape(-1,chartss.shape[-1]), #
-                                 jnp.repeat(ts,self.N_sim).reshape((-1,1)),
-                                 dW[inds].reshape(-1,self.dim),
-                                 jnp.repeat(self._dts[inds],self.N_sim).reshape((-1,1)),
-                                ))
+                inds = jnp.argmin(jnp.abs(ts-self.t0))
+                x0s = jnp.expand_dims(x0s[inds], axis=0)
+                xt = jnp.expand_dims(xt[inds], axis=0)
+                t = jnp.expand_dims(t[inds], axis=0)
+                dt = jnp.expand_dims(dt[inds],axis=0)
+                dW = jnp.expand_dims(dW[inds], axis=0)
+                
+            yield jnp.concatenate((x0s,
+                                   xt,
+                                   t,
+                                   dW,
+                                   dt,
+                                   ), axis=-1)
             
     def update_coords(self, Fx:Array)->Tuple[Array,Array]:
         
@@ -583,6 +621,18 @@ class ProjectionSampling(object):
                    )->Array:
 
         Jf = self.M.JF(x)
+
+        return jnp.einsum('ij,i->j', Jf, v)
+    
+    def grad_local_vsm(self,
+                       x0:Array,
+                       xt:Tuple[Array,Array],
+                       t:Array,
+                       s1_model:Callable,
+                       )->Array:
+        
+        Jf = self.M.JF(xt)
+        v = s1_model(x0,xt[1],t)
 
         return jnp.einsum('ij,i->j', Jf, v)
 
