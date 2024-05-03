@@ -108,7 +108,7 @@ def train_score()->None:
     if "diag" in args.s2_loss_type:
         s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers, layers_beta=layers,
                                                         dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
+                                                        r = max((generator_dim-1)//2,1))(x))
     
         @hk.transform
         def s1s2_model(x):
@@ -118,14 +118,14 @@ def train_score()->None:
                 models.MLP_s2(layers_alpha=layers, 
                               layers_beta=layers,
                               dim=generator_dim,
-                              r = max(generator_dim//2,1))
+                              r = max((generator_dim-1)//2,1))
                 )
             
             return s1s2(x)
     else:    
         s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
                                                         dim=generator_dim, 
-                                                        r = max(generator_dim//2,1))(x))
+                                                        r = max((generator_dim-1)//2,1))(x))
     
         @hk.transform
         def s1s2_model(x):
@@ -135,7 +135,7 @@ def train_score()->None:
                 models.MLP_s2(layers_alpha=layers, 
                               layers_beta=layers,
                               dim=generator_dim,
-                              r = max(generator_dim//2,1))
+                              r = max((generator_dim-1)//2,1))
                 )
              
             return s1s2(x)

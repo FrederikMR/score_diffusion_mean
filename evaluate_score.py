@@ -13,6 +13,7 @@ Created on Fri Feb  9 13:30:00 2024
 #jax
 import jax.numpy as jnp
 import jax.random as jrandom
+from jax import lax
 
 #argparse
 import argparse
@@ -137,12 +138,65 @@ def evaluate_diffusion_mean():
             s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
                                                             dim=generator_dim, 
                                                             r = max((generator_dim-1)//2,1))(x))
+        
+        if "s1s2" in args.dt_approx:
+            s1_path = s2_path
+            if "diag" in args.s2_loss_type:
+                @hk.transform
+                def s1_model(x):
+                    
+                    s1s2 =  models.MLP_diags1s2(
+                        models.MLP_s1(dim=generator_dim, layers=layers), 
+                        models.MLP_s2(layers_alpha=layers, 
+                                      layers_beta=layers,
+                                      dim=generator_dim,
+                                      r = max((generator_dim-1)//2,1))
+                        )
+                    
+                    return s1s2(x)[0]
+                
+                @hk.transform
+                def s2_model(x):
+                    
+                    s1s2 =  models.MLP_diags1s2(
+                        models.MLP_s1(dim=generator_dim, layers=layers), 
+                        models.MLP_s2(layers_alpha=layers, 
+                                      layers_beta=layers,
+                                      dim=generator_dim,
+                                      r = max((generator_dim-1)//2,1))
+                        )
+                    
+                    return s1s2(x)[1]
+            else:    
+                @hk.transform
+                def s1_model(x):
+                    
+                    s1s2 =  models.MLP_diags1s2(
+                        models.MLP_s1(dim=generator_dim, layers=layers), 
+                        models.MLP_s2(layers_alpha=layers, 
+                                      layers_beta=layers,
+                                      dim=generator_dim,
+                                      r = max((generator_dim-1)//2,1))
+                        )
+                    
+                    return s1s2(x)[0]
+                
+                @hk.transform
+                def s2_model(x):
+                    
+                    s1s2 =  models.MLP_diags1s2(
+                        models.MLP_s1(dim=generator_dim, layers=layers), 
+                        models.MLP_s2(layers_alpha=layers, 
+                                      layers_beta=layers,
+                                      dim=generator_dim,
+                                      r = max((generator_dim-1)//2,1))
+                        )
+                    
+                    return s1s2(x)[1]
                     
         s1_state = load_model(s1_path)
         s1_ntrain.append(len(jnp.load(''.join((s1_path, 'loss_arrays.npy')))))
-        st_model = hk.transform(lambda x: models.MLP_t(dim=generator_dim, layers=layers)(x))
         if args.dt_approx == "s1":
-            s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
             s2_state = None
             dt_ntrain.append(jnp.nan)
             st_fun = None
@@ -151,7 +205,6 @@ def evaluate_diffusion_mean():
             dt_ntrain.append(len(jnp.load(''.join((s2_path, 'loss_arrays.npy')))))
             st_fun = None
         elif args.dt_approx == "dt":
-            s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
             st_state = load_model(st_path)
             dt_ntrain.append(len(jnp.load(''.join((st_path, 'loss_arrays.npy')))))
             st_fun = lambda x,y,t: st_model.apply(st_state.params, rng_key, jnp.hstack((x,y,t)))
@@ -183,7 +236,7 @@ def evaluate_diffusion_mean():
         rng_key = jrandom.PRNGKey(args.seed)
         s1_fun = lambda x,y,t: s1_model.apply(s1_state.params, rng_key, jnp.hstack((x,y,t)))
         if "s2" in args.dt_approx:
-            s2_fun = lambda x,y,t: s2_model.apply(s2_state.params, rng_key, jnp.hstack((x,y,t)))
+            s2_fun = lambda x,y,t: lax.stop_gradient(s2_model.apply(s2_state.params, rng_key, jnp.hstack((x,y,t))))
         else:
             s2_fun = None
             
@@ -191,12 +244,16 @@ def evaluate_diffusion_mean():
         s1_test = lambda x,y,t: jacfwd(lambda y1: jnp.log(M.hk_embedded(x,y1,t)).squeeze())(y)
         s2_test = lambda x,y,t: jacfwd(lambda y1: jacfwd(lambda y2: jnp.log(M.hk_embedded(x,y2,t)).squeeze())(y1))(y)
 
+
         ScoreEval = ScoreEvaluation(M,
                                     s1_model=s1_fun,#s1_fun, 
                                     s2_model=s2_fun,#s2_fun,#s2_model_test2, 
                                     st_model=st_fun,
                                     method=method, 
                                     )
+        
+        print(ScoreEval.grady_log(x0,x0,0.5))
+        print(ScoreEval.gradt_log(x0,x0,0.5))
 
         dm_score(M, 
                  s1_model=ScoreEval.grady_log,
@@ -205,7 +262,8 @@ def evaluate_diffusion_mean():
             mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t_init]), \
                                                    step_size=args.step_size, max_iter=args.score_iter)
             T_sm = args.t_init*jnp.ones(len(mu_sm[0]))
-            time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t_init]), step_size=args.step_size, max_iter=args.bridge_iter)
+            time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t_init]), step_size=args.step_size, 
+                                          max_iter=args.bridge_iter)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                                  number=1, globals=locals(), repeat=args.timing_repeats)
             score_mu_time.append(jnp.mean(jnp.array(time)))
@@ -213,7 +271,8 @@ def evaluate_diffusion_mean():
         else:
             mu_sm, T_sm, gradx_sm, gradt_sm = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t_init]), \
                                                    step_size=args.step_size, max_iter=args.score_iter)
-            time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t_init]), step_size=args.step_size, max_iter=args.bridge_iter)
+            time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t_init]), step_size=args.step_size, 
+                                           max_iter=args.bridge_iter)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                                  number=1, globals=locals(), repeat=args.timing_repeats)
             score_mu_time.append(jnp.mean(jnp.array(time)))
@@ -359,7 +418,9 @@ def evaluate_frechet_mean():
                  s2_model = ScoreEval.gradt_log, method="Gradient")
         mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                step_size=args.step_size, max_iter=args.score_iter)
-        time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t0]), step_size=args.step_size, max_iter=args.bridge_iter)
+        time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t0]), 
+                                      step_size=args.step_size, 
+                                      max_iter=args.bridge_iter)
         time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                              number=1, globals=locals(), repeat=args.timing_repeats)
         score_mu_time.append(jnp.mean(jnp.array(time)))
