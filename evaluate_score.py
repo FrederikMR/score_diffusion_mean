@@ -177,6 +177,9 @@ def evaluate_diffusion_mean():
         else:
             mu_opt, T_opt = x0, 0.5
 
+        print(s1_ntrain)
+        print(dt_ntrain)
+
         rng_key = jrandom.PRNGKey(args.seed)
         s1_fun = lambda x,y,t: s1_model.apply(s1_state.params, rng_key, jnp.hstack((x,y,t)))
         if "s2" in args.dt_approx:
