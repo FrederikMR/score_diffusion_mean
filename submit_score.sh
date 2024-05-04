@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J Euclidean2_s1s2dsm
+#BSUB -J Sphere3_s1s2dsm
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
@@ -18,8 +18,8 @@ module swap cudnn/v8.9.1.23-prod-cuda-12.X
 module swap python3/3.10.12
 
 python3 train_score.py \
-    --manifold Euclidean \
-    --dim 2 \
+    --manifold Sphere \
+    --dim 3 \
     --s1_loss_type dsm \
     --s2_loss_type dsm \
     --load_model 0 \
@@ -29,9 +29,9 @@ python3 train_score.py \
     --max_T 1.0 \
     --lr_rate 0.0002 \
     --epochs 50000 \
-    --x_samples 64 \
+    --x_samples 32 \
     --t_samples 100 \
-    --repeats 16 \
+    --repeats 8 \
     --dt_steps 100 \
     --save_step 100 \
     --seed 2712
