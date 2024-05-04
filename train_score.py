@@ -73,11 +73,11 @@ def parse_args():
                         type=int)
     parser.add_argument('--x_samples', default=32, #32
                         type=int)
-    parser.add_argument('--t_samples', default=128,#128
+    parser.add_argument('--t_samples', default=100,#128
                         type=int)
     parser.add_argument('--repeats', default=8,
                         type=int)
-    parser.add_argument('--dt_steps', default=1000,
+    parser.add_argument('--dt_steps', default=100,
                         type=int)
     parser.add_argument('--save_step', default=10,
                         type=int)

@@ -23,16 +23,15 @@ from jaxgeometry.manifolds import *
 #%% Get generator by dimension
 
 def get_generator_dim(manifold:str, dim:int)->List:
-    if dim<3:
+    
+    if manifold == "gp_mnist":
         layers = [512, 512, 512, 512, 512]
-    elif dim<5:
-        layers = [512, 512, 512, 512, 512]
-    elif dim<10:
-        layers = [512, 512, 512, 512, 512]
-    elif dim<20:
-        layers = [512, 512, 512, 512, 512]
+        return layers
     else:
-        layers = [512, 512, 512, 512, 512]
+        if dim < 5:
+            layers = [512, 512, 512]
+        else:
+            layers = [512, 512, 512, 512, 512]
         
     return layers
 
@@ -189,7 +188,7 @@ def load_manifold(manifold:str, dim:int=None)->None:
         generator_dim = M.dim
         x0 = M.coords(jnp.array([jnp.cos(0.), jnp.sin(0.)]))
         sampling_method = 'LocalSampling'
-        layers = [50,100,200,400,800,800,400,200,100,50]
+        layers = get_generator_dim(manifold, generator_dim)
         opt_val = 'x0'
     else:
         return
