@@ -37,9 +37,9 @@ from ManLearn.train_MNIST import load_dataset as load_mnist
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Sphere",
+    parser.add_argument('--manifold', default="Euclidean",
                         type=str)
-    parser.add_argument('--dim', default=10,
+    parser.add_argument('--dim', default=50,
                         type=int)
     parser.add_argument('--N_sim', default=1000,
                         type=int)
@@ -57,7 +57,7 @@ def parse_args():
 
 #%% train for (x,y,t)
 
-def train_score()->None:
+def generate_data()->None:
     
     args = parse_args()
     
@@ -157,5 +157,6 @@ def train_score()->None:
 
 if __name__ == '__main__':
         
-    train_score()
+    generate_data
+    ()
     

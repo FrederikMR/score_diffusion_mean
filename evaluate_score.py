@@ -55,13 +55,13 @@ def parse_args():
     # File-paths
     parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=[2],
+    parser.add_argument('--dim', default=[2,3,5],
                         type=List)
     parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsm",
                         type=str)
-    parser.add_argument('--dt_approx', default="dt",
+    parser.add_argument('--dt_approx', default="s1",
                         type=str)
     parser.add_argument('--fixed_t', default=0,
                         type=int)
@@ -303,17 +303,17 @@ def evaluate_diffusion_mean():
             
         if method == "Local":
             D = len(mu_opt[0])
-            score_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_sm[0][-1])/D)
+            score_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_sm[0][-1]))
             score_t_error.append(jnp.linalg.norm(T_opt-T_sm[-1]))
             
-            bridge_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_bridgex[-1])/D)
+            bridge_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_bridgex[-1]))
             bridge_t_error.append(jnp.linalg.norm(T_opt-T_bridge[-1]))
         else:
             D = len(mu_opt[1])
-            score_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_sm[1][-1])/D)
+            score_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_sm[1][-1]))
             score_t_error.append(jnp.linalg.norm(T_opt-T_sm[-1]))
             
-            bridge_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_bridgechart[-1])/D)
+            bridge_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_bridgechart[-1]))
             bridge_t_error.append(jnp.linalg.norm(T_opt-T_bridge[-1]))
 
     print(score_mu_error)
