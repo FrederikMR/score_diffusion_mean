@@ -24,6 +24,8 @@ from jaxgeometry.manifolds import *
 
 def get_generator_dim(manifold:str, dim:int)->List:
     
+    return [512, 512, 512]
+    
     if manifold == "gp_mnist":
         layers = [512, 512, 512, 512, 512]
         return layers

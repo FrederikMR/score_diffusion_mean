@@ -39,7 +39,7 @@ def parse_args():
     # File-paths
     parser.add_argument('--manifold', default="gp_mnist",
                         type=str)
-    parser.add_argument('--dim', default=50,
+    parser.add_argument('--dim', default=2,
                         type=int)
     parser.add_argument('--N_sim', default=1000,
                         type=int)
