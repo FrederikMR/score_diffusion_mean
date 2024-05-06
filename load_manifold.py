@@ -15,27 +15,26 @@ import jax.numpy as jnp
 
 from gp.gp import RM_EG
 
-from typing import List
+from typing import List, Tuple
 
 #jaxgeometry
 from jaxgeometry.manifolds import *
 
 #%% Get generator by dimension
 
-def get_generator_dim(manifold:str, dim:int)->List:
+def get_generator_dim(manifold:str, dim:int)->Tuple[List,List]:
     
-    return [512, 512, 512]
-    
-    if manifold == "gp_mnist":
-        layers = [512, 512, 512, 512, 512]
-        return layers
+    if manifold == "Euclidean":
+        layers_s1 = [128, 128, 128]
+        layers_s2 = [32,32,32]
+    elif manifold == "Sphere":
+        layers_s1 = [512, 512, 512, 512, 512]
+        layers_s2 = [128, 128, 128, 128, 128]
     else:
-        if dim < 5:
-            layers = [512, 512, 512]
-        else:
-            layers = [512, 512, 512, 512, 512]
+        layers_s1 = [512, 512, 512]
+        layers_s2 = [512, 512, 512]
         
-    return layers
+    return layers_s1, layers_s2
 
 #%% Load Manifold
 

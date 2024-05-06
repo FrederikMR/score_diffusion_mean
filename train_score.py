@@ -63,7 +63,7 @@ def parse_args():
                         type=float)
     parser.add_argument('--gamma', default=1.0,
                         type=float)
-    parser.add_argument('--train_net', default="s1",
+    parser.add_argument('--train_net', default="s2",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
@@ -92,8 +92,7 @@ def parse_args():
 def train_score()->None:
     
     args = parse_args()
-    
-    N_sim = args.x_samples*args.repeats
+
     T_sample_name = (args.T_sample == 1)*"T"
     st_path = f"scores/{args.manifold}{args.dim}/st/"
     s1_path = f"scores/{args.manifold}{args.dim}/s1{T_sample_name}_{args.s1_loss_type}/"
@@ -102,11 +101,12 @@ def train_score()->None:
     
     M, x0, sampling_method, generator_dim, layers, opt_val = load_manifold(args.manifold,
                                                                            args.dim)
+    layers_s1, layers_s2 = layers
     
-    s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-    st_model = hk.transform(lambda x: models.MLP_t(dim=generator_dim, layers=layers)(x))
+    s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers_s1)(x))
+    st_model = hk.transform(lambda x: models.MLP_t(dim=generator_dim, layers=layers_s1)(x))
     if "diag" in args.s2_loss_type:
-        s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers, layers_beta=layers,
+        s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers_s2, layers_beta=layers_s2,
                                                         dim=generator_dim, 
                                                         r = max((generator_dim-1)//2,1))(x))
     
@@ -114,16 +114,16 @@ def train_score()->None:
         def s1s2_model(x):
             
             s1s2 =  models.MLP_diags1s2(
-                models.MLP_s1(dim=generator_dim, layers=layers), 
-                models.MLP_s2(layers_alpha=layers, 
-                              layers_beta=layers,
+                models.MLP_s1(dim=generator_dim, layers=layers_s1), 
+                models.MLP_s2(layers_alpha=layers_s2, 
+                              layers_beta=layers_s2,
                               dim=generator_dim,
                               r = max((generator_dim-1)//2,1))
                 )
             
             return s1s2(x)
     else:    
-        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+        s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers_s2, layers_beta=layers_s1,
                                                         dim=generator_dim, 
                                                         r = max((generator_dim-1)//2,1))(x))
     
@@ -131,9 +131,9 @@ def train_score()->None:
         def s1s2_model(x):
             
             s1s2 =  models.MLP_s1s2(
-                models.MLP_s1(dim=generator_dim, layers=layers), 
-                models.MLP_s2(layers_alpha=layers, 
-                              layers_beta=layers,
+                models.MLP_s1(dim=generator_dim, layers=layers_s1), 
+                models.MLP_s2(layers_alpha=layers_s2, 
+                              layers_beta=layers_s2,
                               dim=generator_dim,
                               r = max((generator_dim-1)//2,1))
                 )
