@@ -101,6 +101,9 @@ def generate_data()->None:
             rot.append(ndimage.rotate(img_base, v, reshape=False))
         rot = jnp.stack(rot)/255
         
+        if not os.path.exists('Data/MNIST/'):
+            os.makedirs('Data/MNIST/')
+        
         jnp.save('Data/MNIST/rot.npy', rot)
         return
     else:
@@ -157,6 +160,5 @@ def generate_data()->None:
 
 if __name__ == '__main__':
         
-    generate_data
-    ()
+    generate_data()
     
