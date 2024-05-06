@@ -27,11 +27,12 @@ python3 train_score.py \
     --t0 0.01 \
     --train_net s1 \
     --max_T 1.0 \
-    --lr_rate 0.0002 \
+    --lr_rate 0.001 \
     --epochs 50000 \
-    --x_samples 64 \
+    --warmup_epochs 1000 \
+    --x_samples 32 \
     --t_samples 100 \
-    --repeats 16 \
+    --repeats 32 \
     --dt_steps 100 \
     --save_step 100 \
     --seed 2712
