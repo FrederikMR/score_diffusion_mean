@@ -47,11 +47,11 @@ from ManLearn.train_MNIST import load_dataset as load_mnist
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Euclidean",
+    parser.add_argument('--manifold', default="Sphere",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
-    parser.add_argument('--s1_loss_type', default="dsm",
+    parser.add_argument('--s1_loss_type', default="vsm",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsmvr",
                         type=str)
@@ -67,15 +67,17 @@ def parse_args():
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)
-    parser.add_argument('--lr_rate', default=0.0002,
+    parser.add_argument('--lr_rate', default=0.001,
                         type=float)
     parser.add_argument('--epochs', default=50000,
+                        type=int)
+    parser.add_argument('--warmup_epochs', default=1000,
                         type=int)
     parser.add_argument('--x_samples', default=32, #32
                         type=int)
     parser.add_argument('--t_samples', default=100,#128
                         type=int)
-    parser.add_argument('--repeats', default=8,
+    parser.add_argument('--repeats', default=32,
                         type=int)
     parser.add_argument('--dt_steps', default=100,
                         type=int)
@@ -213,6 +215,7 @@ def train_score()->None:
                  state=state_s2,
                  lr_rate=args.lr_rate,
                  epochs=args.epochs,
+                 warmup_epochs=args.warmup_epochs,
                  save_step=args.save_step,
                  save_path=s2_path,
                  seed=args.seed,
@@ -240,6 +243,7 @@ def train_score()->None:
                  s1_params=state_s1_params,
                  lr_rate=args.lr_rate,
                  epochs=args.epochs,
+                 warmup_epochs=args.warmup_epochs,
                  save_step=args.save_step,
                  gamma=args.gamma,
                  save_path=s1s2_path,
@@ -261,6 +265,7 @@ def train_score()->None:
                 state=state,
                 lr_rate=args.lr_rate,
                 epochs=args.epochs,
+                warmup_epochs=args.warmup_epochs,
                 save_step=args.save_step,
                 save_path=st_path,
                 seed=args.seed
@@ -280,6 +285,7 @@ def train_score()->None:
                  state =state,
                  lr_rate=args.lr_rate,
                  epochs=args.epochs,
+                 warmup_epochs=args.warmup_epochs,
                  save_step=args.save_step,
                  save_path=s1_path,
                  loss_type=args.s1_loss_type,

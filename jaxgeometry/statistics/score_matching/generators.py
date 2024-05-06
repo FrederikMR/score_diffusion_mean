@@ -126,6 +126,23 @@ class LocalSampling(object):
         
         return (x,chart)
     
+    def div(self,
+            x0:Array,
+            xt:Array,
+            t:Array,
+            s1_model:Callable[[Array,Array,Array], Array],
+            )->Array:
+        
+        (xts, chartts) = vmap(self.update_coords)(xt)
+        
+        divs = vmap(lambda x0, xt, chart, t: self.M.div((xt, chart), 
+                                                   lambda x: self.grad_local_vsm(x0,
+                                                                                 x,
+                                                                                 t,
+                                                                                 s1_model)))(x0,xts,chartts,t)
+        
+        return divs
+    
     def grad_TM(self,
                 x:Array,
                 v:Array,
@@ -265,6 +282,15 @@ class EmbeddedSampling(object):
         chart = self.M.centered_chart(Fx)
         
         return (self.M.invF((Fx,chart)),chart)
+    
+    def div(self,
+            x0:Array,
+            xt:Array,
+            t:Array,
+            s1_model:Callable[[Array,Array,Array], Array],
+            )->Array:
+        
+        return vmap(lambda x,y,t: jnp.trace(jacfwd(lambda y0: s1_model(x,y0,t))(y)))(x0,xt,t)
 
     def grad_TM(self, 
                 x:Array,
@@ -440,6 +466,15 @@ class TMSampling(object):
         
         return (self.M.invF((Fx,chart)), Fx)
     
+    def div(self,
+            x0:Array,
+            xt:Array,
+            t:Array,
+            s1_model:Callable[[Array,Array,Array], Array],
+            )->Array:
+        
+        return vmap(lambda x,y,t: jnp.trace(jacfwd(lambda y0: s1_model(x,y0,t))(y)))(x0,xt,t)
+    
     def grad_TM(self,
                 x:Array,
                 v:Array
@@ -513,6 +548,7 @@ class ProjectionSampling(object):
                  T_sample:bool = False,
                  t0:float=.1,
                  reverse=True,
+                 approx_dim:int=10,
                  )->None:
         
         if not hasattr(M, "invJF"):
@@ -607,6 +643,15 @@ class ProjectionSampling(object):
         chart = self.M.centered_chart(Fx)
         
         return (self.M.invF((Fx,chart)), Fx)
+    
+    def div(self,
+            x0:Array,
+            xt:Array,
+            t:Array,
+            s1_model:Callable[[Array,Array,Array], Array],
+            )->Array:
+        
+        return vmap(lambda x,y,t: jnp.trace(jacfwd(lambda y0: s1_model(x,y0,t))(y)))(x0,xt,t)
     
     def grad_TM(self,
                 x:Array,

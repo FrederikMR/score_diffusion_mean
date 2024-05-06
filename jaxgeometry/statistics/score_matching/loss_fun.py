@@ -29,13 +29,7 @@ def vsm_s1fun(generator:object,
     loss_s1 = s1_model(x0,xt,t.reshape(-1,1))
     norm2s = jnp.sum(loss_s1*loss_s1, axis=1)
     
-    (xts, chartts) = vmap(generator.update_coords)(xt)
-    
-    divs = vmap(lambda x0, xt, chart, t: generator.M.div((xt, chart), 
-                                               lambda x: generator.grad_local_vsm(x0,
-                                                                                  x,
-                                                                                  t,
-                                                                                  s1_model)))(x0,xts,chartts,t)
+    divs = generator.div(x0,xt,t,s1_model)
     
     return jnp.mean(norm2s+2.0*divs)
 
@@ -52,7 +46,7 @@ class ssm_s1fun(object):
         keys = jrandom.split(self.key,num=2)
         self.key = keys[0]
         subkeys = keys[1:]
-        return jrandom.normal(subkeys[0],(d,num)).squeeze()
+        return jrandom.normal(subkeys[0],(num,d)).squeeze()
     
     def __call__(self,
                  generator:object,
@@ -88,7 +82,7 @@ class ssmvr_s1fun(object):
         keys = jrandom.split(self.key,num=2)
         self.key = keys[0]
         subkeys = keys[1:]
-        return jrandom.normal(subkeys[0],(d,num)).squeeze()
+        return jrandom.normal(subkeys[0],(num,d)).squeeze()
     
     def __call__(self,
                  generator:object,
