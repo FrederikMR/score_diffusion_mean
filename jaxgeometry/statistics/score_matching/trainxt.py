@@ -31,12 +31,27 @@ def train_s1(M:object,
              state:TrainingState = None,
              lr_rate:float = 0.001,
              epochs:int=100,
+             warmup_epochs:int=1000,
              save_step:int=100,
              optimizer:object=None,
              save_path:str = "",
              loss_type:str='dsmvr',
              seed:int=2712
              )->None:
+    
+    def learning_rate_fn():
+        """Creates learning rate schedule."""
+        warmup_fn = optax.linear_schedule(
+            init_value=1.0, end_value=lr_rate,
+            transition_steps=warmup_epochs)
+        cosine_epochs = max(epochs - warmup_epochs, 1)
+        cosine_fn = optax.cosine_decay_schedule(
+            init_value=lr_rate,
+            decay_steps=epochs - warmup_epochs)
+        schedule_fn = optax.join_schedules(
+            schedules=[warmup_fn, cosine_fn],
+            boundaries=[warmup_epochs])
+        return schedule_fn
     
     @jit
     def loss_fun(params:hk.Params, state_val:dict, rng_key:Array, data:Array):
@@ -72,8 +87,9 @@ def train_s1(M:object,
         
         return
         
+    lr_schedule = learning_rate_fn()
     if optimizer is None:
-        optimizer = optax.adam(learning_rate = lr_rate,
+        optimizer = optax.adam(learning_rate = lr_schedule,
                                b1 = 0.9,
                                b2 = 0.999,
                                eps = 1e-08,
@@ -149,12 +165,27 @@ def train_s2(M:object,
              state:TrainingState=None,
              lr_rate:float=0.0002,
              epochs:int=100,
+             warmup_epochs:int=1000,
              save_step:int=100,
              optimizer:object=None,
              save_path:str = "",
              seed:int=2712,
              loss_type:str = "dsmvr",
              )->None:
+    
+    def learning_rate_fn():
+        """Creates learning rate schedule."""
+        warmup_fn = optax.linear_schedule(
+            init_value=1.0, end_value=lr_rate,
+            transition_steps=warmup_epochs)
+        cosine_epochs = max(epochs - warmup_epochs, 1)
+        cosine_fn = optax.cosine_decay_schedule(
+            init_value=lr_rate,
+            decay_steps=epochs - warmup_epochs)
+        schedule_fn = optax.join_schedules(
+            schedules=[warmup_fn, cosine_fn],
+            boundaries=[warmup_epochs])
+        return schedule_fn
     
     @jit
     def loss_fun(params:hk.Params, 
@@ -191,8 +222,9 @@ def train_s2(M:object,
     elif loss_type == "dsmdiagvr":
         loss_model = dsmdiagvr_s2fun
         
+    lr_schedule = learning_rate_fn()
     if optimizer is None:
-        optimizer = optax.adam(learning_rate = lr_rate,
+        optimizer = optax.adam(learning_rate = lr_schedule,
                                b1 = 0.9,
                                b2 = 0.999,
                                eps = 1e-08,
@@ -270,6 +302,7 @@ def train_s1s2(M:object,
                s2_params:dict=None,
                lr_rate:float=0.0002,
                epochs:int=100,
+               warmup_epochs:int=1000,
                save_step:int=100,
                optimizer:object=None,
                gamma:float = 1.0,
@@ -277,6 +310,20 @@ def train_s1s2(M:object,
                seed:int=2712,
                loss_type:str='dsmvr'
                )->None:
+    
+    def learning_rate_fn():
+        """Creates learning rate schedule."""
+        warmup_fn = optax.linear_schedule(
+            init_value=1.0, end_value=lr_rate,
+            transition_steps=warmup_epochs)
+        cosine_epochs = max(epochs - warmup_epochs, 1)
+        cosine_fn = optax.cosine_decay_schedule(
+            init_value=lr_rate,
+            decay_steps=epochs - warmup_epochs)
+        schedule_fn = optax.join_schedules(
+            schedules=[warmup_fn, cosine_fn],
+            boundaries=[warmup_epochs])
+        return schedule_fn
     
     @jit
     def loss_fun(params:hk.Params, 
@@ -322,8 +369,9 @@ def train_s1s2(M:object,
         loss_s1model = dsmvr_s1fun
         loss_s2model = dsmdiagvr_s2fun
         
+    lr_schedule = learning_rate_fn()
     if optimizer is None:
-        optimizer = optax.adam(learning_rate = lr_rate,
+        optimizer = optax.adam(learning_rate = lr_schedule,
                                b1 = 0.9,
                                b2 = 0.999,
                                eps = 1e-08,
@@ -407,11 +455,26 @@ def train_t(M:object,
             state:TrainingState = None,
             lr_rate:float = 0.001,
             epochs:int=100,
+            warmup_epochs:int=1000,
             save_step:int=100,
             optimizer:object=None,
             save_path:str = "",
             seed:int=2712
             )->None:
+    
+    def learning_rate_fn():
+        """Creates learning rate schedule."""
+        warmup_fn = optax.linear_schedule(
+            init_value=1.0, end_value=lr_rate,
+            transition_steps=warmup_epochs)
+        cosine_epochs = max(epochs - warmup_epochs, 1)
+        cosine_fn = optax.cosine_decay_schedule(
+            init_value=lr_rate,
+            decay_steps=epochs - warmup_epochs)
+        schedule_fn = optax.join_schedules(
+            schedules=[warmup_fn, cosine_fn],
+            boundaries=[warmup_epochs])
+        return schedule_fn
     
     @jit
     def loss_fun(params:hk.Params, state_val:dict, rng_key:Array, data:Array):
@@ -449,8 +512,9 @@ def train_t(M:object,
         
         return TrainingState(new_params, state.state_val, new_opt_state, rng_key), loss
         
+    lr_schedule = learning_rate_fn()
     if optimizer is None:
-        optimizer = optax.adam(learning_rate = lr_rate,
+        optimizer = optax.adam(learning_rate = lr_schedule,
                                b1 = 0.9,
                                b2 = 0.999,
                                eps = 1e-08,

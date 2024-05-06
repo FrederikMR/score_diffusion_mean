@@ -55,9 +55,9 @@ def parse_args():
     # File-paths
     parser.add_argument('--manifold', default="Euclidean",
                         type=str)
-    parser.add_argument('--dim', default=[2,3,5],
+    parser.add_argument('--dim', default=[5],
                         type=List)
-    parser.add_argument('--s1_loss_type', default="dsm",
+    parser.add_argument('--s1_loss_type', default="vsm",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsm",
                         type=str)

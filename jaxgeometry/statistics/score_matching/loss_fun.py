@@ -38,6 +38,27 @@ def vsm_s1fun(generator:object,
     
     return jnp.mean(norm2s+2.0*divs)
 
+#%% Sliced Score Matching First Order
+
+def ssm_s1fun(generator:object,
+              s1_model,
+              x0:Array,
+              xt:Array,
+              t:Array,
+              dW:Array,
+              dt:Array,
+              v:Array,
+              )->float:
+    """ compute loss."""
+    
+    s1 = s1_model(x0,xt,t.reshape(-1,1))
+
+    vs1 = jacfwd(lambda x: jnp.einsum('...j,...j->...', v, s1_model(x0,x,t)))(x)
+    J = 0.5*jnp.einsum('...j,...j->...',v,s1)**2
+    
+    return jnp.mean(J+vs1)
+    
+
 #%% Denoising Score Matching First Order
 
 def dsm_s1fun(generator:object,
