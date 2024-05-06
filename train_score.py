@@ -63,7 +63,7 @@ def parse_args():
                         type=float)
     parser.add_argument('--gamma', default=1.0,
                         type=float)
-    parser.add_argument('--train_net', default="s2",
+    parser.add_argument('--train_net', default="s1",
                         type=str)
     parser.add_argument('--max_T', default=1.0,
                         type=float)

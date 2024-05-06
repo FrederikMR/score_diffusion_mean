@@ -42,7 +42,7 @@ def train_s1(M:object,
     def learning_rate_fn():
         """Creates learning rate schedule."""
         warmup_fn = optax.linear_schedule(
-            init_value=1.0, end_value=lr_rate,
+            init_value=.0, end_value=lr_rate,
             transition_steps=warmup_epochs)
         cosine_epochs = max(epochs - warmup_epochs, 1)
         cosine_fn = optax.cosine_decay_schedule(
@@ -82,6 +82,10 @@ def train_s1(M:object,
         loss_model = dsm_s1fun
     elif loss_type == "dsmvr":
         loss_model = dsmvr_s1fun
+    elif loss_type == "ssm":
+        loss_model = ssm_s1fun()
+    elif loss_type == "ssmvr":
+        loss_model = ssmvr_s1fun()
     else:
         raise Exception("Invalid loss type. You can choose: vsm, dsm, dsmvr")
         
@@ -176,7 +180,7 @@ def train_s2(M:object,
     def learning_rate_fn():
         """Creates learning rate schedule."""
         warmup_fn = optax.linear_schedule(
-            init_value=1.0, end_value=lr_rate,
+            init_value=.0, end_value=lr_rate,
             transition_steps=warmup_epochs)
         cosine_epochs = max(epochs - warmup_epochs, 1)
         cosine_fn = optax.cosine_decay_schedule(
@@ -314,7 +318,7 @@ def train_s1s2(M:object,
     def learning_rate_fn():
         """Creates learning rate schedule."""
         warmup_fn = optax.linear_schedule(
-            init_value=1.0, end_value=lr_rate,
+            init_value=.0, end_value=lr_rate,
             transition_steps=warmup_epochs)
         cosine_epochs = max(epochs - warmup_epochs, 1)
         cosine_fn = optax.cosine_decay_schedule(
@@ -465,7 +469,7 @@ def train_t(M:object,
     def learning_rate_fn():
         """Creates learning rate schedule."""
         warmup_fn = optax.linear_schedule(
-            init_value=1.0, end_value=lr_rate,
+            init_value=.0, end_value=lr_rate,
             transition_steps=warmup_epochs)
         cosine_epochs = max(epochs - warmup_epochs, 1)
         cosine_fn = optax.cosine_decay_schedule(

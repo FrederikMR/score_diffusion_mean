@@ -11,6 +11,7 @@ Created on Fri Sep  8 12:20:21 2023
 
 #%% Modules
 
+from jaxgeometry.integration import StdNormal
 from jaxgeometry.setup import *
 
 #%% Vanilla Score Matching First Order
@@ -40,24 +41,75 @@ def vsm_s1fun(generator:object,
 
 #%% Sliced Score Matching First Order
 
-def ssm_s1fun(generator:object,
-              s1_model,
-              x0:Array,
-              xt:Array,
-              t:Array,
-              dW:Array,
-              dt:Array,
-              v:Array,
-              )->float:
-    """ compute loss."""
+class ssm_s1fun(object):
+    def __init__(self,
+                 M:int=1
+                 ):
+        self.M = M
+        self.key = jrandom.PRNGKey(2712)
+        
+    def StdNormal(self, d:int, num:int)->Array:
+        keys = jrandom.split(self.key,num=2)
+        self.key = keys[0]
+        subkeys = keys[1:]
+        return jrandom.normal(subkeys[0],(d,num)).squeeze()
     
-    s1 = s1_model(x0,xt,t.reshape(-1,1))
+    def __call__(self,
+                 generator:object,
+                 s1_model,
+                 x0:Array,
+                 xt:Array,
+                 t:Array,
+                 dW:Array,
+                 dt:Array,
+                 )->float:
+        
+        #M = 1
+        s1 = s1_model(x0,xt,t.reshape(-1,1))
+        v = self.StdNormal(d=x0.shape[-1],num=self.M*x0.shape[0]).reshape(-1,x0.shape[-1])
+        
+        val = lambda x,y,t,v: grad(lambda y0: jnp.dot(v,s1_model(x,y0,t)))(y)
+        
+        vs1 = vmap(val)(x0,xt,t,v)
+        J = 0.5*jnp.einsum('...j,...j->...',v,s1)**2
+        
+        return jnp.mean(J+jnp.einsum('...i,...i->...', vs1, v))
 
-    vs1 = jacfwd(lambda x: jnp.einsum('...j,...j->...', v, s1_model(x0,x,t)))(x)
-    J = 0.5*jnp.einsum('...j,...j->...',v,s1)**2
+#%% Sliced Score Matching VR First Order
+
+class ssmvr_s1fun(object):
+    def __init__(self,
+                 M:int=1
+                 ):
+        self.M = M
+        self.key = jrandom.PRNGKey(2712)
+        
+    def StdNormal(self, d:int, num:int)->Array:
+        keys = jrandom.split(self.key,num=2)
+        self.key = keys[0]
+        subkeys = keys[1:]
+        return jrandom.normal(subkeys[0],(d,num)).squeeze()
     
-    return jnp.mean(J+vs1)
-    
+    def __call__(self,
+                 generator:object,
+                 s1_model,
+                 x0:Array,
+                 xt:Array,
+                 t:Array,
+                 dW:Array,
+                 dt:Array,
+                 )->float:
+        
+        #M = 1
+        s1 = s1_model(x0,xt,t.reshape(-1,1))
+        v = self.StdNormal(d=x0.shape[-1],num=self.M*x0.shape[0]).reshape(-1,x0.shape[-1])
+        
+        val = lambda x,y,t,v: grad(lambda y0: jnp.dot(v,s1_model(x,y0,t)))(y)
+        
+        vs1 = vmap(val)(x0,xt,t,v)
+        J = 0.5*jnp.einsum('...j,...j->...',s1,s1)
+        
+        return jnp.mean(J+jnp.einsum('...i,...i->...', vs1, v))
 
 #%% Denoising Score Matching First Order
 

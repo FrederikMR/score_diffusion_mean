@@ -57,7 +57,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--dim', default=[5],
                         type=List)
-    parser.add_argument('--s1_loss_type', default="vsm",
+    parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsm",
                         type=str)
@@ -115,6 +115,8 @@ def evaluate_diffusion_mean():
         
         M, x0, method, generator_dim, layers, opt_val = load_manifold(args.manifold,
                                                                                N)
+        layers_s1, layers_s2 = layers
+        
         if method == "LocalSampling":
             method = "Local"
         else:
@@ -128,14 +130,14 @@ def evaluate_diffusion_mean():
         s2_path = f"{args.score_path}{args.manifold}{N}/{args.dt_approx}_{args.s2_loss_type}/"
         data_path = f"{args.data_path}{args.manifold}{N}/"
         
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
-        st_model = hk.transform(lambda x: models.MLP_t(dim=generator_dim, layers=layers)(x))
+        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers_s1)(x))
+        st_model = hk.transform(lambda x: models.MLP_t(dim=generator_dim, layers=layers_s1)(x))
         if "diag" in args.s2_loss_type:
-            s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers, layers_beta=layers,
+            s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers_s2, layers_beta=layers_s2,
                                                                 dim=generator_dim, 
                                                                 r = max((generator_dim-1)//2,1))(x))
         else:
-            s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
+            s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers_s2, layers_beta=layers_s2,
                                                             dim=generator_dim, 
                                                             r = max((generator_dim-1)//2,1))(x))
         
@@ -146,9 +148,9 @@ def evaluate_diffusion_mean():
                 def s1_model(x):
                     
                     s1s2 =  models.MLP_diags1s2(
-                        models.MLP_s1(dim=generator_dim, layers=layers), 
-                        models.MLP_s2(layers_alpha=layers, 
-                                      layers_beta=layers,
+                        models.MLP_s1(dim=generator_dim, layers=layers_s1), 
+                        models.MLP_s2(layers_alpha=layers_s2, 
+                                      layers_beta=layers_s2,
                                       dim=generator_dim,
                                       r = max((generator_dim-1)//2,1))
                         )
@@ -159,9 +161,9 @@ def evaluate_diffusion_mean():
                 def s2_model(x):
                     
                     s1s2 =  models.MLP_diags1s2(
-                        models.MLP_s1(dim=generator_dim, layers=layers), 
-                        models.MLP_s2(layers_alpha=layers, 
-                                      layers_beta=layers,
+                        models.MLP_s1(dim=generator_dim, layers=layers_s1), 
+                        models.MLP_s2(layers_alpha=layers_s2, 
+                                      layers_beta=layers_s2,
                                       dim=generator_dim,
                                       r = max((generator_dim-1)//2,1))
                         )
@@ -172,9 +174,9 @@ def evaluate_diffusion_mean():
                 def s1_model(x):
                     
                     s1s2 =  models.MLP_diags1s2(
-                        models.MLP_s1(dim=generator_dim, layers=layers), 
-                        models.MLP_s2(layers_alpha=layers, 
-                                      layers_beta=layers,
+                        models.MLP_s1(dim=generator_dim, layers=layers_s1), 
+                        models.MLP_s2(layers_alpha=layers_s2, 
+                                      layers_beta=layers_s2,
                                       dim=generator_dim,
                                       r = max((generator_dim-1)//2,1))
                         )
@@ -185,9 +187,9 @@ def evaluate_diffusion_mean():
                 def s2_model(x):
                     
                     s1s2 =  models.MLP_diags1s2(
-                        models.MLP_s1(dim=generator_dim, layers=layers), 
-                        models.MLP_s2(layers_alpha=layers, 
-                                      layers_beta=layers,
+                        models.MLP_s1(dim=generator_dim, layers=layers_s1), 
+                        models.MLP_s2(layers_alpha=layers_s2, 
+                                      layers_beta=layers_s2,
                                       dim=generator_dim,
                                       r = max((generator_dim-1)//2,1))
                         )
