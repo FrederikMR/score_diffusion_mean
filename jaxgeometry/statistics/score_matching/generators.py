@@ -290,7 +290,7 @@ class EmbeddedSampling(object):
             s1_model:Callable[[Array,Array,Array], Array],
             )->Array:
         
-        return vmap(lambda x,y,t: jnp.trace(jacfwd(lambda y0: s1_model(x,y0,t))(y)))(x0,xt,t)
+        return vmap(lambda x,y,t: jnp.trace(jacfwd(lambda y0: self.grad_TM(y0, s1_model(x,y0,t)))(y)))(x0,xt,t)
 
     def grad_TM(self, 
                 x:Array,
@@ -654,7 +654,7 @@ class ProjectionSampling(object):
             s1_model:Callable[[Array,Array,Array], Array],
             )->Array:
         
-        return vmap(lambda x,y,t: jnp.trace(jacfwd(lambda y0: s1_model(x,y0,t))(y)))(x0,xt,t)
+        return vmap(lambda x,y,t: jnp.trace(jacfwd(lambda y0: self.grad_TM(y0, s1_model(x,y0,t)))(y)))(x0,xt,t)
     
     def grad_TM(self,
                 x:Array,

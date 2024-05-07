@@ -197,7 +197,7 @@ def hk_embedded(M:Euclidean, x:Array,y:Array,t:Array)->Array:
 
 def log_hk(M:Euclidean, x:Array,y:Array,t:Array)->Array:
     
-    return -0.5*jnp.sum((x[0]-y[0])**2)/t-M.dim*0.5*jnp.log(2*jnp.pi*t)
+    return -0.5*(jnp.sum((x[0]-y[0])**2)/t)-M.dim*0.5*jnp.log(2*jnp.pi*t)
 
 def gradx_log_hk(M:Euclidean, x:Array, y:Array, t:Array)->float:
     

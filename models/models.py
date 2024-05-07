@@ -23,6 +23,27 @@ import dataclasses
 
 #%% MLP Score
 @dataclasses.dataclass
+class MLP_p(hk.Module):
+    
+    dim:int
+    layers:list
+    
+    def model(self)->object:
+        
+        model = []
+        for l in self.layers:
+            model.append(hk.Linear(l))
+            model.append(tanh)
+            
+        model.append(hk.Linear(1))
+        
+        return hk.Sequential(model)
+
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        
+        return self.model()(x).squeeze()
+
+@dataclasses.dataclass
 class MLP_t(hk.Module):
     
     dim:int

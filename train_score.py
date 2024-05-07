@@ -37,7 +37,7 @@ from load_manifold import load_manifold
 
 #jaxgeometry
 from jaxgeometry.manifolds import *
-from jaxgeometry.statistics.score_matching import train_s1, train_s2, train_s1s2, train_t, TMSampling, LocalSampling, \
+from jaxgeometry.statistics.score_matching import train_s1, train_s2, train_s1s2, train_t, train_p, TMSampling, LocalSampling, \
     EmbeddedSampling, ProjectionSampling
 from jaxgeometry.statistics.score_matching.model_loader import load_model
 from ManLearn.train_MNIST import load_dataset as load_mnist
@@ -49,9 +49,9 @@ def parse_args():
     # File-paths
     parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=2,
+    parser.add_argument('--dim', default=5,
                         type=int)
-    parser.add_argument('--s1_loss_type', default="vsm",
+    parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsmvr",
                         type=str)
@@ -268,6 +268,29 @@ def train_score()->None:
                 warmup_epochs=args.warmup_epochs,
                 save_step=args.save_step,
                 save_path=st_path,
+                seed=args.seed
+                )
+    elif args.train_net == "s1p":
+        s1p_path = f"scores/{args.manifold}{args.dim}/s1p{T_sample_name}_{args.s1_loss_type}/"
+        s1p_model = hk.transform(lambda x: models.MLP_p(dim=generator_dim, layers=layers_s1)(x))
+        if args.load_model:
+            state = load_model(s1p_path)
+        else:
+            state = None
+
+        if not os.path.exists(s1p_path):
+            os.makedirs(s1p_path)
+
+        train_p(M=M,
+                model=s1p_model,
+                generator=data_generator,
+                state =state,
+                lr_rate=args.lr_rate,
+                epochs=args.epochs,
+                warmup_epochs=args.warmup_epochs,
+                save_step=args.save_step,
+                save_path=s1p_path,
+                loss_type=args.s1_loss_type,
                 seed=args.seed
                 )
     else:

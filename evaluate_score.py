@@ -55,11 +55,13 @@ def parse_args():
     # File-paths
     parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=[2,5],
+    parser.add_argument('--dim', default=[5],
                         type=List)
     parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsm",
+                        type=str)
+    parser.add_argument('--s1_approx', default="s1",
                         type=str)
     parser.add_argument('--dt_approx', default="s1",
                         type=str)
@@ -127,10 +129,14 @@ def evaluate_diffusion_mean():
         
         st_path = f"{args.score_path}{args.manifold}{N}/st/"
         s1_path = f"{args.score_path}{args.manifold}{N}/s1_{args.s1_loss_type}/"
+        s1p_path = f"{args.score_path}{args.manifold}{N}/s1p_{args.s1_loss_type}/"
         s2_path = f"{args.score_path}{args.manifold}{N}/{args.dt_approx}_{args.s2_loss_type}/"
         data_path = f"{args.data_path}{args.manifold}{N}/"
         
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers_s1)(x))
+        if args.s1_approx == "s1p":
+            s1p_model =  hk.transform(lambda x: models.MLP_p(dim=generator_dim, layers=layers_s1)(x))
+        else:
+            s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers_s1)(x))
         st_model = hk.transform(lambda x: models.MLP_t(dim=generator_dim, layers=layers_s1)(x))
         if "diag" in args.s2_loss_type:
             s2_model = hk.transform(lambda x: models.MLP_diags2(layers_alpha=layers_s2, layers_beta=layers_s2,
@@ -196,7 +202,10 @@ def evaluate_diffusion_mean():
                     
                     return s1s2(x)[1]
                     
-        s1_state = load_model(s1_path)
+        if args.s1_approx == "s1p":
+            s1p_state = load_model(s1p_path)
+        else:
+            s1_state = load_model(s1_path)
         s1_ntrain.append(len(jnp.load(''.join((s1_path, 'loss_arrays.npy')))))
         if args.dt_approx == "s1":
             s2_state = None
@@ -235,17 +244,17 @@ def evaluate_diffusion_mean():
         print(s1_ntrain)
         print(dt_ntrain)
 
+        from jax import grad
         rng_key = jrandom.PRNGKey(args.seed)
-        s1_fun = lambda x,y,t: s1_model.apply(s1_state.params, rng_key, jnp.hstack((x,y,t)))
+        if args.s1_approx == "s1p":
+            s1p_fun = lambda x,y,t: s1p_model.apply(s1p_state.params, rng_key, jnp.hstack((x,y,t)))
+            s1_fun = lambda x,y,t: grad(lambda y0: s1p_fun(x,y0,t))(y)
+        else:
+            s1_fun = lambda x,y,t: s1_model.apply(s1_state.params, rng_key, jnp.hstack((x,y,t)))
         if "s2" in args.dt_approx:
             s2_fun = lambda x,y,t: lax.stop_gradient(s2_model.apply(s2_state.params, rng_key, jnp.hstack((x,y,t))))
         else:
             s2_fun = None
-            
-        from jax import jacfwd
-        s1_test = lambda x,y,t: jacfwd(lambda y1: jnp.log(M.hk_embedded(x,y1,t)).squeeze())(y)
-        s2_test = lambda x,y,t: jacfwd(lambda y1: jacfwd(lambda y2: jnp.log(M.hk_embedded(x,y2,t)).squeeze())(y1))(y)
-
 
         ScoreEval = ScoreEvaluation(M,
                                     s1_model=s1_fun,#s1_fun, 
@@ -253,9 +262,6 @@ def evaluate_diffusion_mean():
                                     st_model=st_fun,
                                     method=method, 
                                     )
-        
-        print(ScoreEval.grady_log(x0,x0,0.5))
-        print(ScoreEval.gradt_log(x0,x0,0.5))
 
         dm_score(M, 
                  s1_model=ScoreEval.grady_log,
