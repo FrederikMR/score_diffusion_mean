@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J gp_mnist_s1dsm
+#BSUB -J gp_mnist_s1s2dsm
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
@@ -25,7 +25,7 @@ python3 train_score.py \
     --load_model 0 \
     --T_sample 0 \
     --t0 0.01 \
-    --train_net s1 \
+    --train_net s1s2 \
     --max_T 1.0 \
     --lr_rate 0.001 \
     --epochs 50000 \
