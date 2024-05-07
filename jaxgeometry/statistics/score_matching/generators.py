@@ -473,7 +473,10 @@ class TMSampling(object):
             s1_model:Callable[[Array,Array,Array], Array],
             )->Array:
         
-        return vmap(lambda x,y,t: jnp.trace(jacfwd(lambda y0: s1_model(x,y0,t))(y)))(x0,xt,t)
+        #M.grad = lambda x,f: M.sharp(x,gradx(f)(x))
+        #M.div = lambda x,X: jnp.trace(jacfwdx(X)(x))+.5*jnp.dot(X(x),gradx(M.logAbsDet)(x))
+        
+        return vmap(lambda x,y,t: jnp.trace(jacfwd(lambda y0: self.grad_TM(y0, s1_model(x,y0,t)))(y)))(x0,xt,t)
     
     def grad_TM(self,
                 x:Array,
