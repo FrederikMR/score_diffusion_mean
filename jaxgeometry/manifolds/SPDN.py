@@ -62,8 +62,8 @@ class SPDN(EmbeddedManifold):
         #self.gsharp = self.Stdgsharp
         #self.det = self.Stddet
         #self.Gamma_g = self.StdGamma
-        self.Expt = self.StdExpt
-        self.Exp = lambda x,v: self.Expt(x,v,t=1.0)
+        #self.Expt = self.StdExpt
+        #self.Exp = lambda x,v: self.Expt(x,v,t=1.0)
         self.ExpEmbedded = self.ExpEmbedded
         self.Log = self.StdLog
         self.dist = self.StdDist

@@ -133,13 +133,13 @@ def load_manifold(manifold:str, dim:int=None)->None:
         opt_val = "x0"
         layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "SPDN":
-        #sampling_method = 'LocalSampling'
-        sampling_method = 'TMSampling'
+        sampling_method = 'LocalSampling'
         M = SPDN(N=dim)
-        #generator_dim = M.dim
-        generator_dim = M.emb_dim
-        x0 = M.coords([1.]*(dim*(dim+1)//2))
-        x0 = (x0[0], M.F(x0))
+        generator_dim = M.dim
+        #x0 = M.coords([1.]*(dim*(dim+1)//2))
+        #x0 = (x0[0], M.F(x0))
+        x0 = 10.0*jnp.eye(dim)
+        x0 = (M.invF((x0,x0)), x0.reshape(-1))
         opt_val = "x0"
         layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "Sym":

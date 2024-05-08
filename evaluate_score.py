@@ -53,9 +53,9 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SPDN",
+    parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=[2],
+    parser.add_argument('--dim', default=[2,3,5,10,20,50],
                         type=List)
     parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
@@ -69,7 +69,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--t0', default=0.01,
                         type=float)
-    parser.add_argument('--step_size', default=0.01,
+    parser.add_argument('--step_size', default=0.1,
                         type=float)
     parser.add_argument('--score_iter', default=1000,
                         type=int)
