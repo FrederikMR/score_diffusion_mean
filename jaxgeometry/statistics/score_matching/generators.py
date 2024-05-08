@@ -290,7 +290,15 @@ class EmbeddedSampling(object):
             s1_model:Callable[[Array,Array,Array], Array],
             )->Array:
         
-        return vmap(lambda x,y,t: jnp.trace(jacfwd(lambda y0: self.grad_TM(y0, s1_model(x,y0,t)))(y)))(x0,xt,t)
+        (xts, chartts) = vmap(self.update_coords)(xt)
+        
+        divs = vmap(lambda x0, xt, chart, t: self.M.div((xt, chart), 
+                                                   lambda x: self.grad_local_vsm(x0,
+                                                                                 x,
+                                                                                 t,
+                                                                                 s1_model)))(x0,xts,chartts,t)
+        
+        return divs
 
     def grad_TM(self, 
                 x:Array,

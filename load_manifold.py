@@ -27,6 +27,12 @@ def get_generator_dim(manifold:str, dim:int)->Tuple[List,List]:
     if manifold == "Euclidean":
         layers_s1 = [128, 128, 128]
         layers_s2 = [32,32,32]
+        #if dim < 15:
+        #    layers_s1 = [128, 128, 128]
+        #    layers_s2 = [32,32,32]
+        #else:
+        #    layers_s1 = [512, 512, 512, 512, 512]
+        #    layers_s2 = [128, 128, 128, 128, 128]
     elif manifold == "Sphere":
         layers_s1 = [512, 512, 512, 512, 512]
         layers_s2 = [128, 128, 128, 128, 128]
@@ -127,10 +133,13 @@ def load_manifold(manifold:str, dim:int=None)->None:
         opt_val = "x0"
         layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "SPDN":
-        sampling_method = 'LocalSampling'
+        #sampling_method = 'LocalSampling'
+        sampling_method = 'TMSampling'
         M = SPDN(N=dim)
-        generator_dim = M.dim
+        #generator_dim = M.dim
+        generator_dim = M.emb_dim
         x0 = M.coords([1.]*(dim*(dim+1)//2))
+        x0 = (x0[0], M.F(x0))
         opt_val = "x0"
         layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "Sym":
