@@ -126,36 +126,43 @@ class SPDN(EmbeddedManifold):
         P = self.F(x).reshape(self.N,self.N)
         v = jnp.dot(self.JF(x),v).reshape(self.N,self.N)
         
-        P_phalf = jnp.array(jscipy.linalg.sqrtm(P))
-        P_nhalf = jnp.linalg.inv(P_phalf)
+        U,S,V = jnp.linalg.svd(P)
+        P_phalf = jnp.dot(jnp.dot(U, jnp.diag(jnp.sqrt(S))), V)#jnp.linalg.cholesky(P)
+        P_nhalf = jnp.linalg.inv(P_phalf)#jnp.linalg.inv(P_phalf)
         
-        P_exp = jnp.matmul(jnp.matmul(P_phalf, \
-                                     jscipy.linalg.expm(t*jnp.matmul(jnp.matmul(P_nhalf, v), P_nhalf))),
-                          P_phalf)
+        exp_val = jnp.dot(jnp.dot(P_nhalf, v), P_nhalf)
+        exp_val = jscipy.linalg.expm(exp_val)
+        
+        P_exp = jnp.dot(jnp.dot(P_phalf, exp_val), P_phalf)
+        P_exp = 0.5*(P_exp+P_exp.T)
         
         return (self.invF((P_exp, P_exp)), P_exp.reshape(-1))
-    
+
     def ExpEmbedded(self, Fx:Array, v:Array, t:float=1.0)->Array:
         
         P = Fx.reshape(self.N,self.N)
         v = v.reshape(self.N,self.N)
         
-        P_phalf = jnp.real(jscipy.linalg.sqrtm(P))
-        P_nhalf = jnp.linalg.inv(P_phalf)
+        U,S,V = jnp.linalg.svd(P)
+        P_phalf = jnp.dot(jnp.dot(U, jnp.diag(jnp.sqrt(S))), V)#jnp.linalg.cholesky(P)
+        P_nhalf = jnp.linalg.inv(P_phalf)#jnp.linalg.inv(P_phalf)
         
-        P_exp = jnp.matmul(jnp.matmul(P_phalf, \
-                                     jscipy.linalg.expm(t*jnp.matmul(jnp.matmul(P_nhalf, v), P_nhalf))),
-                          P_phalf)
+        exp_val = jnp.dot(jnp.dot(P_nhalf, v), P_nhalf)
+        exp_val = jscipy.linalg.expm(exp_val)
         
-        return P_exp.reshape(-1)
+        P_exp = jnp.dot(jnp.dot(P_phalf, exp_val), P_phalf)
+        P_exp = 0.5*(P_exp+P_exp.T) #For numerical stability
+        
+        return lax.select(jnp.linalg.det(P_exp)<1e-2  , P.reshape(-1), P_exp.reshape(-1))
     
     def StdLog(self, x:Tuple[Array, Array], y:Array)->Array:
         
         P = self.F(x).reshape(self.N,self.N)
         S = y.reshape(self.N,self.N)
         
-        P_phalf = jnp.real(jscipy.linalg.sqrtm(P))
-        P_nhalf = jnp.real(jscipy.linalg.sqrtm(jnp.linalg.inv(P)))
+        U,S,V = jnp.linalg.svd(P)
+        P_phalf = jnp.dot(jnp.dot(U, jnp.diag(jnp.sqrt(S))), V)#jnp.linalg.cholesky(P)
+        P_nhalf = jnp.linalg.inv(P_phalf)#jnp.linalg.inv(P_phalf)
         
         w = jnp.matmul(jnp.matmul(P_phalf, \
                                      logm(jnp.matmul(jnp.matmul(P_nhalf, S), P_nhalf))),
@@ -218,7 +225,6 @@ class SPDN(EmbeddedManifold):
         P = x.reshape(self.N,self.N)
         v = v.reshape(self.N, self.N)
         
-        P1_phalf = jnp.real(jscipy.linalg.sqrtm(P))
         v_symmetric = 0.5*(v+v.T)
         
         return v_symmetric.reshape(-1)#jnp.matmul(jnp.matmul(P1_phalf, v_symmetric), P1_phalf).reshape(-1)

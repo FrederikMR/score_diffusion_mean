@@ -53,9 +53,9 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Sphere",
+    parser.add_argument('--manifold', default="SPDN",
                         type=str)
-    parser.add_argument('--dim', default=[5],
+    parser.add_argument('--dim', default=[2],
                         type=List)
     parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
@@ -223,7 +223,6 @@ def evaluate_diffusion_mean():
         xs = pd.read_csv(''.join((data_path, 'xs.csv')), header=None)
         charts = pd.read_csv(''.join((data_path, 'chart.csv')), header=None)
         X_obs = (jnp.array(xs.values), jnp.array(charts.values))
-        
         if opt_val == "opt":            
             mu_opt, T_opt = M.mlxt_hk(X_obs)
         elif opt_val == "gradient":
@@ -256,6 +255,7 @@ def evaluate_diffusion_mean():
         else:
             s2_fun = None
 
+        #print(s1_fun(x0[0],x0[0],0.5))
         ScoreEval = ScoreEvaluation(M,
                                     s1_model=s1_fun,#s1_fun, 
                                     s2_model=s2_fun,#s2_fun,#s2_model_test2, 
