@@ -47,7 +47,7 @@ from ManLearn.train_MNIST import load_dataset as load_mnist
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SPDN",
+    parser.add_argument('--manifold', default="Sphere",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
@@ -57,7 +57,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--load_model', default=0,
                         type=int)
-    parser.add_argument('--T_sample', default=0,
+    parser.add_argument('--T_sample', default=1,
                         type=int)
     parser.add_argument('--t0', default=0.01,
                         type=float)

@@ -206,6 +206,8 @@ class EmbeddedSampling(object):
         self.max_T = max_T
         self.dt_steps = dt_steps
         self.T_sample = T_sample
+        if self.T_sample:
+            self.t_samples = 1
         self.t0 = t0
         self.repeats = repeats
         self.x0s = tile(x0, repeats)
@@ -389,6 +391,8 @@ class TMSampling(object):
         self.max_T = max_T
         self.dt_steps = dt_steps
         self.T_sample = T_sample
+        if self.T_sample:
+            self.t_samples = 1
         self.t0 = t0
         self.repeats = repeats
         self.x0s = tile(x0, repeats)
@@ -572,6 +576,8 @@ class ProjectionSampling(object):
         self.max_T = max_T
         self.dt_steps = dt_steps
         self.T_sample = T_sample
+        if self.T_sample:
+            self.t_samples = 1
         self.t0 = t0
         self.repeats = repeats
         self.x0s = tile(x0, repeats)

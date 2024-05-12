@@ -60,10 +60,15 @@ class ScoreEvaluation(object):
     def update_coords(self, Fx:Array)->Tuple[Array, Array]:
         
         chart = self.M.centered_chart(Fx)
-        
-        return (self.M.invF((Fx,chart)),chart)
+        if self.method == "Local":    
+            return (Fx, chart)
+        else:        
+            return (self.M.invF((Fx,chart)),chart)
     
     def grad_local(self, x:Tuple[Array,Array], v:Array)->Array:
+        
+        if not (type(x) == tuple):
+            x = self.update_coords(x)
         
         Jf = self.M.JF(x)
 
@@ -74,6 +79,9 @@ class ScoreEvaluation(object):
         return self.M.proj(Fx, v)
     
     def hess_local(self, x:Tuple[Array,Array], v:Array, h:Array)->Array:
+        
+        if not (type(x) == tuple):
+            x = self.update_coords(x)
         
         val1 = self.M.JF(x)
         val2 = jacfwdx(lambda x1: self.M.JF(x1))(x)
@@ -96,6 +104,12 @@ class ScoreEvaluation(object):
              t:Array
              )->Array:
         
+        if not (type(x) == tuple):
+            x = self.update_coords(x)
+            
+        if not (type(y) == tuple):
+            y = self.update_coords(y)
+        
         if self.method == "Local":
             p0 = jnp.log(jscipy.stats.multivariate_normal.pdf(y[0],x[0],self.eps*jnp.eye(len(x[0]))))
         else:
@@ -111,6 +125,12 @@ class ScoreEvaluation(object):
                   t:Array,
                   )->Array:
         
+        if not (type(x) == tuple):
+            x = self.update_coords(x)
+            
+        if not (type(y) == tuple):
+            y = self.update_coords(y)
+        
         if self.method == "Embedded":
             #x = self.update_coords(x)
             #y = self.update_coords(y)
@@ -124,6 +144,12 @@ class ScoreEvaluation(object):
                    y:Tuple[Array, Array],
                    t:Array
                    )->Array:
+        
+        if not (type(x) == tuple):
+            x = self.update_coords(x)
+            
+        if not (type(y) == tuple):
+            y = self.update_coords(y)
         
         if self.method == "Embedded":
             #x = self.update_coords(x)
@@ -139,6 +165,12 @@ class ScoreEvaluation(object):
                   y:Tuple[Array,Array],
                   t:Array, 
                   )->Array:
+        
+        if not (type(x) == tuple):
+            x = self.update_coords(x)
+            
+        if not (type(y) == tuple):
+            y = self.update_coords(y)
         
         if self.st_model is not None:
             return self.st_model(x,y,t)
@@ -166,3 +198,4 @@ class ScoreEvaluation(object):
             laplace_beltrami = jnp.trace(s2)+.5*jnp.dot(s1,jacfwdx(self.M.logAbsDet)(y).squeeze())
         
         return 0.5*(laplace_beltrami+norm_s1)
+    
