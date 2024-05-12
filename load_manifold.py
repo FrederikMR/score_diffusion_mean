@@ -26,7 +26,7 @@ def get_generator_dim(manifold:str, dim:int)->Tuple[List,List]:
     
     if manifold == "Euclidean":
         layers_s1 = [128, 128, 128]
-        layers_s2 = [32,32,32]
+        layers_s2 = [128,128,128]
         #if dim < 15:
         #    layers_s1 = [128, 128, 128]
         #    layers_s2 = [32,32,32]
@@ -35,7 +35,7 @@ def get_generator_dim(manifold:str, dim:int)->Tuple[List,List]:
         #    layers_s2 = [128, 128, 128, 128, 128]
     elif manifold == "Sphere":
         layers_s1 = [512, 512, 512, 512, 512]
-        layers_s2 = [128, 128, 128, 128, 128]
+        layers_s2 = [512, 512, 512, 512, 512]
     else:
         layers_s1 = [512, 512, 512]
         layers_s2 = [512, 512, 512]

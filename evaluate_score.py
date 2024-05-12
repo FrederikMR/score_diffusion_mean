@@ -53,9 +53,9 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Sphere",
+    parser.add_argument('--manifold', default="Euclidean",
                         type=str)
-    parser.add_argument('--dim', default=[2,3],
+    parser.add_argument('--dim', default=[2,3,5,10],
                         type=List)
     parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
@@ -65,9 +65,9 @@ def parse_args():
                         type=str)
     parser.add_argument('--dt_approx', default="s1",
                         type=str)
-    parser.add_argument('--fixed_t', default=0,
+    parser.add_argument('--fixed_t', default=1,
                         type=int)
-    parser.add_argument('--t0', default=0.01,
+    parser.add_argument('--t0', default=0.1,
                         type=float)
     parser.add_argument('--step_size', default=0.1,
                         type=float)
@@ -77,7 +77,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--t_init', default=0.2,
                         type=float)
-    parser.add_argument('--estimate', default="diffusion_mean",
+    parser.add_argument('--estimate', default="frechet_mean",
                         type=str)
     parser.add_argument('--bridge_sampling', default=0,
                         type=int)
@@ -362,55 +362,34 @@ def evaluate_frechet_mean():
     frechet_mu_time = []
     frechet_std_time = []
     for N in args.dim:
-        M, x0, method, generator_dim, opt_val = load_manifold(N)
-        s1_path = f"../scores/{args.manifold}{N}/s1T_{args.s1_loss_type}/"
-        s2_path = f"../scores/{args.manifold}{N}/{args.dt_approx}_{args.s2_loss_type}/"
+        M, x0, method, generator_dim, layers, opt_val = load_manifold(args.manifold,
+                                                                               N)
+        layers_s1, layers_s2 = layers
+        
+        s1_path = f"scores/{args.manifold}{N}/s1T_{args.s1_loss_type}/"
+        s2_path = f"scores/{args.manifold}{N}/{args.dt_approx}_{args.s2_loss_type}/"
         data_path = f"{args.data_path}{args.manifold}{N}/"
-
-        if generator_dim<10:
-            layers = [50,100,100,50]
-        elif generator_dim<50:
-            layers = [50,100,200,200,100,50]
+        
+        if method == "LocalSampling":
+            method = "Local"
         else:
-            layers = [50,100,200,400,400,200,100,50]
+            method = "Embedded"
         
         
         s1_state = load_model(s1_path)
         s1_ntrain.append(len(jnp.load(''.join((s1_path, 'loss_arrays.npy')))))
-        if args.s2_approx:
-            s2_state = load_model(s2_path)
-            s2_ntrain.append(len(jnp.load(''.join((s2_path, 'loss_arrays.npy')))))
-        else:
-            s2_state = None
-            s2_ntrain.append(jnp.nan)
             
-        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers)(x))
+        rng_key = jrandom.PRNGKey(args.seed)
+        s1_model = hk.transform(lambda x: models.MLP_s1(dim=generator_dim, layers=layers_s1)(x))
+        s1_fun = lambda x,y,t: s1_model.apply(s1_state.params, rng_key, jnp.hstack((x,y,t)))
         
-        if args.s2_type == "s2":
-            s2_model = hk.transform(lambda x: models.MLP_s2(layers_alpha=layers, layers_beta=layers,
-                                                            dim=generator_dim, r = max(generator_dim//2,1))(x))
-        elif args.s2_type == "s1s2":
-            @hk.transform
-            def s2_model(x):
-                
-                s1s2 =  models.MLP_s1s2(
-                    models.MLP_s1(dim=generator_dim, layers=layers), 
-                    models.MLP_s2(layers_alpha=layers, 
-                                  layers_beta=layers,
-                                  dim=generator_dim,
-                                  r = max(generator_dim//2,1))
-                    )
-                
-                return s1s2(x)[1]
             
         ScoreEval = ScoreEvaluation(M, 
-                                    s1_model=s1_model, 
-                                    s1_state=s1_state, 
-                                    s2_model=s2_model, 
-                                    s2_state=s2_state,
-                                    s2_approx=args.s2_approx, 
-                                    method=method, 
-                                    seed=args.seed)
+                                    s1_model=s1_fun,
+                                    s2_model = None,
+                                    st_model = None,
+                                    method = method,
+                                    )
         
         xs = pd.read_csv(''.join((data_path, 'xs.csv')), header=None)
         charts = pd.read_csv(''.join((data_path, 'chart.csv')), header=None)
@@ -434,6 +413,11 @@ def evaluate_frechet_mean():
         score_mu_time.append(jnp.mean(jnp.array(time)))
         score_std_time.append(jnp.std(jnp.array(time)))
         
+        print(mu_opt[1])
+        print(mu_sm[1][-1])
+        print(mu_opt[0])
+        print(mu_sm[0][-1])
+        
         if args.bridge_sampling:
             Frechet_mean(M)
             mu_frechet,loss,iterations,vs = M.Frechet_mean(zip(X_obs[0], X_obs[1]),(X_obs[0][0], X_obs[1][0]))
@@ -448,13 +432,11 @@ def evaluate_frechet_mean():
             frechet_std_time.append(jnp.nan)
             
         if method == "Local":
-            D = len(mu_opt[0])
-            score_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_sm[0][-1])/D)
-            frechet_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_frechet[0])/D)
+            score_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_sm[0][-1]))
+            frechet_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_frechet[0]))
         else:
-            D = len(mu_opt[1])
-            score_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_sm[1][-1])/D)            
-            frechet_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_frechet[1])/D)
+            score_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_sm[1][-1]))            
+            frechet_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_frechet[1]))
 
     error = {'score_mu_error': jnp.stack(score_mu_error),
              'frechet_mu_error': jnp.stack(frechet_mu_error),

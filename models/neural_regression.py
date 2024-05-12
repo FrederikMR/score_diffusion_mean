@@ -20,10 +20,10 @@ import haiku as hk
 #dataclasses
 import dataclasses
 
-#%% Models
+#%% Neural Regression Models
 
 @dataclasses.dataclass
-class MLP_f(hk.Module):
+class MLP_f_R2(hk.Module):
     
     dim:int
     layers:list
@@ -42,6 +42,29 @@ class MLP_f(hk.Module):
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         
         return self.model()(x)
+    
+@dataclasses.dataclass
+class MLP_f_S2(hk.Module):
+    
+    dim:int
+    layers:list
+    
+    def model(self)->object:
+        
+        model = []
+        for l in self.layers:
+            model.append(hk.Linear(l))
+            model.append(tanh)
+            
+        model.append(hk.Linear(self.dim))
+        
+        return hk.Sequential(model)
+
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        
+        val = self.model()(x)
+        
+        return val/jnp.linalg.norm(val, axis=-1).reshape(-1,1)
     
 @dataclasses.dataclass
 class MLP_sigma(hk.Module):
@@ -64,9 +87,19 @@ class MLP_sigma(hk.Module):
         return sigmoid(self.model()(x)).squeeze()
             
 @dataclasses.dataclass
-class MLP_mlnr(hk.Module):
+class MLP_mlnr_R2(hk.Module):
     
-    f:MLP_f
+    f:MLP_f_R2
+    sigma:MLP_sigma
+
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        
+        return self.f(x), self.sigma(x)
+    
+@dataclasses.dataclass
+class MLP_mlnr_S2(hk.Module):
+    
+    f:MLP_f_S2
     sigma:MLP_sigma
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:

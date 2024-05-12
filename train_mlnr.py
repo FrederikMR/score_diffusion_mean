@@ -31,6 +31,8 @@ import argparse
 #scores
 from models import models, neural_regression
 
+import pickle
+
 from typing import NamedTuple
 
 #os
@@ -137,16 +139,6 @@ def train()->None:
         s2_fun = None
         st_fun = None
     
-    @hk.transform
-    def mlnr_model(x):
-        
-        mlnr =  neural_regression.MLP_mlnr(
-            neural_regression.MLP_f(dim=generator_dim, layers=layers_s1), 
-            neural_regression.MLP_sigma(layers=layers_s1)
-            )
-         
-        return mlnr(x)
-    
     
     if not os.path.exists(mlnr_path):
         os.makedirs(mlnr_path)
@@ -174,6 +166,17 @@ def train()->None:
         
         
     if args.manifold == "Euclidean":
+        @hk.transform
+        def mlnr_model(x):
+            
+            mlnr =  neural_regression.MLP_mlnr_R2(
+                neural_regression.MLP_f_R2(dim=generator_dim, layers=layers_s1), 
+                neural_regression.MLP_sigma(layers=layers_s1)
+                )
+             
+            return mlnr(x)
+        
+        
         key, subkey = jrandom.split(rng_key)
         input_data = 1.0*jrandom.normal(key, shape=(50000,))
         key, subkey = jrandom.split(rng_key)
@@ -182,6 +185,25 @@ def train()->None:
         input_data = input_data.reshape(-1,1)
         np.savetxt(''.join((mlnr_path, 'input.csv')), input_data, delimiter=",")
         np.savetxt(''.join((mlnr_path, 'output.csv')), output_data, delimiter=",")
+    elif args.manifold == "Sphere":
+        
+        @hk.transform
+        def mlnr_model(x):
+            
+            mlnr =  neural_regression.MLP_mlnr_S2(
+                neural_regression.MLP_f_S2(dim=generator_dim, layers=layers_s1), 
+                neural_regression.MLP_sigma(layers=layers_s1)
+                )
+             
+            return mlnr(x)
+        
+        data_path = '../data/AFLW2000/head_pose.pkl'
+        with open(data_path, 'rb') as f:
+            data_dict = pickle.load(f)
+            
+        input_data = jnp.array(data_dict['features'])
+        output_data = jnp.array(data_dict['labels'])
+        
     else:
         raise ValueError("Datasets only defined for R2 (Euclidean with dim=2) and S2 (Sphere with dim=2)")
         
