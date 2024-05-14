@@ -30,9 +30,9 @@ python3 train_score.py \
     --lr_rate 0.001 \
     --epochs 50000 \
     --warmup_epochs 1000 \
-    --x_samples 128 \
+    --x_samples 1 \
     --t_samples 100 \
-    --repeats 128 \
+    --repeats 256 \
     --dt_steps 100 \
     --save_step 100 \
     --seed 2712
