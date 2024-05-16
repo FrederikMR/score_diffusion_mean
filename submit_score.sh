@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J gp_mnist_s1dsm
+#BSUB -J Landmarks10_s1tdsm
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
@@ -18,12 +18,12 @@ module swap cudnn/v8.9.1.23-prod-cuda-12.X
 module swap python3/3.10.12
 
 python3 train_score.py \
-    --manifold gp_mnist \
-    --dim 2 \
+    --manifold Landmarks \
+    --dim 10 \
     --s1_loss_type dsm \
     --s2_loss_type dsm \
     --load_model 0 \
-    --T_sample 0 \
+    --T_sample 1 \
     --t0 0.01 \
     --train_net s1 \
     --max_T 1.0 \
@@ -32,7 +32,7 @@ python3 train_score.py \
     --warmup_epochs 1000 \
     --x_samples 1 \
     --t_samples 100 \
-    --repeats 1024 \
+    --repeats 102400 \
     --dt_steps 100 \
     --save_step 100 \
     --seed 2712
