@@ -57,8 +57,8 @@ def iterative_mle(obss:Array,
     for i in range(num_steps):
         (value, opt_state, chart) = step(i, params, opt_state, chart)
         values += (value,); paramss += ((*get_params(opt_state),chart),)
-        if i % 1 == 0:
-            print("Step {} | T: {:0.6e} | T: {}".format(i, value, str((get_params(opt_state),chart))))
-    print("Final {} | T: {:0.6e} | T: {}".format(i, value, str(get_params(opt_state))))
+        #if i % 1 == 0:
+            #print("Step {} | T: {:0.6e} | T: {}".format(i, value, str((get_params(opt_state),chart))))
+    #print("Final {} | T: {:0.6e} | T: {}".format(i, value, str(get_params(opt_state))))
     
     return (get_params(opt_state),chart,value,jnp.array(values),paramss)

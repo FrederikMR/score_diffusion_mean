@@ -145,11 +145,18 @@ class MLGeodesicRegression(object):
 
             return ((p, v, sigma),)*2
         
-        val, _ = lax.scan(update, init=(self.p, self.v, self.sigma), xs=jnp.ones(self.max_iter))
+        #val, _ = lax.scan(update, init=(self.p, self.v, self.sigma), xs=jnp.ones(self.max_iter))
+        p, v, sigma = self.p, self.v, self.sigma
+        for i in range(self.max_iter):
+            print(f"Epoch {i+1}/{self.max_iter}")
+            p,v,sigma = update((p,v,sigma), i)[0]
+            self.p = p
+            self.v = v
+            self.sigma = sigma
         
-        self.p = val[0]
-        self.v = val[1]
-        self.sigma = val[2]
+        #self.p = val[0]
+        #self.v = val[1]
+        #self.sigma = val[2]
         
         return
     

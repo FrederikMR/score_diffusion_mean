@@ -52,9 +52,9 @@ from ManLearn.train_MNIST import load_dataset as load_mnist
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Euclidean",
+    parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=2,
+    parser.add_argument('--dim', default=3,
                         type=int)
     parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
@@ -201,11 +201,13 @@ def train()->None:
         with open(data_path, 'rb') as f:
             data_dict = pickle.load(f)
             
-        input_data = jnp.array(data_dict['features'])
-        output_data = jnp.array(data_dict['labels'])
+        print(data_dict.keys())
+            
+        input_data = jnp.array(data_dict['train_features'])
+        output_data = jnp.array(data_dict['train_labels'])
         
     else:
-        raise ValueError("Datasets only defined for R2 (Euclidean with dim=2) and S2 (Sphere with dim=2)")
+        raise ValueError("Datasets only defined for R2 (Euclidean with dim=2) and S3 (Sphere with dim=3)")
         
     train_mlnr(input_data=input_data,
                output_data=output_data,

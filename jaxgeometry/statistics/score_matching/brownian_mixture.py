@@ -16,7 +16,7 @@ from jaxgeometry.setup import *
 from jaxgeometry.optimization.JAXOptimization import JointJaxOpt
 from jaxgeometry.optimization.GradientDescent import JointGradientDescent
 
-#%% Brownian Mixture Model
+#%% Normalizing
 
 class BrownianMixtureGrad(object):
     def __init__(self, 
@@ -36,6 +36,7 @@ class BrownianMixtureGrad(object):
                  max_t:float=1.0,
                  seed:int=2712,
                  max_step:float=0.1,
+                 grid_points:Tuple[Array, Array]=None,
                  )->None:
         
         self.M = M
@@ -54,6 +55,7 @@ class BrownianMixtureGrad(object):
         self.max_t = max_t
         self.key = jrandom.PRNGKey(seed)
         self.max_step = max_step
+        self.grid_points = None
         
     def __str__(self)->str:
         
@@ -86,7 +88,14 @@ class BrownianMixtureGrad(object):
                                                                                                    X_obs[1])
         #log_pnk -= jnp.mean(log_pnk, axis=0)#jnp.max(log_pnk)#jnp.max(log_pnk,axis=0)
         p_nk = jnp.exp(log_pnk)
-        p_nk /= jnp.mean(p_nk, axis=0)
+        if self.grid_points is None:
+            p_nk /= jnp.mean(p_nk, axis=0)
+        else:
+            Z = vmap(lambda x,c: vmap(lambda mu_x,mu_c,t: self.log_hk((x,c),(mu_x,mu_c), t))(mu[0],
+                                                                                             mu[1],
+                                                                                             T))(self.grid_points[0],
+                                                                                                 self.grid_points[1])
+            p_nk /= jnp.mean(jnp.exp(Z), axis=0)
         
         return p_nk
     
@@ -198,10 +207,10 @@ class BrownianMixtureGrad(object):
             return ((mu, T, alpha),)*2
         
         @jit
-        def update(carry:Tuple[Array, Array, Array],
-                   idx:int,
-                   )->Tuple[Tuple[Array, Array, Array],
-                            Tuple[Array, Array, Array]]:
+        def update_gradient(carry:Tuple[Array, Array, Array],
+                            idx:int,
+                            )->Tuple[Tuple[Array, Array, Array],
+                                     Tuple[Array, Array, Array]]:
             
             mu, T, alpha = carry
             
@@ -226,6 +235,36 @@ class BrownianMixtureGrad(object):
             return ((mu, T, alpha),)*2
         
         @jit
+        def update_jax(carry:Tuple[Array, Array, Array],
+                       idx:int,
+                       )->Tuple[Tuple[Array, Array, Array],
+                                Tuple[Array, Array, Array]]:
+            
+            mu, T, alpha, opt_state = carry
+            
+            p_nk = self.p_nk(X_obs, mu, T)
+            gamma_znk = self.gamma_znk(alpha, p_nk)
+
+            grad_mu = mu_gradient(p_nk, gamma_znk, alpha, mu, T)
+            grad_T = T_gradient(p_nk, gamma_znk, alpha, mu, T) #jacfwd(lambda s: loss_fun(mu, s, alpha))(sigma)#
+            grad_T = jnp.clip(grad_T, -jnp.ones_like(grad_T)*self.max_step/self.lr, 
+                              jnp.ones_like(grad_T)*self.max_step/self.lr)
+            grad_alpha = alpha_gradient(p_nk, gamma_znk, alpha, mu, T)
+            
+            grad = jnp.hstack((grad_mu.reshape(-1), grad_T, grad_alpha))
+            opt_state = opt_update(idx, grad, opt_state)
+            
+            params = get_params(opt_state)
+            mux = params[:(self.n_clusters*self.M.dim)].reshape(self.n_clusters, self.M.dim)
+            T = params[(self.n_clusters*self.M.dim):(self.n_clusters+(self.n_clusters*self.M.dim))]
+            alpha = params[(self.n_clusters+(self.n_clusters*self.M.dim)):]
+            
+            mu = vmap(lambda mu_x, mu_c: self.M.update_coords((mu_x, mu_c),
+                                                              self.M.centered_chart((mu_x, mu_c))))(mux, mu[1])
+
+            return ((mu, T, alpha, opt_state),)*2
+        
+        @jit
         def loss_fun(mu:Tuple[Array,Array], T:Array, alpha):
             pi = self.pi(alpha)
             p_nk = self.p_nk(X_obs, mu, T)
@@ -241,10 +280,19 @@ class BrownianMixtureGrad(object):
                                                    xs=jnp.ones(self.warmup))[0]
             self.mu, self.T, self.alpha = lax.scan(update_mu, init=(self.mu, self.T, self.alpha), 
                                                    xs=jnp.ones(self.warmup))[0]
-        self.mu, self.T, self.alpha = lax.scan(update, init=(self.mu, self.T, self.alpha), 
-                                               xs=jnp.ones(self.max_iter))[0]
+            
+        if self.update_method == "JAX":
+            opt_init, opt_update, get_params = optimizers.sgd(self.lr)
+            opt_state = opt_init(jnp.hstack((self.mu[0].reshape(-1), self.T, self.alpha)))
+            val = lax.scan(update_jax, init=(self.mu, self.T, self.alpha, opt_state), 
+                                                   xs=jnp.ones(self.max_iter))
+            self.mu, self.T, self.alpha, _ = val[0]
+        else:
+            val = lax.scan(update_gradient, init=(self.mu, self.T, self.alpha), 
+                                                   xs=jnp.ones(self.max_iter))
+            self.mu, self.T, self.alpha = val[0]
         
-        return
+        return val[1]
     
     def fit(self, 
             X_train:Tuple[Array,Array],
@@ -272,11 +320,526 @@ class BrownianMixtureGrad(object):
         else:
             self.mu = mu_init
             
-        self.gradient_optimization(X_train)
+        val = self.gradient_optimization(X_train)
+        
+        return val
+   
+ 
+#%% Brownian Mixture Model EM
+
+class BrownianMixtureEM(object):
+    def __init__(self, 
+                 M:object,
+                 log_hk:Callable,
+                 grady_log:Callable, 
+                 gradt_log:Callable, 
+                 n_clusters:int=4,
+                 eps:float=0.01,
+                 method:str='Local',
+                 update_method:str="Gradient",
+                 warmup:int=100,
+                 em_iter:int=100,
+                 grad_iter:int=100,
+                 lr:float=0.01,
+                 dt_steps:int=100,
+                 min_t:float=1e-2,
+                 max_t:float=1.0,
+                 seed:int=2712,
+                 max_step:float=0.1,
+                 grid_points:Tuple[Array,Array]=None,
+                 )->None:
+        
+        self.M = M
+        self.log_hk = log_hk
+        self.grady_log = grady_log
+        self.gradt_log = gradt_log
+        self.n_clusters = n_clusters
+        self.em_iter = em_iter
+        self.grad_iter = grad_iter
+        self.lr = lr
+        self.eps = eps
+        self.dt_steps = dt_steps
+        self.update_method = update_method
+        self.method = method
+        self.min_t = min_t
+        self.max_t = max_t
+        self.key = jrandom.PRNGKey(seed)
+        self.max_step = max_step
+        self.grid_points = grid_points
+        
+    def __str__(self)->str:
+        
+        return "Riemannian Brownian Mixture Model Object"
+    
+    def pi(self, alpha:Array=None)->Array:
+        
+        if alpha is None:
+            exp_val = jnp.exp(self.alpha)
+        else:
+            exp_val = jnp.exp(alpha)
+            
+        return exp_val/jnp.sum(exp_val)
+    
+    def classify(self, X_obs:Tuple[Array, Array])->Array:
+        
+        p_nk = self.p_nk(X_obs, self.mu, self.T)
+        
+        return jnp.argmax(p_nk, axis=-1)
+    
+    def p_nk(self, 
+             X_obs:Tuple[Array,Array],
+             mu:Tuple[Array, Array],
+             T:Array,
+             )->Array:
+
+        log_pnk = vmap(lambda x,c: vmap(lambda mu_x,mu_c,t: self.log_hk((x,c),(mu_x,mu_c), t))(mu[0],
+                                                                                               mu[1],
+                                                                                               T))(X_obs[0],
+                                                                                                   X_obs[1])
+        #log_pnk -= jnp.mean(log_pnk, axis=0)#jnp.max(log_pnk)#jnp.max(log_pnk,axis=0)
+        p_nk = jnp.exp(log_pnk)
+        if self.grid_points is None:
+            p_nk /= jnp.mean(p_nk, axis=0)
+        else:
+            Z = vmap(lambda x,c: vmap(lambda mu_x,mu_c,t: self.log_hk((x,c),(mu_x,mu_c), t))(mu[0],
+                                                                                             mu[1],
+                                                                                             T))(self.grid_points[0],
+                                                                                                 self.grid_points[1])
+            p_nk /= jnp.mean(jnp.exp(Z), axis=0)
+        
+        return p_nk
+    
+    def gamma_znk(self, 
+                  pi:Array=None,
+                  p_nk:Array=None,
+                  )->Array:
+
+        val = jnp.einsum('ij,j->ij', p_nk, pi)
+        
+        return val/jnp.sum(val, axis=-1).reshape(-1,1)
+    
+    def update_pi(self,
+                  gamma_znk:Array,
+                  pi:Array):
+        
+        return jnp.mean(gamma_znk, axis=0)
+    
+    def gradient_optimization(self,
+                              X_obs:Tuple[Array, Array],
+                              gamma_znk:Array,
+                              )->None:
+
+        @jit
+        def mu_gradient(gamma_znk:Array, mu:Tuple[Array, Array], T:Array)->Array:
+
+            grady_log = vmap(lambda x,c: vmap(lambda mu_x, mu_c, t: self.grady_log((x,c), 
+                                                                                   (mu_x, mu_c), 
+                                                                                   t))(mu[0], 
+                                                                                       mu[1],
+                                                                                       T))(X_obs[0],
+                                                                                           X_obs[1])
+
+            return -jnp.mean(jnp.einsum('ij,ijk->ijk', gamma_znk, grady_log), axis=0)
+        
+        @jit
+        def T_gradient(gamma_znk:Array, mu:Tuple[Array, Array], T:Array)->Array:
+
+            gradt_log = vmap(lambda x,c: vmap(lambda mu_x, mu_c, t: self.gradt_log((x,c),
+                                                                                   (mu_x, mu_c),
+                                                                                   t))(mu[0],
+                                                                                       mu[1],
+                                                                                       T))(X_obs[0],
+                                                                                           X_obs[1])
+                                                                                                         
+            return -jnp.mean(jnp.einsum('ij,ij->ij', gamma_znk, gradt_log), axis=0)
+        
+        @jit
+        def update_gradient(carry:Tuple[Array, Array],
+                            idx:int,
+                            )->Tuple[Tuple[Array, Array],
+                                     Tuple[Array, Array]]:
+            
+            mu, T = carry
+
+            grad_mu = mu_gradient(gamma_znk, mu, T)
+            grad_T = T_gradient(gamma_znk, mu, T) #jacfwd(lambda s: loss_fun(mu, s, alpha))(sigma)#
+            grad_T = jnp.clip(grad_T, -jnp.ones_like(grad_T)*self.max_step/self.lr, 
+                              jnp.ones_like(grad_T)*self.max_step/self.lr)
+            
+            mu = vmap(lambda mu_x, mu_c, grad: self.M.Exp((mu_x, mu_c), -self.lr*grad))(mu[0], mu[1], grad_mu)
+            mu = vmap(lambda mu_x, mu_c: self.M.update_coords((mu_x, mu_c),
+                                                              self.M.centered_chart((mu_x, mu_c))))(mu[0], mu[1])
+
+            T -= self.lr*grad_T
+            T = jnp.clip(T, self.min_t, self.max_t)
+
+            return ((mu, T),)*2
+        
+        @jit
+        def update_jax(carry:Tuple[Array, Array, Array],
+                       idx:int,
+                       )->Tuple[Tuple[Array, Array, Array],
+                                Tuple[Array, Array, Array]]:
+            
+            mu, T, opt_state = carry
+
+            grad_mu = mu_gradient(gamma_znk, pi, mu, T)
+            grad_T = T_gradient(gamma_znk, pi, mu, T) #jacfwd(lambda s: loss_fun(mu, s, alpha))(sigma)#
+            grad_T = jnp.clip(grad_T, -jnp.ones_like(grad_T)*self.max_step/self.lr, 
+                              jnp.ones_like(grad_T)*self.max_step/self.lr)
+            
+            grad = jnp.hstack((grad_mu.reshape(-1), grad_T, grad_alpha))
+            opt_state = opt_update(idx, grad, opt_state)
+            
+            params = get_params(opt_state)
+            mux = params[:(self.n_clusters*self.M.dim)].reshape(self.n_clusters, self.M.dim)
+            T = params[(self.n_clusters*self.M.dim):]
+            
+            mu = vmap(lambda mu_x, mu_c: self.M.update_coords((mu_x, mu_c),
+                                                              self.M.centered_chart((mu_x, mu_c))))(mux, mu[1])
+
+            return ((mu, T, opt_state),)*2
+            
+        if self.update_method == "JAX":
+            opt_init, opt_update, get_params = optimizers.sgd(self.lr)
+            opt_state = opt_init(jnp.hstack((self.mu[0].reshape(-1), self.T)))
+            val = lax.scan(update_jax, init=(self.mu, self.T, opt_state), 
+                                                   xs=jnp.ones(self.grad_iter))
+            mu, T, _ = val[0]
+        else:
+            val = lax.scan(update_gradient, init=(self.mu, self.T), xs=jnp.ones(self.grad_iter))
+            mu, T = val[0]
+        
+        return mu, T
+    
+    def em_optimization(self, 
+                        X_obs:Tuple[Array, Array]
+                        )->None:
+        
+        def update_em(carry:Tuple[Array, Array, Array], 
+                      idx:int
+                      ):
+            
+            mu, T, pi = carry
+            p_nk = self.p_nk(X_obs, mu, T)
+            gamma_znk = self.gamma_znk(pi,p_nk)
+            
+            pi = self.update_pi(gamma_znk, pi)
+            mu, T = self.gradient_optimization(X_obs, gamma_znk)
+            
+            return ((mu, T, pi),)*2
+        
+        self.mu, self.T, self.pi = lax.scan(update_em, init=(self.mu, self.T, self.pi), 
+                                            xs=jnp.ones(self.em_iter))[0]
+        
+        return
+    
+    def fit(self, 
+            X_train:Tuple[Array,Array],
+            mu_init:Tuple[Array,Array]=None,
+            T_init:Array=None,
+            pi_init:Array=None
+            )->None:
+        
+        if pi_init is None:
+            self.pi = jnp.ones(self.n_clusters)/self.n_clusters
+        else:
+            self.pi = pi_init
+        
+        if T_init is None:
+            self.T = 1.0*jnp.ones(self.n_clusters)/self.n_clusters
+        else:
+            self.T = T_init
+        
+        if mu_init is None:
+            key, subkey = jrandom.split(self.key)
+            self.key = subkey
+            centroid_idx = jrandom.choice(subkey, jnp.arange(0,len(X_train[0]), 1), shape=(self.n_clusters,))
+            self.mu = (X_train[0][jnp.array(centroid_idx)], 
+                              X_train[1][jnp.array(centroid_idx)].reshape(len(centroid_idx),-1))
+        else:
+            self.mu = mu_init
+            
+        self.em_optimization(X_train)
         
         return
 
 #%% Old Version
+
+class BrownianMixtureGradNoNorm(object):
+    def __init__(self, 
+                 M:object,
+                 log_hk:Callable,
+                 grady_log:Callable, 
+                 gradt_log:Callable, 
+                 n_clusters:int=4,
+                 eps:float=0.01,
+                 method:str='Local',
+                 update_method:str="Gradient",
+                 warmup:int=100,
+                 max_iter:int=100,
+                 lr:float=0.01,
+                 dt_steps:int=100,
+                 min_t:float=1e-2,
+                 max_t:float=1.0,
+                 seed:int=2712,
+                 max_step:float=0.1,
+                 )->None:
+        
+        self.M = M
+        self.log_hk = log_hk
+        self.grady_log = grady_log
+        self.gradt_log = gradt_log
+        self.n_clusters = n_clusters
+        self.warmup = warmup
+        self.max_iter = max_iter
+        self.lr = lr
+        self.eps = eps
+        self.dt_steps = dt_steps
+        self.update_method = update_method
+        self.method = method
+        self.min_t = min_t
+        self.max_t = max_t
+        self.key = jrandom.PRNGKey(seed)
+        self.max_step = max_step
+        
+    def __str__(self)->str:
+        
+        return "Riemannian Brownian Mixture Model Object"
+    
+    def classify(self, X_obs:Tuple[Array, Array])->Array:
+        
+        p_nk = self.p_nk(X_obs, self.mu, self.T)
+        
+        return jnp.argmax(p_nk, axis=-1)
+    
+    def p_nk(self, 
+             X_obs:Tuple[Array,Array],
+             mu:Tuple[Array, Array],
+             T:Array,
+             )->Array:
+
+        log_pnk = vmap(lambda x,c: vmap(lambda mu_x,mu_c,t: self.log_hk((x,c),(mu_x,mu_c), t))(mu[0],
+                                                                                               mu[1],
+                                                                                               T))(X_obs[0],
+                                                                                                   X_obs[1])
+        p_nk = jnp.exp(log_pnk)
+        
+        return p_nk
+    
+    def gamma_znk(self, 
+                  c:Array=None,
+                  p_nk:Array=None,
+                  )->Array:
+        
+        val = jnp.einsum('ij,j->ij', p_nk, jnp.exp(c))
+        
+        return val/jnp.sum(val, axis=-1).reshape(-1,1)
+    
+    def gradient_optimization(self,
+                              X_obs:Tuple[Array, Array]
+                              )->None:
+        
+        @jit
+        def c_gradient(p_nk:Array, gamma_znk:Array, c:Array, mu:Tuple[Array, Array], T:Array)->Array:
+            
+            return -jnp.mean(gamma_znk, axis=0)
+
+        @jit
+        def mu_gradient(p_nk:Array, gamma_znk, c:Array, mu:Tuple[Array, Array], T:Array)->Array:
+
+            grady_log = vmap(lambda x,c: vmap(lambda mu_x, mu_c, t: self.grady_log((x,c), 
+                                                                                   (mu_x, mu_c), 
+                                                                                   t))(mu[0], 
+                                                                                       mu[1],
+                                                                                       T))(X_obs[0],
+                                                                                           X_obs[1])
+
+            return -jnp.mean(jnp.einsum('ij,ijk->ijk', gamma_znk, grady_log), axis=0)
+        
+        @jit
+        def T_gradient(p_nk:Array, gamma_znk, c:Array, mu:Tuple[Array, Array], T:Array)->Array:
+                    
+            gradt_log = vmap(lambda x,c: vmap(lambda mu_x, mu_c, t: self.gradt_log((x,c),
+                                                                                   (mu_x, mu_c),
+                                                                                   t))(mu[0],
+                                                                                       mu[1],
+                                                                                       T))(X_obs[0],
+                                                                                           X_obs[1])
+                                                                                                         
+            return -jnp.mean(jnp.einsum('ij,ij->ij', gamma_znk, gradt_log), axis=0)
+
+        @jit
+        def update_mu(carry:Tuple[Array, Array, Array], 
+                      idx:int,
+                      )->Tuple[Tuple[Array, Array, Array],
+                               Tuple[Array, Array, Array]]:
+            
+            mu, T, c = carry
+            
+            p_nk = self.p_nk(X_obs, mu, T)
+            gamma_znk = self.gamma_znk(c, p_nk)
+
+            grad_mu = mu_gradient(p_nk, gamma_znk, c, mu, T)
+
+            mu = vmap(lambda mu_x, mu_c, grad: self.M.Exp((mu_x, mu_c), -self.lr*grad))(mu[0], mu[1], grad_mu)
+            mu = vmap(lambda mu_x, mu_c: self.M.update_coords((mu_x, mu_c),
+                                                              self.M.centered_chart((mu_x, mu_c))))(mu[0], mu[1])
+
+            return ((mu, T, c),)*2
+        
+        @jit
+        def update_T(carry:Tuple[Array, Array, Array],
+                     idx:int,
+                     )->Tuple[Tuple[Array, Array, Array],
+                              Tuple[Array, Array, Array]]:
+            
+            mu, T, c = carry
+            
+            p_nk = self.p_nk(X_obs, mu, T)
+            gamma_znk = self.gamma_znk(c, p_nk)
+
+            grad_T = T_gradient(p_nk, gamma_znk, c, mu, T) #jacfwd(lambda s: loss_fun(mu, s, alpha))(sigma)#
+            grad_T = jnp.clip(grad_T, -jnp.ones_like(grad_T)*self.max_step/self.lr, 
+                              jnp.ones_like(grad_T)*self.max_step/self.lr)
+
+            T -= self.lr*grad_T
+            T = jnp.clip(T, self.min_t, self.max_t)
+
+            return ((mu, T, c),)*2
+        
+        @jit
+        def update_alpha(carry:Tuple[Array, Array, Array],
+                         idx:int,
+                         )->Tuple[Tuple[Array, Array, Array],
+                                  Tuple[Array, Array, Array]]:
+            
+            mu, T, c = carry
+            
+            p_nk = self.p_nk(X_obs, mu, T)
+            gamma_znk = self.gamma_znk(c, p_nk)
+            
+            grad_alpha = c_gradient(p_nk, gamma_znk, c, mu, T)
+
+            c -= self.lr*grad_alpha
+
+            return ((mu, T, c),)*2
+        
+        @jit
+        def update_gradient(carry:Tuple[Array, Array, Array],
+                            idx:int,
+                            )->Tuple[Tuple[Array, Array, Array],
+                                     Tuple[Array, Array, Array]]:
+            
+            mu, T, c = carry
+            
+            p_nk = self.p_nk(X_obs, mu, T)
+            gamma_znk = self.gamma_znk(c, p_nk)
+
+            grad_mu = mu_gradient(p_nk, gamma_znk, c, mu, T)
+            grad_T = T_gradient(p_nk, gamma_znk, c, mu, T) #jacfwd(lambda s: loss_fun(mu, s, alpha))(sigma)#
+            grad_T = jnp.clip(grad_T, -jnp.ones_like(grad_T)*self.max_step/self.lr, 
+                              jnp.ones_like(grad_T)*self.max_step/self.lr)
+            
+            grad_alpha = c_gradient(p_nk, gamma_znk, c, mu, T)
+            
+            mu = vmap(lambda mu_x, mu_c, grad: self.M.Exp((mu_x, mu_c), -self.lr*grad))(mu[0], mu[1], grad_mu)
+            mu = vmap(lambda mu_x, mu_c: self.M.update_coords((mu_x, mu_c),
+                                                              self.M.centered_chart((mu_x, mu_c))))(mu[0], mu[1])
+
+            T -= self.lr*grad_T
+            T = jnp.clip(T, self.min_t, self.max_t)
+            c -= self.lr*grad_alpha
+
+            return ((mu, T, c),)*2
+        
+        @jit
+        def update_jax(carry:Tuple[Array, Array, Array],
+                       idx:int,
+                       )->Tuple[Tuple[Array, Array, Array],
+                                Tuple[Array, Array, Array]]:
+            
+            mu, T, c, opt_state = carry
+            
+            p_nk = self.p_nk(X_obs, mu, T)
+            gamma_znk = self.gamma_znk(c, p_nk)
+
+            grad_mu = mu_gradient(p_nk, gamma_znk, c, mu, T)
+            grad_T = T_gradient(p_nk, gamma_znk, c, mu, T) #jacfwd(lambda s: loss_fun(mu, s, alpha))(sigma)#
+            grad_T = jnp.clip(grad_T, -jnp.ones_like(grad_T)*self.max_step/self.lr, 
+                              jnp.ones_like(grad_T)*self.max_step/self.lr)
+            grad_alpha = c_gradient(p_nk, gamma_znk, c, mu, T)
+            
+            grad = jnp.hstack((grad_mu.reshape(-1), grad_T, grad_alpha))
+            opt_state = opt_update(idx, grad, opt_state)
+            
+            params = get_params(opt_state)
+            mux = params[:(self.n_clusters*self.M.dim)].reshape(self.n_clusters, self.M.dim)
+            T = params[(self.n_clusters*self.M.dim):(self.n_clusters+(self.n_clusters*self.M.dim))]
+            c = params[(self.n_clusters+(self.n_clusters*self.M.dim)):]
+            
+            mu = vmap(lambda mu_x, mu_c: self.M.update_coords((mu_x, mu_c),
+                                                              self.M.centered_chart((mu_x, mu_c))))(mux, mu[1])
+
+            return ((mu, T, c, opt_state),)*2
+        
+        @jit
+        def loss_fun(mu:Tuple[Array,Array], T:Array, c):
+
+            p_nk = self.p_nk(X_obs, mu, T)
+            
+            inner = jnp.log(jnp.sum(pi*p_nk, axis=-1))
+            
+            return -jnp.mean(inner, axis=0)
+        
+        if self.warmup:
+            self.mu, self.T, self.c = lax.scan(update_mu, init=(self.mu, self.T, self.c), 
+                                                   xs=jnp.ones(self.warmup))[0]
+            self.mu, self.T, self.c = lax.scan(update_mu, init=(self.mu, self.T, self.c), 
+                                                   xs=jnp.ones(self.warmup))[0]
+            self.mu, self.T, self.c = lax.scan(update_mu, init=(self.mu, self.T, self.c), 
+                                                   xs=jnp.ones(self.warmup))[0]
+            
+        if self.update_method == "JAX":
+            opt_init, opt_update, get_params = optimizers.sgd(self.lr)
+            opt_state = opt_init(jnp.hstack((self.mu[0].reshape(-1), self.T, self.c)))
+            self.mu, self.T, self.c, _ = lax.scan(update_jax, init=(self.mu, self.T, self.c, opt_state), 
+                                                   xs=jnp.ones(self.max_iter))[0]
+        else:
+            self.mu, self.T, self.c = lax.scan(update_gradient, init=(self.mu, self.T, self.c), 
+                                                   xs=jnp.ones(self.max_iter))[0]
+        
+        return
+    
+    def fit(self, 
+            X_train:Tuple[Array,Array],
+            mu_init:Tuple[Array,Array]=None,
+            T_init:Array=None,
+            c_init:Array=None
+            )->None:
+        
+        if c_init is None:
+            self.c = jnp.zeros(self.n_clusters)
+        else:
+            self.c = c_init
+        
+        if T_init is None:
+            self.T = 1.0*jnp.ones(self.n_clusters)/self.n_clusters
+        else:
+            self.T = T_init
+        
+        if mu_init is None:
+            key, subkey = jrandom.split(self.key)
+            self.key = subkey
+            centroid_idx = jrandom.choice(subkey, jnp.arange(0,len(X_train[0]), 1), shape=(self.n_clusters,))
+            self.mu = (X_train[0][jnp.array(centroid_idx)], 
+                              X_train[1][jnp.array(centroid_idx)].reshape(len(centroid_idx),-1))
+        else:
+            self.mu = mu_init
+            
+        self.gradient_optimization(X_train)
+        
+        return
 
 class BrownianMixtureOld(object):
     def __init__(self, 

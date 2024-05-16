@@ -33,6 +33,9 @@ import jax.scipy as jscipy
 import jax.scipy.optimize as jopt
 import jax.random as jrandom
 
+#from jax.config import config
+#config.update('jax_enable_x64', False)
+
 #JAX Optimization
 from jax.example_libraries import optimizers
 

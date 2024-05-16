@@ -68,9 +68,11 @@ def train_mlnr(input_data:Array,
         sigma2 = jnp.clip(sigma_data**2, min_t, max_t)
         
         loss1 = jnp.einsum('...i,...i->...', 
-                           lax.stop_gradient(grady_log(y,f_data, sigma2)),
+                           grady_log(y,lax.stop_gradient(f_data), 
+                                     lax.stop_gradient(sigma2)),
                            f_data)
-        loss2 = lax.stop_gradient(gradt_log(y,f_data,sigma2))*sigma2
+        loss2 = gradt_log(y,lax.stop_gradient(f_data),
+                          lax.stop_gradient(sigma2))*sigma2
         
         return -jnp.sum(loss1+loss2)
     

@@ -96,7 +96,7 @@ def load_manifold(manifold:str, dim:int=None)->None:
         opt_val = "x0"
         layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "Ellipsoid":
-        sampling_method = 'TMSampling'
+        sampling_method = 'EmbeddedSampling'
         M = nEllipsoid(N=dim, params = jnp.linspace(0.5,1.0,dim+1))
         generator_dim = M.emb_dim
         x0 = M.coords([0.]*dim)
@@ -120,7 +120,7 @@ def load_manifold(manifold:str, dim:int=None)->None:
         sampling_method = 'LocalSampling'
         M = Landmarks(N=dim,m=2)   
         generator_dim = M.dim
-        x0 = M.coords(jnp.vstack((jnp.linspace(-5.0,0.0,M.N),jnp.linspace(5.0,0.0,M.N))).T.flatten())
+        x0 = M.coords(jnp.vstack((jnp.linspace(-5.0,5.0,M.N),jnp.linspace(0.0,0.0,M.N))).T.flatten())
         if dim >=10:
             with open('../../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt', 'r') as the_file:
                 all_data = [line.strip() for line in the_file.readlines()]

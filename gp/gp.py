@@ -229,6 +229,60 @@ def RM_EG(X_training, y_training, sigman = 1.0, m_fun = None, Dm_fun = None, k_f
         
         return 0.5*(Dchris1+Dchris2)
     
+    def min_energy(x0,xT,N,T):
+        
+        def loss_fun(x):
+            
+            x = x.reshape(-1, len(x0))
+            
+            Gx = vmap(lambda x: RM.G(x).squeeze())(x)
+            
+            diff0 = x[0]-x0
+            diff = x[1:]-x[:-1]
+            diffT = xT-x[-1]
+            
+            term1 = jnp.einsum('i,ij,j->', diff0, Gx0, diff0)
+            term2 = jnp.einsum('...i,...ij,...j->...', diff, Gx[:-1], diff)
+            term3 = jnp.einsum('i,ij,j->', diffT, Gx[-1], diffT)
+            
+            return term1+jnp.sum(term2)+term3
+        
+        Gx0 = RM.G(x0)
+        
+        dt_grid = jnp.linspace(0,T,N)[1:]
+        x0_init = x0+(xT-x0)*dt_grid.reshape(-1,1)
+        
+        sol = minimize(loss_fun, x0_init.reshape(-1),
+                     method='BFGS', options={'gtol': tol, 'maxiter':max_iter, 'disp':True}) #FOR NO MESSAGE: SET 'disp':False
+        
+        #print(sol.message)
+        
+        x = sol.x
+        
+        return x
+    
+    def curve_length(x0,xT,x, T, N):
+        
+        def loss_fun(x):
+            
+            x = x.reshape(-1, len(x0))
+            
+            Gx = vmap(lambda x: RM.G(x).squeeze())(x)
+            
+            diff0 = x[0]-x0
+            diff = x[1:]-x[:-1]
+            diffT = xT-x[-1]
+            
+            term1 = jnp.einsum('i,ij,j->', diff0, Gx0, diff0)
+            term2 = jnp.einsum('...i,...ij,...j->...', diff, Gx[:-1], diff)
+            term3 = jnp.einsum('i,ij,j->', diffT, Gx[-1], diffT)
+            
+            return (jnp.sqrt(term1)+jnp.sum(jnp.sqrt(term2))+jnp.sqrt(term3))
+        
+        Gx0 = RM.G(x0)
+        
+        return loss_fun(x)
+    
     def ivp_geodesic(x,v):
         
         def eq_geodesic(t, y):
@@ -553,6 +607,8 @@ def RM_EG(X_training, y_training, sigman = 1.0, m_fun = None, Dm_fun = None, k_f
     RM.CO = jit(curvature_operator)
     RM.CT = jit(curvature_tensor)
     RM.SC = jit(sectional_curvature)
+    RM.min_energy = min_energy
+    RM.curve_length = curve_length
     
     return RM
 

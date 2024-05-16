@@ -80,7 +80,7 @@ def diffusion_mean(M:object)->None:
     x = M.coords(jnp.zeros(M.dim))
     params_inds = (0,5)
     
-    M.diffusion_mean = lambda samples,params=(x[0]+.1*np.random.normal(size=M.dim),jnp.array(.2,dtype="float32")),N=N,num_steps=80: \
+    M.diffusion_mean = lambda samples,params=(x[0]+.1*np.random.normal(size=M.dim),jnp.array(.2,dtype=jnp.float64)),N=N,num_steps=80: \
             iterative_mle(samples,\
                 neg_log_p_Ts,\
                 params,params_inds,params_update,x[1],_dts,M,\
