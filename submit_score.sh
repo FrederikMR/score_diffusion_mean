@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J Landmarks10_s1dsm
+#BSUB -J Landmarks2_s1dsm
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
@@ -23,7 +23,7 @@ python3 train_score.py \
     --s1_loss_type dsm \
     --s2_loss_type dsm \
     --load_model 0 \
-    --T_sample 1 \
+    --T_sample 0 \
     --t0 0.01 \
     --train_net s1 \
     --max_T 1.0 \
@@ -32,7 +32,7 @@ python3 train_score.py \
     --warmup_epochs 1000 \
     --x_samples 1 \
     --t_samples 100 \
-    --repeats 102400 \
+    --repeats 1024 \
     --dt_steps 100 \
     --save_step 100 \
     --seed 2712
