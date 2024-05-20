@@ -105,14 +105,14 @@ def load_manifold(manifold:str, dim:int=None)->None:
     elif manifold == "Cylinder":
         sampling_method = 'EmbeddedSampling'
         M = Cylinder(params=(1.,jnp.array([0.,0.,1.]),jnp.pi/2.))
-        generator_dim = M.dim
+        generator_dim = M.emb_dim
         x0 = M.coords([0.]*2)
         opt_val = "x0"
         layers = get_generator_dim(manifold, generator_dim)
     elif manifold == "Torus":
         sampling_method = 'EmbeddedSampling'
         M = Torus()        
-        generator_dim = M.dim
+        generator_dim = M.emb_dim
         x0 = M.coords([0.]*2)
         opt_val = "x0"
         layers = get_generator_dim(manifold, generator_dim)

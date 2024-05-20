@@ -294,6 +294,7 @@ class EmbeddedSampling(object):
             )->Array:
         
         (xts, chartts) = vmap(self.update_coords)(xt)
+        chartts = vmap(lambda x,c: self.M.F((x,c)))(xts, chartts)
         
         divs = vmap(lambda x0, xt, chart, t: self.M.div((xt, chart), 
                                                    lambda x: self.grad_local_vsm(x0,
