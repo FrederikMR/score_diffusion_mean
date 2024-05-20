@@ -251,10 +251,10 @@ class EmbeddedSampling(object):
                 self.x0s = self.x0s_default
                 
             x0s = jnp.tile(jnp.repeat(Fx0s,self.x_samples,axis=0),(self.dt_steps,1,1))
-            xt = chartss#xss
+            xt = vmap(lambda x,c: vmap(lambda x1,c1: self.M.F((x1,c1)))(x,c))(xss,chartss)#xss
             t = jnp.tile(ts, (self.N_sim, 1)).T.reshape(self.dt_steps, self.N_sim, 1)
             dt = jnp.tile(self._dts, (self.N_sim, 1)).T.reshape(self.dt_steps, self.N_sim, 1)
-            dW = vmap(lambda v,c: vmap(lambda v1,c1: self.grad_local_to_TM(c1, v1))(v,c))(dW, chartss)
+            dW = vmap(lambda v,c: vmap(lambda v1,c1: self.grad_local_to_TM(c1, v1))(v,c))(dW, xt)
            
             if not self.T_sample:
                 inds = jnp.array(random.sample(range(self._dts.shape[0]), self.t_samples))
@@ -293,17 +293,17 @@ class EmbeddedSampling(object):
             s1_model:Callable[[Array,Array,Array], Array],
             )->Array:
         
-        #(xts, chartts) = vmap(self.update_coords)(xt)
+        (xts, chartts) = vmap(self.update_coords)(xt)
         
-        #divs = vmap(lambda x0, xt, chart, t: self.M.div((xt, chart), 
-        #                                           lambda x: self.grad_local_vsm(x0,
-        #                                                                         x,
-        #                                                                         t,
-        #                                                                         s1_model)))(x0,xts,chartts,t)
+        divs = vmap(lambda x0, xt, chart, t: self.M.div((xt, chart), 
+                                                   lambda x: self.grad_local_vsm(x0,
+                                                                                 x,
+                                                                                 t,
+                                                                                 s1_model)))(x0,xts,chartts,t)
         
-        #return divs
+        return divs
         
-        return vmap(lambda x,y,t: jnp.trace(jacfwd(lambda y0: self.grad_TM(y0, s1_model(x,y0,t)))(y)))(x0,xt,t)
+        #return vmap(lambda x,y,t: jnp.trace(jacfwd(lambda y0: self.grad_TM(y0, s1_model(x,y0,t)))(y)))(x0,xt,t)
 
     def grad_TM(self, 
                 x:Array,
@@ -320,7 +320,7 @@ class EmbeddedSampling(object):
     
         return self.M.proj(x, v)
     
-    def grad_local(self,
+    def grad_local(self,chartss,
                    x:Array,
                    v:Array,
                    )->Array:

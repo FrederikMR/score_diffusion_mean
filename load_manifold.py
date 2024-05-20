@@ -122,7 +122,7 @@ def load_manifold(manifold:str, dim:int=None)->None:
         generator_dim = M.dim
         x0 = M.coords(jnp.vstack((jnp.linspace(-5.0,5.0,M.N),jnp.linspace(0.0,0.0,M.N))).T.flatten())
         if dim >=10:
-            with open('../../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt', 'r') as the_file:
+            with open('../../../Data/landmarks/Papilonidae/Papilionidae_landmarks.txt', 'r') as the_file:
                 all_data = [line.strip() for line in the_file.readlines()]
                 
                 x1 = jnp.array([float(x) for x in all_data[0].split()[2:]])

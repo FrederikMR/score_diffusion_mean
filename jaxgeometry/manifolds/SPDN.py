@@ -158,17 +158,21 @@ class SPDN(EmbeddedManifold):
     def StdLog(self, x:Tuple[Array, Array], y:Array)->Array:
         
         P = self.F(x).reshape(self.N,self.N)
-        S = y.reshape(self.N,self.N)
+        Q = y.reshape(self.N,self.N)
         
         U,S,V = jnp.linalg.svd(P)
         P_phalf = jnp.dot(jnp.dot(U, jnp.diag(jnp.sqrt(S))), V)#jnp.linalg.cholesky(P)
         P_nhalf = jnp.linalg.inv(P_phalf)#jnp.linalg.inv(P_phalf)
         
-        w = jnp.matmul(jnp.matmul(P_phalf, \
-                                     logm(jnp.matmul(jnp.matmul(P_nhalf, S), P_nhalf))),
-                          P_phalf)
+        jnp.dot(U,jnp.dot(jnp.diag(jnp.log(S)),V))
+        
+        log_val = jnp.matmul(jnp.matmul(P_nhalf, Q), P_nhalf)
+        U,S,V = jnp.linalg.svd(log_val)
+        log_val = jnp.dot(U,jnp.dot(jnp.diag(jnp.log(S)),V))
+        
+        w = jnp.matmul(jnp.matmul(P_phalf, log_val), P_phalf)
             
-        return jnp.dot(self.invJF((x[1],x[1])),w)
+        return jnp.dot(self.invJF((x[1],x[1])),w.reshape(-1))
     
     def StdLogEmbedded(self, x:Tuple[Array, Array], y:Array)->Array:
         

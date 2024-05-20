@@ -15,8 +15,8 @@ from .generators import LocalSampling, EmbeddedSampling, TMSampling, ProjectionS
 from .diffusion_mean import diffusion_mean
 from .model_loader import save_model, load_model
 from .score_evaluation import ScoreEvaluation
-from .mlgr import MLGeodesicRegression
-from .brownian_mixture import BrownianMixtureGrad, BrownianMixtureEM
+from .mlgr import MLGeodesicRegression, MLGeodesicRegressionEmbedded
+from .brownian_mixture import BrownianMixtureGrad, BrownianMixtureEM, BrownianMixtureGradEmbedded, BrownianMixtureEMEmbedded
 from .mlnr import train_mlnr
 
 #%% Code

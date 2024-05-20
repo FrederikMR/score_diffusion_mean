@@ -53,9 +53,9 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Euclidean",
+    parser.add_argument('--manifold', default="SPDN",
                         type=str)
-    parser.add_argument('--dim', default=[2],
+    parser.add_argument('--dim', default=[2,3,5],
                         type=List)
     parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
@@ -63,7 +63,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--dt_approx', default="s1",
                         type=str)
-    parser.add_argument('--t0', default=0.1,
+    parser.add_argument('--t0', default=0.01,
                         type=float)
     parser.add_argument('--step_size', default=0.1,
                         type=float)
@@ -321,8 +321,8 @@ def evaluate_frechet_mean():
     
     score_mu_error = []
     frechet_mu_error = []
+    diff_error = []
     s1_ntrain = []
-    s2_ntrain = []
     score_mu_time = []
     score_std_time = []
     frechet_mu_time = []
@@ -366,14 +366,19 @@ def evaluate_frechet_mean():
         else:
             mu_opt = x0
         
-        
-        dm_score(M, s1_model=lambda x,y,t: t*ScoreEval.grady_log(x,y,t), 
+        def s1_evaluate(x,y,t):
+            
+            val1 = t*ScoreEval.grady_log(x,y,t)
+            
+            return val1/jnp.linalg.norm(val1)
+            
+        dm_score(M, s1_model=s1_evaluate, 
                  s2_model = ScoreEval.gradt_log, method="Gradient")
         mu_sm, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
                                                step_size=args.step_size, max_iter=args.score_iter)
         time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t0]), 
                                       step_size=args.step_size, 
-                                      max_iter=args.bridge_iter)
+                                      max_iter=10)
         time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                              number=1, globals=locals(), repeat=args.timing_repeats)
         score_mu_time.append(jnp.mean(jnp.array(time)))
@@ -384,10 +389,21 @@ def evaluate_frechet_mean():
         print(mu_opt[0])
         print(mu_sm[0][-1])
         
-        if args.bridge_sampling:
+        if args.benchmark:
             Frechet_mean(M)
-            mu_frechet,loss,iterations,vs = M.Frechet_mean(zip(X_obs[0], X_obs[1]),(X_obs[0][0], X_obs[1][0]))
-            time_fun = lambda x: M.Frechet_mean(zip(X_obs[0], X_obs[1]),(x[0], x[1]))
+            if not (args.manifold == "Sphere"):
+                mu_frechet,loss,iterations,vs = M.Frechet_mean(zip(X_obs[0], X_obs[1]),(X_obs[0][0], X_obs[1][0]))
+                time_fun = lambda x: M.Frechet_mean(zip(X_obs[0], X_obs[1]),(x[0], x[1]), 
+                                                    options={'num_steps':10})
+                print(mu_frechet)
+            else:
+                mu_frechet, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
+                                                       step_size=args.step_size, max_iter=args.score_iter)
+                mu_frechet = (mu_frechet[0][-1], mu_frechet[1][-1])
+                time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t0]), 
+                                              step_size=args.step_size, 
+                                              max_iter=10)
+                print(mu_frechet)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                                  number=1, globals=locals(), repeat=args.timing_repeats)
             frechet_mu_time.append(jnp.mean(jnp.array(time)))
@@ -398,24 +414,28 @@ def evaluate_frechet_mean():
             frechet_std_time.append(jnp.nan)
             
         if method == "Local":
+            diff_error.append(jnp.linalg.norm(mu_frechet[0]-mu_sm[0][-1]))
             score_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_sm[0][-1]))
             frechet_mu_error.append(jnp.linalg.norm(mu_opt[0]-mu_frechet[0]))
         else:
-            score_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_sm[1][-1]))            
+            diff_error.append(jnp.linalg.norm(mu_frechet[1]-mu_sm[1][-1]))  
+            score_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_sm[1][-1]))
             frechet_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_frechet[1]))
+            
+    print(score_mu_error)
 
-    error = {'score_mu_error': jnp.stack(score_mu_error),
+    error = {'diff_error': jnp.stack(diff_error),
+             'score_mu_error': jnp.stack(score_mu_error),
              'frechet_mu_error': jnp.stack(frechet_mu_error),
              'dim': args.dim,
              's1_ntrain': jnp.stack(s1_ntrain),
-             's2_ntrain': jnp.stack(s2_ntrain),
              'score_mu_time': jnp.stack(score_mu_time),
              'score_std_time': jnp.stack(score_std_time),
              'frechet_mu_time': jnp.stack(frechet_mu_time),
              'frechet_std_time': jnp.stack(frechet_std_time)
              }
     
-    save_path = f"{args.save_path}frechet_{args.manifold}.pkl"
+    save_path = f"{args.save_path}timing_frechet_{args.manifold}.pkl"
     if not os.path.exists(args.save_path):
         os.makedirs(args.save_path)
     with open(save_path, 'wb') as f:
