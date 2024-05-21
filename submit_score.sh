@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J Sym5_s1tdsm
+#BSUB -J Torus_s1vsm
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 4:00
@@ -18,12 +18,12 @@ module swap cudnn/v8.9.1.23-prod-cuda-12.X
 module swap python3/3.10.12
 
 python3 train_score.py \
-    --manifold Sym \
-    --dim 5 \
-    --s1_loss_type dsm \
+    --manifold Torus \
+    --dim 2 \
+    --s1_loss_type vsm \
     --s2_loss_type dsm \
     --load_model 0 \
-    --T_sample 1 \
+    --T_sample 0 \
     --t0 0.01 \
     --train_net s1 \
     --max_T 1.0 \
