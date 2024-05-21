@@ -53,11 +53,11 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="SPDN",
+    parser.add_argument('--manifold', default="Cylinder",
                         type=str)
-    parser.add_argument('--dim', default=[2,3,5],
+    parser.add_argument('--dim', default=[2],
                         type=List)
-    parser.add_argument('--s1_loss_type', default="dsm",
+    parser.add_argument('--s1_loss_type', default="vsm",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsm",
                         type=str)
@@ -73,7 +73,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--t_init', default=0.2,
                         type=float)
-    parser.add_argument('--estimate', default="frechet_mean",
+    parser.add_argument('--estimate', default="diffusion_mean",
                         type=str)
     parser.add_argument('--benchmark', default=1,
                         type=int)
@@ -115,6 +115,10 @@ def evaluate_diffusion_mean():
                                                                                N)
         layers_s1, layers_s2 = layers
         
+        if N < 5:
+            N_bridge = 1
+        else:
+            N_bridge = 2
         if method == "LocalSampling":
             method = "Local"
         else:
@@ -243,7 +247,7 @@ def evaluate_diffusion_mean():
         mu_sm, T_sm, gradx_sm, gradt_sm = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t_init]), \
                                                step_size=args.step_size, max_iter=args.score_iter)
         time_fun = lambda x: M.sm_dmxt(X_obs, (x[0], x[1]), jnp.array([args.t_init]), step_size=args.step_size, 
-                                       max_iter=5)
+                                       max_iter=10)
         time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                              number=1, globals=locals(), repeat=args.timing_repeats)
         score_mu_time.append(jnp.mean(jnp.array(time)))
@@ -260,14 +264,14 @@ def evaluate_diffusion_mean():
             X_obs = (X_obs[0].astype(jnp.float64), X_obs[1].astype(jnp.float64))
             (thetas,chart,log_likelihood,log_likelihoods,mu_bridge) = M.diffusion_mean(X_obs,
                                                                                        num_steps=args.bridge_iter, 
-                                                                                       N=1)
+                                                                                       N=N_bridge)
             
             mu_bridgex, T_bridge, mu_bridgechart = zip(*mu_bridge)
             mu_bridgex, mu_bridgechart = jnp.stack(mu_bridgex), jnp.stack(mu_bridgechart)
             T_bridge = jnp.stack(T_bridge)
             (thetas,chart,log_likelihood,log_likelihoods,mu_bridge) = M.diffusion_mean(X_obs,
-                                                                                       num_steps=1, 
-                                                                                       N=1)
+                                                                                       num_steps=10, 
+                                                                                       N=N_bridge)
             time = timeit.repeat('M.diffusion_mean(X_obs,num_steps=5,N=1)', number=1,
                                  globals=locals(), repeat=args.timing_repeats)
             bridge_mu_time.append(jnp.mean(jnp.array(time)))
