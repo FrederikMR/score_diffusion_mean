@@ -81,7 +81,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--data_path', default='../data/',
                         type=str)
-    parser.add_argument('--save_path', default='../results/estimates/',
+    parser.add_argument('--save_path', default='table/estimates/',
                         type=str)
     parser.add_argument('--score_path', default='scores/',
                         type=str)
