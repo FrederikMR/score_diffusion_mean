@@ -67,6 +67,13 @@ def load_manifold(manifold:str, dim:int=None)->None:
         x0 = M.coords([0.]*dim)
         opt_val = "gradient"
         layers = get_generator_dim(manifold, generator_dim)
+    elif manifold == "H2":
+        sampling_method = 'LocalSampling'
+        M = H2()
+        generator_dim = M.dim
+        x0 = M.coords([0.]*M.dim)
+        layers = get_generator_dim(manifold, generator_dim)
+        opt_val = "x0"
     elif manifold == "HyperbolicSpace":
         sampling_method = 'TMSampling'
         M = nHyperbolicSpace(N=dim)

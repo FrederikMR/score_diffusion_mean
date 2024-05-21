@@ -53,7 +53,7 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Cylinder",
+    parser.add_argument('--manifold', default="Ellipsoid",
                         type=str)
     parser.add_argument('--dim', default=[2],
                         type=List)
@@ -125,7 +125,13 @@ def evaluate_diffusion_mean():
             method = "Embedded"
             
         Brownian_coords(M)
-        dm_bridge(M)
+        
+        if args.manifold == "Landmarks":
+            phi = "Landmarks"
+        else:
+            phi = None
+            
+        dm_bridge(M, phi)
         
         st_path = f"{args.score_path}{args.manifold}{N}/st/"
         s1_path = f"{args.score_path}{args.manifold}{N}/s1_{args.s1_loss_type}/"
@@ -294,6 +300,9 @@ def evaluate_diffusion_mean():
             bridge_mu_error.append(jnp.linalg.norm(mu_opt[1]-mu_bridgechart[-1]))
             bridge_t_error.append(jnp.linalg.norm(T_opt-T_bridge[-1]))
 
+    print(mu_bridgex[-1])
+    print(mu_bridgechart[-1])
+    print(T_bridge[-1])
     print(score_mu_error)
     print(score_t_error)
     error = {'score_mu_error': jnp.stack(score_mu_error),

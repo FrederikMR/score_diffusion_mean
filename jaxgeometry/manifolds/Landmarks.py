@@ -48,6 +48,7 @@ class Landmarks(Manifold):
         self.m = m # landmark space dimension (usually 2 or 3
         self.dim = self.m*self.N
         self.rank = self.dim
+        self.do_chart_update = lambda x: False
 
         # for cfg kernels
         self.std_basis = True
