@@ -43,7 +43,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--N_sim', default=1000,
                         type=int)
-    parser.add_argument('--save_path', default='../data/',
+    parser.add_argument('--save_path', default='data/',
                         type=str)
     parser.add_argument('--max_T', default=0.5,
                         type=float)

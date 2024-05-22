@@ -79,9 +79,9 @@ def parse_args():
                         type=int)
     parser.add_argument('--method', default="Gradient",
                         type=str)
-    parser.add_argument('--data_path', default='../data/',
+    parser.add_argument('--data_path', default='data/',
                         type=str)
-    parser.add_argument('--save_path', default='../table/estimates/',
+    parser.add_argument('--save_path', default='table/estimates/',
                         type=str)
     parser.add_argument('--score_path', default='scores/',
                         type=str)
@@ -114,11 +114,7 @@ def evaluate_diffusion_mean():
         M, x0, method, generator_dim, layers, opt_val = load_manifold(args.manifold,
                                                                                N)
         layers_s1, layers_s2 = layers
-        
-        if N < 5:
-            N_bridge = 1
-        else:
-            N_bridge = 2
+
         if method == "LocalSampling":
             method = "Local"
         else:
@@ -270,14 +266,14 @@ def evaluate_diffusion_mean():
             X_obs = (X_obs[0].astype(jnp.float64), X_obs[1].astype(jnp.float64))
             (thetas,chart,log_likelihood,log_likelihoods,mu_bridge) = M.diffusion_mean(X_obs,
                                                                                        num_steps=args.bridge_iter, 
-                                                                                       N=N_bridge)
+                                                                                       N=1)
             
             mu_bridgex, T_bridge, mu_bridgechart = zip(*mu_bridge)
             mu_bridgex, mu_bridgechart = jnp.stack(mu_bridgex), jnp.stack(mu_bridgechart)
             T_bridge = jnp.stack(T_bridge)
             (thetas,chart,log_likelihood,log_likelihoods,mu_bridge) = M.diffusion_mean(X_obs,
                                                                                        num_steps=5, 
-                                                                                       N=N_bridge)
+                                                                                       N=1)
             time = timeit.repeat('M.diffusion_mean(X_obs,num_steps=5,N=1)', number=1,
                                  globals=locals(), repeat=args.timing_repeats)
             bridge_mu_time.append(jnp.mean(jnp.array(time)))
