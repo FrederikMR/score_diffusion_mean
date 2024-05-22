@@ -1,6 +1,6 @@
 #!/bin/sh
 #BSUB -q gpuv100
-#BSUB -J Ellipsoid10_s1vsm
+#BSUB -J Ellipsoid10_s1tvsm
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 4:00
@@ -23,7 +23,7 @@ python3 train_score.py \
     --s1_loss_type vsm \
     --s2_loss_type dsm \
     --load_model 0 \
-    --T_sample 0 \
+    --T_sample 1 \
     --t0 0.01 \
     --train_net s1 \
     --max_T 1.0 \
