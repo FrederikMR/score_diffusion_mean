@@ -37,13 +37,13 @@ from ManLearn.train_MNIST import load_dataset as load_mnist
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Torus",
+    parser.add_argument('--manifold', default="SPDN",
                         type=str)
-    parser.add_argument('--dim', default=2,
+    parser.add_argument('--dim', default=5,
                         type=int)
     parser.add_argument('--N_sim', default=1000,
                         type=int)
-    parser.add_argument('--save_path', default='../data/',
+    parser.add_argument('--save_path', default='data/',
                         type=str)
     parser.add_argument('--max_T', default=0.5,
                         type=float)

@@ -53,9 +53,9 @@ from jaxgeometry.statistics import Frechet_mean
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Euclidean",
+    parser.add_argument('--manifold', default="Sphere",
                         type=str)
-    parser.add_argument('--dim', default=[2,3,5,10],
+    parser.add_argument('--dim', default=[10],
                         type=List)
     parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
@@ -77,15 +77,15 @@ def parse_args():
                         type=str)
     parser.add_argument('--benchmark', default=1,
                         type=int)
-    parser.add_argument('--method', default="JAX",
+    parser.add_argument('--method', default="Gradient",
                         type=str)
-    parser.add_argument('--data_path', default='../data/',
+    parser.add_argument('--data_path', default='data/',
                         type=str)
     parser.add_argument('--save_path', default='table/estimates/',
                         type=str)
     parser.add_argument('--score_path', default='scores/',
                         type=str)
-    parser.add_argument('--timing_repeats', default=5,
+    parser.add_argument('--timing_repeats', default=10,
                         type=int)
     parser.add_argument('--seed', default=2712,
                         type=int)
@@ -256,8 +256,8 @@ def evaluate_diffusion_mean():
                                        max_iter=10)
         time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                              number=1, globals=locals(), repeat=args.timing_repeats)
-        score_mu_time.append(jnp.mean(jnp.array(time)))
-        score_std_time.append(jnp.std(jnp.array(time)))
+        score_mu_time.append(jnp.mean(jnp.array(time)/10))
+        score_std_time.append(jnp.std(jnp.array(time)/10))
             #mu_sm, T_sm, gradx_sm, _ = M.sm_dmxt(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t_init]))
         print(s1_ntrain)
         print(T_opt)
@@ -280,8 +280,8 @@ def evaluate_diffusion_mean():
                                                                                        N=N_bridge)
             time = timeit.repeat('M.diffusion_mean(X_obs,num_steps=5,N=1)', number=1,
                                  globals=locals(), repeat=args.timing_repeats)
-            bridge_mu_time.append(jnp.mean(jnp.array(time)))
-            bridge_std_time.append(jnp.std(jnp.array(time)))
+            bridge_mu_time.append(jnp.mean(jnp.array(time)/10))
+            bridge_std_time.append(jnp.std(jnp.array(time)/10))
         else:
             mu_bridgex, mu_bridgechart, T_bridge = [jnp.nan], [jnp.nan], [jnp.nan]
             bridge_mu_time.append(jnp.nan)
@@ -381,7 +381,7 @@ def evaluate_frechet_mean():
         
         def s1_evaluate(x,y,t):
             
-            val1 = t*ScoreEval.grady_log(x,y,t)
+            val1 = ScoreEval.grady_log(x,y,t)
             
             return val1/jnp.linalg.norm(val1)
             
@@ -394,8 +394,8 @@ def evaluate_frechet_mean():
                                       max_iter=10)
         time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                              number=1, globals=locals(), repeat=args.timing_repeats)
-        score_mu_time.append(jnp.mean(jnp.array(time)))
-        score_std_time.append(jnp.std(jnp.array(time)))
+        score_mu_time.append(jnp.mean(jnp.array(time)/10))
+        score_std_time.append(jnp.std(jnp.array(time)/10))
         
         print(mu_opt[1])
         print(mu_sm[1][-1])
@@ -404,23 +404,42 @@ def evaluate_frechet_mean():
         
         if args.benchmark:
             Frechet_mean(M)
-            if not (args.manifold == "Sphere"):
-                mu_frechet,loss,iterations,vs = M.Frechet_mean(zip(X_obs[0], X_obs[1]),(X_obs[0][0], X_obs[1][0]))
-                time_fun = lambda x: M.Frechet_mean(zip(X_obs[0], X_obs[1]),(x[0], x[1]), 
-                                                    options={'num_steps':10})
-                print(mu_frechet)
-            else:
-                mu_frechet, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
-                                                       step_size=args.step_size, max_iter=args.score_iter)
-                mu_frechet = (mu_frechet[0][-1], mu_frechet[1][-1])
-                time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t0]), 
+            #mu_frechet,loss,iterations,vs = M.Frechet_mean(zip(X_obs[0], X_obs[1]),(X_obs[0][0], X_obs[1][0]),
+            #                                               options={'num_steps':args.bridge_iter})
+            #time_fun = lambda x: M.Frechet_mean(zip(X_obs[0], X_obs[1]),(x[0], x[1]), 
+            #                                    options={'num_steps':10})
+            #print(mu_frechet)
+            #mu_frechet,loss,iterations,vs = M.Frechet_mean(zip(X_obs[0], X_obs[1]),(X_obs[0][0], X_obs[1][0]),
+            #                                               options={'num_steps':10})
+            #time_fun = lambda x: M.Frechet_mean(zip(X_obs[0], X_obs[1]),(x[0], x[1]), 
+            #                                    options={'num_steps':10})            
+            #print(mu_frechet)
+            dm_score(M, s1_model=lambda x,y,t: M.Log(y,x[1]), 
+                     s2_model = ScoreEval.gradt_log, method="Gradient")
+            mu_frechet, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
+                                                       step_size=args.step_size, max_iter=args.bridge_iter)
+            mu_frechet = (mu_frechet[0][-1], mu_frechet[1][-1])
+            time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t0]), 
                                               step_size=args.step_size, 
                                               max_iter=10)
-                print(mu_frechet)
+            print(mu_frechet)
+            #if not (args.manifold == "Sphere" or args.manifold=="Ellipsoid"):
+            #    mu_frechet,loss,iterations,vs = M.Frechet_mean(zip(X_obs[0], X_obs[1]),(X_obs[0][0], X_obs[1][0]))
+            #    time_fun = lambda x: M.Frechet_mean(zip(X_obs[0], X_obs[1]),(x[0], x[1]), 
+            #                                        options={'num_steps':10})
+            #    print(mu_frechet)
+            #else:
+            #    mu_frechet, _ = M.sm_dmx(X_obs, (X_obs[0][0], X_obs[1][0]), jnp.array([args.t0]), \
+            #                                           step_size=args.step_size, max_iter=args.score_iter)
+            #    mu_frechet = (mu_frechet[0][-1], mu_frechet[1][-1])
+            #    time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t0]), 
+            #                                  step_size=args.step_size, 
+            #                                  max_iter=10)
+            #    print(mu_frechet)
             time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                                  number=1, globals=locals(), repeat=args.timing_repeats)
-            frechet_mu_time.append(jnp.mean(jnp.array(time)))
-            frechet_std_time.append(jnp.std(jnp.array(time)))
+            frechet_mu_time.append(jnp.mean(jnp.array(time)/10))
+            frechet_std_time.append(jnp.std(jnp.array(time)/10))
         else:
             mu_frechet = (jnp.nan, jnp.nan)
             frechet_mu_time.append(jnp.nan)
