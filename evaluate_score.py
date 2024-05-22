@@ -391,7 +391,7 @@ def evaluate_frechet_mean():
                                                step_size=args.step_size, max_iter=args.score_iter)
         time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t0]), 
                                       step_size=args.step_size, 
-                                      max_iter=10)
+                                      max_iter=5)
         time = timeit.repeat('time_fun((X_obs[0][0], X_obs[1][0]))',
                              number=1, globals=locals(), repeat=args.timing_repeats)
         score_mu_time.append(jnp.mean(jnp.array(time)))
@@ -421,7 +421,7 @@ def evaluate_frechet_mean():
             mu_frechet = (mu_frechet[0][-1], mu_frechet[1][-1])
             time_fun = lambda x: M.sm_dmx(X_obs, (x[0], x[1]), jnp.array([args.t0]), 
                                               step_size=args.step_size, 
-                                              max_iter=10)
+                                              max_iter=5)
             print(mu_frechet)
             #if not (args.manifold == "Sphere" or args.manifold=="Ellipsoid"):
             #    mu_frechet,loss,iterations,vs = M.Frechet_mean(zip(X_obs[0], X_obs[1]),(X_obs[0][0], X_obs[1][0]))
