@@ -65,7 +65,7 @@ def parse_args():
                         type=str)
     parser.add_argument('--t0', default=0.01,
                         type=float)
-    parser.add_argument('--step_size', default=0.1,
+    parser.add_argument('--step_size', default=0.01,
                         type=float)
     parser.add_argument('--score_iter', default=1000,
                         type=int)
@@ -75,7 +75,7 @@ def parse_args():
                         type=float)
     parser.add_argument('--estimate', default="diffusion_mean",
                         type=str)
-    parser.add_argument('--benchmark', default=1,
+    parser.add_argument('--benchmark', default=0,
                         type=int)
     parser.add_argument('--method', default="Gradient",
                         type=str)
