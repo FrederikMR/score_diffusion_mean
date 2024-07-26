@@ -24,7 +24,7 @@ python3 train_score.py \
     --s2_loss_type dsm \
     --load_model 0 \
     --T_sample 1 \
-    --t0 0.01 \
+    --t0 0.1 \
     --train_net s1 \
     --max_T 1.0 \
     --lr_rate 0.001 \

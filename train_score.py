@@ -47,11 +47,11 @@ from ManLearn.train_MNIST import load_dataset as load_mnist
 def parse_args():
     parser = argparse.ArgumentParser()
     # File-paths
-    parser.add_argument('--manifold', default="Torus",
+    parser.add_argument('--manifold', default="Sphere",
                         type=str)
     parser.add_argument('--dim', default=2,
                         type=int)
-    parser.add_argument('--s1_loss_type', default="vsm",
+    parser.add_argument('--s1_loss_type', default="dsm",
                         type=str)
     parser.add_argument('--s2_loss_type', default="dsm",
                         type=str)
@@ -59,7 +59,7 @@ def parse_args():
                         type=int)
     parser.add_argument('--T_sample', default=0,
                         type=int)
-    parser.add_argument('--t0', default=0.01,
+    parser.add_argument('--t0', default=0.1,
                         type=float)
     parser.add_argument('--gamma', default=1.0,
                         type=float)
@@ -69,7 +69,7 @@ def parse_args():
                         type=float)
     parser.add_argument('--lr_rate', default=0.001,
                         type=float)
-    parser.add_argument('--epochs', default=50000,
+    parser.add_argument('--epochs', default=200000,
                         type=int)
     parser.add_argument('--warmup_epochs', default=1000,
                         type=int)
